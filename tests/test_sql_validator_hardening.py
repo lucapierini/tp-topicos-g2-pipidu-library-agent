@@ -45,7 +45,12 @@ REJECTED = [
     ("B8", "SELECT id INTO nueva FROM libros", SQL_NOT_READONLY),
     # --- #2: columnas sin calificar o inexistentes en consultas con varias tablas ---
     ("B9", "SELECT secreto FROM socios s JOIN prestamos p ON p.socio_id = s.id", COLUMN_NOT_ALLOWED),
-    ("B10", "SELECT id FROM libros l JOIN autores a ON a.id = l.autor_id", COLUMN_NOT_ALLOWED),
+    ("B10", "SELECT id FROM libros l JOIN editoriales e ON e.id = l.editorial_id", COLUMN_NOT_ALLOWED),
+    # `libros` ya no tiene `autor_id` (N:M por `libros_autores`): el modelo no puede usarlo (D64).
+    ("B29", "SELECT l.autor_id FROM libros l", COLUMN_NOT_ALLOWED),
+    # El repositorio documental es interno: la herramienta de RAG lo lee por su vía, no el SQL (D21).
+    ("B30", "SELECT contenido FROM documentos_chunks", TABLE_NOT_ALLOWED),
+    ("B31", "SELECT nombre_archivo FROM documentos", TABLE_NOT_ALLOWED),
     ("B11", "SELECT s.secreto FROM socios s", COLUMN_NOT_ALLOWED),
     ("B12", "SELECT x FROM (SELECT secreto AS x FROM socios) t", COLUMN_NOT_ALLOWED),
     # --- #3: schema distinto de `public` ---
@@ -64,8 +69,8 @@ REJECTED = [
     ("B19", "WITH RECURSIVE r AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM r) SELECT n FROM r",
      QUERY_TOO_COMPLEX),
     ("B20", _TOO_MANY_TABLES, QUERY_TOO_COMPLEX),
-    # --- #13: el estado se lee de la vista calculada, no de una columna almacenada ---
-    ("B21", "SELECT estado FROM prestamos", COLUMN_NOT_ALLOWED),
+    # --- el estado calculado vive en la vista; la tabla solo guarda activo/devuelto (D64) ---
+    ("B21", "SELECT estado_calculado FROM prestamos", COLUMN_NOT_ALLOWED),
     # --- el validador no lanza: entradas rotas se rechazan ---
     ("B22", "SELECT 'abc FROM libros", SQL_NOT_READONLY),
     ("B23", "", SQL_NOT_READONLY),
@@ -107,8 +112,9 @@ ACCEPTED = [
     'SELECT "Id" FROM LIBROS',
     "SELECT id FROM libros UNION SELECT id FROM socios",
     "SELECT l.titulo FROM libros l WHERE l.titulo ILIKE '%a%' ORDER BY l.titulo LIMIT 10 OFFSET 5",
-    "SELECT a.nombre, count(l.id) AS libros FROM autores a JOIN libros l ON l.autor_id = a.id "
+    "SELECT a.nombre, count(la.libro_id) AS libros FROM autores a JOIN libros_autores la ON la.autor_id = a.id "
     "GROUP BY a.nombre ORDER BY libros DESC",
+    "SELECT estado FROM prestamos WHERE estado = 'activo'",
 ]
 
 
@@ -180,11 +186,11 @@ def test_qualified_star_over_subquery_does_not_raise() -> None:
 
 def test_star_over_join_yields_unique_output_names() -> None:
     # `dict(zip(columns, row))` pisaría el segundo `id` en silencio (viola Art. 4).
-    result = validate_sql("SELECT * FROM libros l JOIN autores a ON a.id = l.autor_id")
+    result = validate_sql("SELECT * FROM libros l JOIN editoriales e ON e.id = l.editorial_id")
     assert result.ok
     names = _projection_names(result.normalized_sql)
     assert len(names) == len(set(names))
-    assert {"l_id", "a_id"} <= set(names)
+    assert {"l_id", "e_id"} <= set(names)
 
 
 def test_unnamed_aggregates_keep_their_natural_name() -> None:
@@ -227,12 +233,13 @@ REFERENCE_QUERIES = {
     "G2": "SELECT l.titulo, count(*) AS total FROM prestamos p JOIN libros l ON l.id = p.libro_id "
           "WHERE p.fecha_prestamo BETWEEN '2026-08-01' AND '2026-11-30' "
           "GROUP BY l.titulo ORDER BY total DESC LIMIT 5",
-    "G3": "SELECT DISTINCT s.id, s.nombre, s.apellido FROM prestamos_estado pe "
-          "JOIN socios s ON s.id = pe.socio_id WHERE pe.estado = 'vencido'",
+    "G3": "SELECT DISTINCT s.id, s.nombre, s.apellido FROM v_prestamos_estado v "
+          "JOIN socios s ON s.id = v.socio_id WHERE v.estado_calculado = 'vencido'",
     "G4": "SELECT coalesce(sum(l.ejemplares_disponibles), 0) AS disponibles FROM libros l "
           "JOIN categorias c ON c.id = l.categoria_id WHERE c.nombre = 'Ciencias de la Computación'",
     "G5": "SELECT a.nombre, a.apellido, count(*) AS libros FROM libros l "
-          "JOIN autores a ON a.id = l.autor_id JOIN editoriales e ON e.id = l.editorial_id "
+          "JOIN libros_autores la ON la.libro_id = l.id JOIN autores a ON a.id = la.autor_id "
+          "JOIN editoriales e ON e.id = l.editorial_id "
           "WHERE e.nombre = 'Sudamericana' GROUP BY a.id, a.nombre, a.apellido "
           "ORDER BY libros DESC LIMIT 1",
     "G10": "SELECT p.fecha_prestamo, p.fecha_devolucion_prevista, CURRENT_DATE - p.fecha_prestamo AS dias "

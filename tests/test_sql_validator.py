@@ -58,8 +58,9 @@ def test_adversarial_rejected(case_id: str, sql: str, expected: str) -> None:
         "SELECT id, titulo FROM libros WHERE ejemplares_disponibles > 0",
         "SELECT s.nombre, p.id FROM prestamos p JOIN socios s ON s.id = p.socio_id",
         "WITH top AS (SELECT libro_id, count(*) AS c FROM prestamos GROUP BY libro_id) SELECT * FROM top",
-        "SELECT estado, dias_atraso FROM prestamos_estado WHERE estado = 'vencido'",
-        "SELECT a.nombre, count(l.id) AS libros FROM autores a JOIN libros l ON l.autor_id = a.id GROUP BY a.nombre",
+        "SELECT estado_calculado, dias_atraso FROM v_prestamos_estado WHERE estado_calculado = 'vencido'",
+        "SELECT a.nombre, count(la.libro_id) AS libros FROM autores a "
+        "JOIN libros_autores la ON la.autor_id = a.id GROUP BY a.nombre",
         "SELECT id FROM libros UNION SELECT id FROM socios",
         "SELECT count(*) AS c, max(fecha_prestamo) FROM prestamos",
     ],

@@ -8,11 +8,15 @@ La recuperación depende de dos piezas que se inyectan como protocolos:
 
 Así el umbral, el top-k, la ausencia de resultados y la referencia de origen se prueban sin
 base ni API (Art. 6). La ingesta (extracción, chunking, embeddings de documentos, tabla) es
-del integrante de RAG y base de datos (D19): esta herramienta solo **lee** `documentos_embeddings`.
+del integrante de RAG y base de datos (D19): esta herramienta solo **lee** `documentos_chunks`.
 
 Contrato con la ingesta (a confirmar con quien la implemente):
-- tabla `documentos_embeddings` con columnas `id, document, location, text, content_hash, vector`;
-- `vector(768)` (D5) con índice HNSW `vector_cosine_ops` (D13);
+- `documentos(id, nombre_archivo, tipo, sha256, ...)` y
+  `documentos_chunks(id, documento_id, chunk_index, contenido, embedding vector(768), metadata jsonb)`;
+- la ubicación de un fragmento (R-4.7) se lee de `metadata`: `seccion`, `ubicacion` o `pagina`. Si la
+  ingesta no la guarda, la cita queda como "fragmento N" y se pierde "Art. 12" / "p. 3";
+- índice HNSW con `vector_cosine_ops` (D13): sin operador explícito pgvector usa L2 y la consulta por
+  coseno no lo aprovecha;
 - los documentos se embeben con `task_type=RETRIEVAL_DOCUMENT` y la consulta con `RETRIEVAL_QUERY`;
 - el rol `agent_ro` necesita `GRANT SELECT` sobre la tabla (la whitelist de la herramienta SQL la
   excluye a propósito: D21; esta herramienta la lee por una vía distinta).
@@ -30,8 +34,8 @@ from agent.contracts import Chunk, RagResult
 from agent.errors import NO_RELEVANT_RESULTS, RETRIEVAL_ERROR
 from agent.retry import call_with_retry
 
-EMBEDDINGS_TABLE = "documentos_embeddings"
-EMBEDDINGS_COLUMNS = ("id", "document", "location", "text", "content_hash", "vector")
+CHUNKS_TABLE = "documentos_chunks"
+DOCUMENTS_TABLE = "documentos"
 
 
 class Embedder(Protocol):
@@ -109,7 +113,7 @@ class InMemoryVectorStore:
 
 
 class PgVectorStore:
-    """Búsqueda por distancia de coseno sobre `documentos_embeddings` (pgvector, D13)."""
+    """Búsqueda por distancia de coseno sobre `documentos_chunks` (pgvector, D13, D66)."""
 
     def __init__(self, config: Config | None = None, conn=None) -> None:
         self.cfg = config or load_config()
@@ -145,10 +149,17 @@ class PgVectorStore:
     def search(self, vector: list[float], top_k: int) -> list[Chunk]:
         literal = "[" + ",".join(repr(float(x)) for x in vector) + "]"
         # `<=>` es la distancia de coseno: similitud = 1 - distancia. El ORDER BY usa el índice HNSW.
+        # El esquema no tiene columna de ubicación: sale de `metadata` (sección, ubicación o página) y,
+        # si no hay nada, del número de fragmento. `content_hash` es el sha256 del documento + el índice
+        # del fragmento: estable entre corridas y único por fragmento.
         sql = (
-            f"SELECT id, document, location, text, content_hash, "  # noqa: S608 - constantes del módulo
-            f"1 - (vector <=> %s::vector) AS similarity "
-            f"FROM {EMBEDDINGS_TABLE} ORDER BY vector <=> %s::vector LIMIT %s"
+            "SELECT c.id, d.nombre_archivo, "
+            "COALESCE(c.metadata->>'seccion', c.metadata->>'ubicacion', "
+            "'p. ' || (c.metadata->>'pagina'), 'fragmento ' || c.chunk_index::text), "
+            "c.contenido, COALESCE(d.sha256, d.nombre_archivo) || ':' || c.chunk_index::text, "
+            "1 - (c.embedding <=> %s::vector) AS similarity "
+            f"FROM {CHUNKS_TABLE} c JOIN {DOCUMENTS_TABLE} d ON d.id = c.documento_id "
+            "ORDER BY c.embedding <=> %s::vector LIMIT %s"
         )
         conn = self._connection()
         try:

@@ -19,16 +19,21 @@ TABLE_NOTES = {
     "autores": "autores de los libros",
     "editoriales": "editoriales",
     "categorias": "categorías temáticas de los libros",
-    "libros": "catálogo; `ejemplares_disponibles` es el stock prestable ahora",
+    "libros": "catálogo; `ejemplares_disponibles` es el stock prestable ahora; NO tiene autor: los autores "
+              "están en `libros_autores`",
+    "libros_autores": "relación N:M entre libros y autores; `orden` es la posición del autor en el libro",
     "socios": "alumnos y docentes; `tipo_socio` es 'alumno' o 'docente'",
-    "prestamos": "un préstamo por fila; `fecha_devolucion_real` es NULL si no se devolvió",
-    "prestamos_estado": "VISTA de `prestamos` con `estado` ('activo', 'devuelto', 'vencido') y `dias_atraso` calculados",
+    "prestamos": "un préstamo por fila; `estado` es SOLO 'activo' o 'devuelto' (nunca 'vencido'); "
+                 "`fecha_devolucion_real` es NULL si no se devolvió",
+    "v_prestamos_estado": "VISTA de `prestamos` con `estado_calculado` ('activo', 'devuelto', 'vencido') y "
+                          "`dias_atraso`. Para vencidos y atrasos usar SIEMPRE esta vista",
 }
 
 RELATIONS = (
-    "libros.autor_id -> autores.id; libros.editorial_id -> editoriales.id; "
-    "libros.categoria_id -> categorias.id; prestamos.libro_id -> libros.id; "
-    "prestamos.socio_id -> socios.id; prestamos_estado.libro_id / socio_id igual que prestamos."
+    "libros.editorial_id -> editoriales.id; libros.categoria_id -> categorias.id; "
+    "libros_autores.libro_id -> libros.id; libros_autores.autor_id -> autores.id (los autores de un libro "
+    "se obtienen por `libros_autores`); prestamos.libro_id -> libros.id; prestamos.socio_id -> socios.id; "
+    "v_prestamos_estado.libro_id / socio_id igual que prestamos."
 )
 
 

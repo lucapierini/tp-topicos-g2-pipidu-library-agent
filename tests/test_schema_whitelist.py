@@ -2,7 +2,9 @@
 
 Este test es el contrato entre el desarrollo del agente y el modelo de datos:
 si el integrante que arma el esquema cambia una tabla o una columna, acá se rompe
-en el mismo commit.
+en el mismo commit. Es **bidireccional**: una columna que existe y no está en la whitelist es
+inalcanzable (y `SELECT *` no la devuelve); una columna en la whitelist que no existe hace que el
+modelo genere SQL inválido (D64).
 """
 from __future__ import annotations
 
@@ -15,47 +17,71 @@ from agent.config.schema_whitelist import ALLOWED_FUNCTIONS, ALLOWED_TABLES, FOR
 
 SCHEMA = Path(__file__).resolve().parents[1] / "db" / "schema.sql"
 
+_NOT_COLUMNS = {"CONSTRAINT", "PRIMARY", "UNIQUE", "CHECK", "FOREIGN"}
+
+
+def _schema_text() -> str:
+    return SCHEMA.read_text(encoding="utf-8")
+
+
+def _table_columns(text: str, table: str) -> set[str]:
+    block = re.search(rf"CREATE TABLE\s+{table}\s*\((.*?)\n\);", text, re.I | re.S)
+    assert block, f"{table} no aparece en schema.sql"
+    names = re.findall(r"^\s{2}(\w+)\s+\w", block.group(1), re.M)
+    return {n for n in names if n.upper() not in _NOT_COLUMNS}
+
 
 @pytest.mark.skipif(not SCHEMA.exists(), reason="db/schema.sql todavía no existe (T2.1)")
 def test_whitelist_matches_schema_sql() -> None:
-    # Art. 11: la whitelist no oculta columnas por política, debe cubrir el modelo completo.
-    # Si el esquema tiene una columna, la whitelist la incluye; si no, la columna es
-    # inalcanzable para el agente y el test se rompe en el mismo commit.
-    text = SCHEMA.read_text(encoding="utf-8")
+    text = _schema_text()
     tables = set(re.findall(r"CREATE TABLE(?: IF NOT EXISTS)?\s+(\w+)", text, flags=re.I))
     views = set(re.findall(r"CREATE VIEW(?: IF NOT EXISTS)?\s+(\w+)", text, flags=re.I))
+    internal = tables & FORBIDDEN_TABLES  # documentos, documentos_chunks: excluidos a propósito (D21)
 
     allowed = set(ALLOWED_TABLES)
-    assert tables <= allowed, f"tablas en el esquema fuera de la whitelist: {tables - allowed}"
-    assert views <= allowed, f"vistas en el esquema fuera de la whitelist: {views - allowed}"
+    assert (tables - internal) <= allowed, f"tablas del esquema fuera de la whitelist: {tables - internal - allowed}"
+    assert views <= allowed, f"vistas del esquema fuera de la whitelist: {views - allowed}"
+    assert allowed <= (tables | views), f"la whitelist nombra objetos que no existen: {allowed - tables - views}"
 
     for table, columns in ALLOWED_TABLES.items():
         if table in views:
             continue
-        block = re.search(rf"CREATE TABLE(?: IF NOT EXISTS)?\s+{table}\s*\((.*?)\n\)", text, re.I | re.S)
-        assert block, f"{table} no aparece en schema.sql"
-        cols = set(re.findall(r"^\s{2}(\w+)\s+\w", block.group(1), re.M))
-        assert cols <= columns, f"columnas de {table} fuera de la whitelist: {cols - columns}"
+        actual = _table_columns(text, table)
+        assert actual == columns, (
+            f"{table}: en el esquema y no en la whitelist {actual - columns}; "
+            f"en la whitelist y no en el esquema {columns - actual}"
+        )
+
+
+@pytest.mark.skipif(not SCHEMA.exists(), reason="db/schema.sql todavía no existe (T2.1)")
+def test_view_columns_exist_in_the_view_definition() -> None:
+    text = _schema_text()
+    view = re.search(r"CREATE VIEW\s+v_prestamos_estado\s+AS\s+(.*?);", text, re.I | re.S)
+    assert view, "v_prestamos_estado no aparece en schema.sql"
+    for column in ALLOWED_TABLES["v_prestamos_estado"]:
+        assert re.search(rf"\b{column}\b", view.group(1)), f"la vista no define {column}"
 
 
 def test_internal_tables_are_never_allowed() -> None:
     # La herramienta SQL lee el dominio, nunca la trazabilidad ni el repositorio documental.
     for table in FORBIDDEN_TABLES:
         assert table not in ALLOWED_TABLES
+    assert {"agent_runs", "documentos", "documentos_chunks"} <= FORBIDDEN_TABLES
 
 
-def test_prestamos_estado_is_a_view_not_a_stored_state() -> None:
-    # D7 / R-3.12: el estado se resuelve por cálculo. La vista existe en la whitelist
-    # porque es la única forma de que el agente consulte el vencimiento.
-    assert "prestamos_estado" in ALLOWED_TABLES
-    assert "dias_atraso" in ALLOWED_TABLES["prestamos_estado"]
+def test_overdue_state_lives_in_the_calculated_view() -> None:
+    # D7 / R-3.12 / D64: la tabla guarda solo activo/devuelto (CHECK en el esquema); el vencimiento
+    # es `estado_calculado` en la vista, la única forma de que el agente consulte "vencido".
+    assert "v_prestamos_estado" in ALLOWED_TABLES
+    assert {"estado_calculado", "dias_atraso"} <= ALLOWED_TABLES["v_prestamos_estado"]
+    assert "estado_calculado" not in ALLOWED_TABLES["prestamos"]
+    assert "estado" in ALLOWED_TABLES["prestamos"]
 
 
-def test_estado_se_lee_solo_de_la_vista_calculada() -> None:
-    # D51: la tabla no expone `estado`; si lo hiciera, el modelo podría leer un valor almacenado
-    # que nunca dice `vencido` en vez de calcularlo (R-3.12).
-    assert "estado" not in ALLOWED_TABLES["prestamos"]
-    assert "estado" in ALLOWED_TABLES["prestamos_estado"]
+def test_books_reach_their_authors_through_the_junction_table() -> None:
+    # Un libro puede tener varios autores: `libros` no tiene `autor_id` (D64).
+    assert "autor_id" not in ALLOWED_TABLES["libros"]
+    assert {"libro_id", "autor_id"} <= ALLOWED_TABLES["libros_autores"]
 
 
 def test_sqlglot_schema_mirrors_the_whitelist() -> None:

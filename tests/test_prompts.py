@@ -25,10 +25,22 @@ def test_schema_lists_exactly_the_whitelisted_columns() -> None:
         assert listed == columns, table
 
 
-def test_prestamos_does_not_advertise_a_stored_state_column() -> None:
-    line = next(ln for ln in schema_description().splitlines() if ln.startswith("- prestamos("))
-    assert "estado" not in line
-    assert "prestamos_estado" in system_prompt()
+def test_the_prompt_steers_overdue_queries_to_the_view() -> None:
+    # `prestamos.estado` solo vale activo/devuelto: pedirle `vencido` nunca devuelve filas (D64).
+    description = schema_description()
+    prestamos = next(ln for ln in description.splitlines() if ln.startswith("- prestamos("))
+    assert "nunca 'vencido'" in prestamos
+    view = next(ln for ln in description.splitlines() if ln.startswith("- v_prestamos_estado("))
+    assert "estado_calculado" in view
+    assert "v_prestamos_estado" in system_prompt()
+
+
+def test_the_prompt_does_not_offer_a_book_author_column() -> None:
+    # Los autores de un libro están en `libros_autores` (N:M): `libros.autor_id` no existe.
+    description = schema_description()
+    libros = next(ln for ln in description.splitlines() if ln.startswith("- libros("))
+    assert "autor_id" not in libros
+    assert "- libros_autores(" in description
 
 
 def test_no_unresolved_placeholders_remain() -> None:
@@ -47,7 +59,7 @@ def test_configured_values_are_injected() -> None:
 
 def test_the_prompt_forbids_what_the_validator_forbids() -> None:
     rendered = system_prompt().lower()
-    for fragment in ("select", "recursive", "prestamos_estado", "no_relevant_results"):
+    for fragment in ("select", "recursive", "v_prestamos_estado", "no_relevant_results"):
         assert fragment in rendered
 
 

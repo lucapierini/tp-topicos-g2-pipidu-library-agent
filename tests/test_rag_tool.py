@@ -171,7 +171,9 @@ def test_pgvector_store_orders_by_cosine_distance_and_maps_rows() -> None:
     chunks = store.search([0.1, 0.2, 0.3], 5)
 
     sql, params = conn.queries[0]
-    assert "<=>" in sql and "documentos_embeddings" in sql and "ORDER BY" in sql
+    assert "<=>" in sql and "documentos_chunks" in sql and "JOIN documentos" in sql and "ORDER BY" in sql
+    # La ubicación sale de `metadata` y la tabla de chunks no se confunde con la SQL del agente (D66).
+    assert "metadata" in sql and "nombre_archivo" in sql
     assert params == ("[0.1,0.2,0.3]", "[0.1,0.2,0.3]", 5)
     assert chunks[0].document == "reglamento_biblioteca.pdf" and chunks[0].similarity == pytest.approx(0.82)
     assert conn.rollbacks == 1, "la lectura no deja una transacción abierta"

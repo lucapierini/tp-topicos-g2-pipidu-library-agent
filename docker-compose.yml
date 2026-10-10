@@ -1,0 +1,40 @@
+# Base local para pruebas: PostgreSQL + pgvector con los roles del proyecto (T1.3, D14).
+#
+#   cp .env.example .env     # completar las contraseñas
+#   docker compose up -d     # espera al healthcheck
+#   bash scripts/replicate_neon.sh   # (opcional) trae el esquema y los datos de Neon
+#
+# La imagen debe tener la misma versión mayor que Neon para poder restaurar su dump: `PG_IMAGE`.
+# El script de réplica la detecta y te dice cuál usar.
+services:
+  db:
+    image: ${PG_IMAGE:-pgvector/pgvector:pg17}
+    container_name: pipidu-db
+    restart: unless-stopped
+    environment:
+      # Superusuario local: solo para inicializar y restaurar. La aplicación NO lo usa.
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?definí POSTGRES_ADMIN_PASSWORD en .env}
+      POSTGRES_DB: ${POSTGRES_DB:-pipidu}
+      AGENT_RO_PASSWORD: ${POSTGRES_PASSWORD:?definí POSTGRES_PASSWORD en .env (contraseña de agent_ro)}
+      AGENT_LOGGER_PASSWORD: ${POSTGRES_LOG_PASSWORD:?definí POSTGRES_LOG_PASSWORD en .env (agent_logger)}
+      # 1 = carga db/dev_seed.sql (pocas filas deterministas para pruebas); 0 = base vacía.
+      DEV_SEED: ${DEV_SEED:-1}
+    ports:
+      # Solo en loopback: la base de pruebas no se expone a la red.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pipidu-pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+      - ./db/migrations:/migrations:ro
+      - ./db/schema.sql:/schema.sql:ro
+      - ./db/post_restore.sql:/post_restore.sql:ro
+      - ./db/dev_seed.sql:/dev_seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-pipidu}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pipidu-pgdata:

@@ -30,8 +30,11 @@ Reglas para la sentencia:
   `INSERT`/`UPDATE`/`DELETE`/DDL, sin `WITH RECURSIVE`.
 - Calificá siempre las columnas con el alias de su tabla cuando haya un `JOIN`.
 - Usá solo columnas del esquema. El modelo no registra precios ni ventas.
-- **Estado de un préstamo (activo, devuelto, vencido) y atrasos: consultá la vista `prestamos_estado`**
-  (`estado`, `dias_atraso`). La tabla `prestamos` no tiene estado.
+- **Vencidos y atrasos: consultá la vista `v_prestamos_estado`** (`estado_calculado` = 'vencido',
+  `dias_atraso`). La columna `prestamos.estado` solo vale 'activo' o 'devuelto': un préstamo vencido
+  sigue siendo 'activo' ahí, así que `prestamos.estado = 'vencido'` nunca devuelve filas.
+- Un libro puede tener varios autores: para el autor de un libro uní `libros_autores` con `autores`
+  (`libros` no tiene `autor_id`).
 - "Este cuatrimestre" es el rango `$cuatrimestre_start` a `$cuatrimestre_end`:
   `fecha_prestamo BETWEEN '$cuatrimestre_start' AND '$cuatrimestre_end'`.
 - "Hace N días" se calcula sobre `CURRENT_DATE` (zona horaria $timezone): `CURRENT_DATE - INTERVAL 'N days'`.
@@ -51,17 +54,17 @@ Ejemplos de sentencias (los nombres son ilustrativos):
 2. "¿Cuáles son los 5 libros más prestados este cuatrimestre?"
    `SELECT l.titulo, count(*) AS prestamos FROM prestamos p JOIN libros l ON l.id = p.libro_id WHERE p.fecha_prestamo BETWEEN '$cuatrimestre_start' AND '$cuatrimestre_end' GROUP BY l.titulo ORDER BY prestamos DESC LIMIT 5`
 3. "¿Qué socios tienen préstamos vencidos?"
-   `SELECT DISTINCT s.nombre, s.apellido, pe.dias_atraso FROM prestamos_estado pe JOIN socios s ON s.id = pe.socio_id WHERE pe.estado = 'vencido' ORDER BY pe.dias_atraso DESC`
+   `SELECT DISTINCT s.nombre, s.apellido, v.dias_atraso FROM v_prestamos_estado v JOIN socios s ON s.id = v.socio_id WHERE v.estado_calculado = 'vencido' ORDER BY v.dias_atraso DESC`
 4. "¿Cuántos ejemplares disponibles hay de la categoría Literatura?"
    `SELECT coalesce(sum(l.ejemplares_disponibles), 0) AS disponibles FROM libros l JOIN categorias c ON c.id = l.categoria_id WHERE c.nombre ILIKE 'Literatura'`
 5. "¿Qué autor tiene más libros de la editorial Alfa?"
-   `SELECT a.nombre, a.apellido, count(*) AS libros FROM libros l JOIN autores a ON a.id = l.autor_id JOIN editoriales e ON e.id = l.editorial_id WHERE e.nombre ILIKE 'Alfa' GROUP BY a.id, a.nombre, a.apellido ORDER BY libros DESC LIMIT 1`
+   `SELECT a.nombre, a.apellido, count(*) AS libros FROM libros l JOIN libros_autores la ON la.libro_id = l.id JOIN autores a ON a.id = la.autor_id JOIN editoriales e ON e.id = l.editorial_id WHERE e.nombre ILIKE 'Alfa' GROUP BY a.id, a.nombre, a.apellido ORDER BY libros DESC LIMIT 1`
 6. "¿Quién es el socio con más préstamos?"
    `SELECT s.nombre, s.apellido, s.tipo_socio, count(*) AS prestamos FROM prestamos p JOIN socios s ON s.id = p.socio_id GROUP BY s.id, s.nombre, s.apellido, s.tipo_socio ORDER BY prestamos DESC LIMIT 1`
 7. "¿Qué préstamos de Ana Gómez llevan más de 20 días?"
    `SELECT l.titulo, p.fecha_prestamo, CURRENT_DATE - p.fecha_prestamo AS dias FROM prestamos p JOIN socios s ON s.id = p.socio_id JOIN libros l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Ana' AND s.apellido ILIKE 'Gómez' AND p.fecha_devolucion_real IS NULL AND p.fecha_prestamo <= CURRENT_DATE - INTERVAL '20 days'`
 8. "¿Cuántos libros publicó cada autor?"
-   `SELECT a.nombre, a.apellido, count(l.id) AS libros FROM autores a LEFT JOIN libros l ON l.autor_id = a.id GROUP BY a.id, a.nombre, a.apellido ORDER BY libros DESC`
+   `SELECT a.nombre, a.apellido, count(la.libro_id) AS libros FROM autores a LEFT JOIN libros_autores la ON la.autor_id = a.id GROUP BY a.id, a.nombre, a.apellido ORDER BY libros DESC`
 
 ## Herramienta `retrieve_documents`
 

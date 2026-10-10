@@ -21,3 +21,6 @@ venv/
 # CLAUDE.md solo la importa con @AGENTS.md)
 AGENTS.md
 CLAUDE.md
+
+# Volcados de la base compartida (scripts/replicate_neon.sh): datos, no código
+db/dumps/

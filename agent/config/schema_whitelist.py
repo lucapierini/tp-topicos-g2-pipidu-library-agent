@@ -3,13 +3,12 @@
 Este archivo es un contrato entre el desarrollo del agente y el modelo de datos.
 Si `db/schema.sql` cambia, la whitelist cambia en el mismo commit.
 
-Incluye las 6 tablas del modelo (R-3.4) y la vista `prestamos_estado`, que es la
-forma en que el estado de vencimiento se resuelve por cálculo y no por valor
-almacenado (D7, R-3.12).
+Refleja el esquema real compartido (`db/schema.sql`, D64): las 7 tablas del dominio y la vista
+`v_prestamos_estado`, que es donde el vencimiento se resuelve por cálculo (D7, R-3.12): la tabla
+`prestamos` solo guarda `activo`/`devuelto`, nunca `vencido`.
 
-Las tablas internas del sistema (`agent_runs`, `documentos_embeddings`) NO están
-permitidas: la herramienta SQL solo lee el dominio, nunca la trazabilidad ni el
-repositorio documental.
+Las tablas internas NO están permitidas (D21): `agent_runs` (trazabilidad) y `documentos` /
+`documentos_chunks` (repositorio documental, que lee la herramienta de RAG por su propia vía).
 """
 from __future__ import annotations
 
@@ -23,9 +22,13 @@ ALLOWED_TABLES: dict[str, set[str]] = {
     "categorias": {
         "id", "nombre", "descripcion",
     },
+    # No hay `autor_id`: un libro puede tener varios autores (`libros_autores`, N:M).
     "libros": {
-        "id", "titulo", "isbn", "autor_id", "editorial_id", "categoria_id",
+        "id", "titulo", "isbn", "editorial_id", "categoria_id",
         "anio_publicacion", "ejemplares_totales", "ejemplares_disponibles",
+    },
+    "libros_autores": {
+        "libro_id", "autor_id", "orden",
     },
     "socios": {
         # No hay política de PII (Art. 11): todos los usuarios acceden a toda la información
@@ -34,24 +37,25 @@ ALLOWED_TABLES: dict[str, set[str]] = {
         # una columna física del esquema que no esté acá es inalcanzable para el agente.
         "id", "nombre", "apellido", "legajo", "tipo_socio", "email", "fecha_alta",
     },
-    # `estado` NO está en la whitelist de la tabla (D51): el vencimiento se calcula en la vista
-    # `prestamos_estado` (D7, R-3.12). Si la tabla expusiera una columna almacenada, el modelo
-    # podría leerla en vez de calcularlo y el resultado dejaría de ser verificable.
+    # `estado` existe pero solo vale 'activo' o 'devuelto' (CHECK en el esquema): un préstamo
+    # vencido sigue siendo 'activo' acá. El vencimiento se consulta en la vista (D64, reemplaza D51).
     "prestamos": {
         "id", "libro_id", "socio_id", "fecha_prestamo", "fecha_devolucion_prevista",
-        "fecha_devolucion_real",
+        "fecha_devolucion_real", "estado",
     },
-    # Vista calculada (D7, R-3.12). El estado se deriva de las fechas.
-    "prestamos_estado": {
+    # Vista calculada (D7, R-3.12). `estado_calculado` es 'activo' | 'devuelto' | 'vencido'.
+    "v_prestamos_estado": {
         "id", "libro_id", "socio_id", "fecha_prestamo", "fecha_devolucion_prevista",
-        "fecha_devolucion_real", "estado", "dias_atraso",
+        "fecha_devolucion_real", "estado", "estado_calculado", "dias_atraso",
     },
 }
 
 # Explícitamente fuera de la whitelist, para que el test de regresión no se
-# apoye en un olvido.
+# apoye en un olvido. `documentos_embeddings` es el nombre que se asumió antes de conocer el esquema.
 FORBIDDEN_TABLES: set[str] = {
     "agent_runs",
+    "documentos",
+    "documentos_chunks",
     "documentos_embeddings",
     "pg_catalog",
     "information_schema",

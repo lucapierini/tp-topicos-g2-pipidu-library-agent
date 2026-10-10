@@ -56,4 +56,4 @@ def test_los_libros_del_golden_set_existen(cursor) -> None:
 
 
 def test_hay_al_menos_un_prestamo_vencido_para_g3(cursor) -> None:
-    assert _exists(cursor, "SELECT 1 FROM prestamos_estado WHERE estado = 'vencido' LIMIT 1")
+    assert _exists(cursor, "SELECT 1 FROM v_prestamos_estado WHERE estado_calculado = 'vencido' LIMIT 1")
