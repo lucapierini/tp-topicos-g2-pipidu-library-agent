@@ -63,11 +63,8 @@ La herramienta SHALL rechazar sentencias que contengan `;`, comentarios `--` o `
 
 ### Requirement: R-3.4 — Whitelist de tablas y columnas
 La herramienta SHALL rechazar referencias a tablas o columnas fuera de la whitelist del esquema
-documentado (las funciones se rigen por R-3.13). La whitelist cubre el modelo completo del dominio (Art. 11): no oculta columnas por
-política de privacidad, es un control de alcance y de inyección. La whitelist de columnas SHALL ser
-aplicable a `SELECT *`: la herramienta SHALL expandir `*` a las columnas de la whitelist antes de
-ejecutar, de modo que una columna física fuera de la whitelist sea inalcanzable. Los identificadores
-SHALL normalizarse a minúsculas antes de comparar.
+documentado (las funciones se rigen por R-3.13). La whitelist cubre el modelo completo del dominio
+(Art. 11): no oculta columnas por política de privacidad, es un control de alcance y de inyección.
 
 #### Scenario: tabla del catálogo interno
 - **GIVEN** una sentencia que referencia `pg_catalog.pg_tables`
@@ -81,16 +78,30 @@ SHALL normalizarse a minúsculas antes de comparar.
 - **THEN** rechaza la ejecución
 - **AND** devuelve el error `COLUMN_NOT_ALLOWED`
 
+### Requirement: R-3.14 — Expansión de `SELECT *`
+La herramienta SHALL expandir `SELECT *` a las columnas de la whitelist antes de ejecutar, de modo que
+una columna física del esquema fuera de la whitelist sea inalcanzable.
+
 #### Scenario: `SELECT *` no evade la whitelist de columnas
 - **GIVEN** la sentencia `SELECT * FROM socios` y una columna física del esquema fuera de la whitelist
 - **WHEN** la herramienta evalúa la sentencia
 - **THEN** la sentencia ejecutada es la expandida a las columnas de la whitelist
 - **AND** la columna no documentada no aparece en el resultado
 
+### Requirement: R-3.15 — Normalización de identificadores
+La herramienta SHALL normalizar los identificadores a minúsculas antes de aplicar la whitelist y SHALL
+preservar los literales de texto sin modificación.
+
 #### Scenario: identificador entre comillas
 - **GIVEN** la sentencia `SELECT id FROM "Libros"`
 - **WHEN** la herramienta evalúa la sentencia
 - **THEN** normaliza el identificador a minúsculas y lo acepta
+
+#### Scenario: literal preservado
+- **GIVEN** la sentencia `SELECT titulo FROM libros WHERE titulo = 'Cien años de soledad'`
+- **WHEN** se genera la sentencia normalizada
+- **THEN** el literal permanece idéntico
+- **AND** los valores citados en la respuesta coinciden con los valores devueltos (Art. 4)
 
 #### Scenario: tabla inexistente
 - **GIVEN** una sentencia que referencia una tabla no incluida en la whitelist
