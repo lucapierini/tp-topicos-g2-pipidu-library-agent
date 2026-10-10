@@ -15,7 +15,7 @@ Entrega: 16/10/2026 23:59 (GMT-03). Coloquio: 23/10 o 30/10/2026.
 |---|---|
 | Lenguaje | Python 3.11+ |
 | Base de datos | PostgreSQL + pgvector |
-| LLM | Google Gemini |
+| LLM | Google Gemini (aceptación y despliegue). En desarrollo puede apuntarse a un servidor local compatible con la API de OpenAI vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`): valida el flujo, no reemplaza la medición de aceptación (R-2.8) |
 | Embeddings | Gemini Embeddings API |
 | Framework agéntico | Smolagents |
 | UI | Streamlit |

@@ -154,6 +154,34 @@ Se corre el golden set completo y se mide:
 - **Casos `none`:** 1/1 sin invocación de tools y sin afirmaciones inventadas.
 - **Salida estructurada:** 13/13 con clasificación emitida antes de la primera invocación (R-2.7).
 
+### 4.1 Entornos de ejecución de la prueba (R-2.8, D56, D59)
+
+La misma prueba se corre en dos entornos con **propósitos distintos**:
+
+| Entorno | Modelo | Qué valida | ¿Cuenta como aceptación? |
+|---|---|---|---|
+| Local | Servidor OpenAI-compatible en `127.0.0.1` (`LLM_MODEL=openai/<id>`, `LLM_API_BASE`) | El flujo: clasificación previa a las tools, tools por fuente, límites de intentos y pasos, composición, SQL aceptado por el validador. Sin cuota ni costo | **No** |
+| Definitivo | Gemini con `GEMINI_API_KEY` (`LLM_MODEL=gemini/<modelo>`) | Los criterios de §4 con el modelo que se despliega | **Sí** |
+
+Reglas:
+
+1. Orden: primero el modelo local para depurar el flujo; después, sin cambiar código ni prompts, Gemini.
+2. Cada corrida se guarda con `scripts/measure_golden.py --out TP/evidencia/<archivo>.json`, que registra
+   el modelo, el endpoint, la fecha, la configuración y el resultado por caso (R-6.5).
+3. Hasta que existan el seed y los PDFs los backends de datos son falsos y el validador de SQL es el
+   real: la corrida mide clasificación, herramientas invocadas, orden y SQL aceptado, **no** el contenido
+   (D59). Los `check` de contenido del golden set corren cuando haya base.
+4. Un modelo local más débil puede clasificar bien y aun así generar peor SQL; que el validador rechace sus
+   errores es el comportamiento esperado, no una falla de la prueba.
+5. Si el modelo definitivo cambia (p. ej. por cuota), la medición de aceptación se repite completa.
+
+Corridas registradas:
+
+| Fecha | Modelo | Clasificación | Híbridos (2 tools) | `none` sin tools | Antes de tools | SQL rechazado | Cuenta como aceptación |
+|---|---|---|---|---|---|---|---|
+| 2026-10-10 | `gemini-3.1-flash-lite` | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí (backends falsos: sin evaluar contenido) |
+| 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 3/3 (solo G1, G6, G13) | no medido | 1/1 | 3/3 | 1/1 (G1 inventó `titulo_dummy`; el validador lo frenó y regeneró) | No: validación del flujo. Corrida parcial **sin archivo de evidencia**; la de los 13 casos está pendiente |
+
 ---
 
 ## 5. Definition of Done (por tarea)

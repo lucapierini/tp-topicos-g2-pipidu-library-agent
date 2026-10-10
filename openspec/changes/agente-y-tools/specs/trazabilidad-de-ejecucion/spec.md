@@ -38,3 +38,19 @@ El registro SHALL consignar la cantidad de intentos de generación de sentencia 
 - **GIVEN** una consulta que requirió dos intentos de generación
 - **WHEN** se consulta el registro
 - **THEN** se observan los dos intentos con su resultado individual
+
+### Requirement: R-6.5 — Identificación del modelo usado
+El registro SHALL consignar el identificador del modelo y el endpoint (local o API externa) que resolvieron
+la consulta, porque la validez de una medición depende del modelo que la produjo.
+
+#### Scenario: consulta resuelta con un modelo local
+- **GIVEN** una consulta ejecutada con `LLM_API_BASE` apuntando a un servidor local
+- **WHEN** se consulta el registro
+- **THEN** figura el identificador del modelo local y que el endpoint es local
+- **AND** la corrida no puede confundirse con evidencia de aceptación
+
+#### Scenario: consulta resuelta con Gemini
+- **GIVEN** una consulta ejecutada con el modelo definitivo
+- **WHEN** se consulta el registro
+- **THEN** figura el identificador del modelo de Gemini
+- **AND** la clave de API no aparece en el registro

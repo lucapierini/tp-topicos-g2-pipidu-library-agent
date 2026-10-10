@@ -36,6 +36,8 @@ _(ninguna — es el primer change del proyecto)_
 
 - Nuevas tablas: las 6 del modelo relacional + `documentos_embeddings` (pgvector) + `agent_runs`.
 - Nuevo rol de base de datos `readonly_role`.
-- Nuevas dependencias: `smolagents`, `psycopg2-binary`, `pypdf`, `google-genai`, `streamlit`, `pytest`.
-- Nueva variable de entorno: `GEMINI_API_KEY`, credenciales de Cloud SQL.
+- Nuevas dependencias: `smolagents[litellm]`, `psycopg2-binary`, `pypdf`, `google-genai`, `streamlit`, `sqlglot`, `pytest`.
+- Nuevas variables de entorno: `GEMINI_API_KEY`, credenciales de Cloud SQL y, para cambiar de proveedor sin
+  tocar código, `LLM_MODEL`, `LLM_API_BASE` y `LLM_API_KEY` (R-2.8). El flujo se valida primero contra un
+  modelo local y la aceptación se mide después con Gemini.
 - Depende de un despliegue en GCP (Cloud Run + Cloud SQL) para el criterio de promoción 1.

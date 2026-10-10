@@ -13,6 +13,14 @@ está pendiente y se corre con `pytest -m integration`.
 Lo que bloquea la continuación: `db/schema.sql` + `agent_ro` (T2.1, T2.2) y `documentos_embeddings`
 (T3.4). Todo lo demás se puede mockear.
 
+**Orquestador (2026-10-10):** `agent/agent.py`, `classifier.py`, `tools/rag_tool.py`, los prompts y el
+reintento ante 429 están implementados y probados offline (`pytest -q` → 322 passed). El flujo se valida
+primero contra un **modelo local** (Strata, servidor OpenAI-compatible) y la **aceptación** se mide con
+Gemini (R-2.8). Medición registrada: `gemini-3.1-flash-lite` → 13/13 clasificaciones, 3/3 híbridos con las
+dos tools, 1/1 `none` sin tools, 0/8 SQL rechazado (`TP/evidencia/`), con backends falsos: el contenido
+no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el modelo definitivo si cambia
+(T6.7) y las tareas 7.x (composición con agent_runs) y 8.x (UI).
+
 ## 1. Setup y entorno
 
 - [x] 1.1 Crear la estructura de carpetas (`db/`, `rag/`, `agent/`, `ui/`, `tests/`, `docker/`) y verificar que `tree` muestra la estructura de `openspec/project.md`
@@ -54,7 +62,7 @@ Lo que bloquea la continuación: `db/schema.sql` + `agent_ro` (T2.1, T2.2) y `do
 
 ## 5. Tool `rag_search_tool`
 
-- [ ] 5.1 Implementar el retrieval top-k por similitud de coseno con umbral desde configuración y verificar que `tests/test_rag_tool.py` pasa (R-4.4)
+- [x] 5.1 Implementar el retrieval top-k por similitud de coseno con umbral desde configuración y verificar que `tests/test_rag_tool.py` pasa (R-4.4). Embedder y store son protocolos: la política se prueba sin PDFs ni base; la calibración del umbral (R-4.8) queda para `scripts/calibrate_threshold.py` con los documentos reales
 - [x] 5.2 Implementar el contrato `RagResult`/`Chunk` con documento y ubicación por fragmento y verificar que una prueba asserts la referencia de origen (R-4.7)
 
 ## 6. Orquestador y selección de fuente
@@ -64,6 +72,8 @@ Lo que bloquea la continuación: `db/schema.sql` + `agent_ro` (T2.1, T2.2) y `do
 - [ ] 6.3 Implementar el `ToolCallingAgent` de Smolagents con las dos tools, temperatura 0, `max_steps = 6` y timeout de API 30 s, y verificar que los 13 casos del golden set producen la clasificación esperada (≥11/13) (D2, D15, R-2.1)
 - [ ] 6.4 Verificar los 3 casos híbridos: invocan ambas herramientas (R-2.4)
 - [ ] 6.5 Verificar el caso `none`: no invoca herramientas y no inventa (R-2.5)
+- [ ] 6.6 Validar el flujo completo contra un **modelo local** (`LLM_MODEL`, `LLM_API_BASE`) con `scripts/measure_golden.py` y verificar clasificación previa a las tools, herramientas por fuente y SQL aceptado por el validador. No cuenta como aceptación (R-2.8)
+- [ ] 6.7 Repetir la medición con **Gemini** (`GEMINI_API_KEY`, sin cambios de código), versionar la corrida en `TP/evidencia/` consignando el modelo y verificar ≥ 11/13, 3/3 híbridos y 1/1 `none` (R-2.1, R-2.8, R-6.5)
 
 ## 7. Composición de respuesta y trazabilidad
 

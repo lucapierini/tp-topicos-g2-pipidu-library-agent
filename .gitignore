@@ -16,3 +16,8 @@ venv/
 .pi/
 .claude/
 .cursor/
+
+# Guías para asistentes de IA: locales de cada integrante (AGENTS.md es la única fuente;
+# CLAUDE.md solo la importa con @AGENTS.md)
+AGENTS.md
+CLAUDE.md

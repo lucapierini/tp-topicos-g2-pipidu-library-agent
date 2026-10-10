@@ -36,6 +36,10 @@ _(se completa con la tarea 1.5 de `openspec/changes/agente-y-tools/tasks.md`)_
 
 ```bash
 cp .env.example .env          # GEMINI_API_KEY y credenciales de BD
+# Desarrollo sin cuota: apuntar a un servidor local OpenAI-compatible (R-2.8). Validar el flujo con
+# LLM_MODEL=openai/<id> y LLM_API_BASE=http://127.0.0.1:<puerto>/v1; la aceptación se mide después con
+# Gemini (dejar LLM_MODEL y LLM_API_BASE vacíos). Los resultados locales no cuentan como aceptación.
+python scripts/measure_golden.py --out TP/evidencia/<corrida>.json   # mide R-2.1 con el modelo configurado
 docker compose up -d          # Postgres + pgvector
 make seed                     # datos sintéticos (semilla 42)
 make ingest                   # chunking + embeddings

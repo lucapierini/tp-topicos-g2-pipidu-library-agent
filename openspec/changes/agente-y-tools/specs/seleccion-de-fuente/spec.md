@@ -77,3 +77,34 @@ cualquier herramienta.
 - **WHEN** el agente invoca la herramienta de RAG
 - **THEN** el sistema registra la inconsistencia
 - **AND** la fuente declarada en la respuesta es la efectivamente invocada
+
+### Requirement: R-2.8 — Proveedor del modelo configurable
+El sistema SHALL permitir cambiar el proveedor del modelo (clasificación y loop de herramientas) por
+configuración, sin cambios de código: un servidor local compatible con la API de OpenAI durante el
+desarrollo y Gemini mediante API key para la aceptación y el despliegue. El flujo (clasificación previa,
+herramientas expuestas por fuente, límites de intentos y pasos, composición de la respuesta) SHALL ser el
+mismo con cualquier proveedor.
+
+#### Scenario: validación del flujo contra un modelo local
+- **GIVEN** `LLM_MODEL` y `LLM_API_BASE` apuntando a un servidor local
+- **WHEN** se ejecuta el golden set
+- **THEN** la clasificación se emite antes de la primera herramienta y solo se exponen las herramientas de la fuente
+- **AND** la ejecución no consume cuota de ninguna API externa
+
+#### Scenario: los resultados locales no reemplazan la aceptación
+- **GIVEN** una corrida del golden set contra un modelo local
+- **WHEN** se evalúa el criterio R-2.1 (≥ 11/13)
+- **THEN** la corrida se registra como validación del flujo y no como aceptación
+- **AND** la aceptación se mide con el modelo definitivo (Gemini) y su evidencia consigna el modelo usado
+
+#### Scenario: migración al modelo definitivo
+- **GIVEN** el flujo validado contra el modelo local
+- **WHEN** se cambia la configuración a Gemini con `GEMINI_API_KEY`
+- **THEN** no se modifica código ni prompts
+- **AND** se repite la medición completa del golden set con el modelo definitivo
+
+#### Scenario: límite de cuota del proveedor
+- **GIVEN** un proveedor que responde 429 con un tiempo de espera
+- **WHEN** el sistema recibe la respuesta
+- **THEN** reintenta respetando la espera indicada, hasta el máximo configurado
+- **AND** si se agotan los reintentos reporta el error al usuario y no lo presenta como una clasificación

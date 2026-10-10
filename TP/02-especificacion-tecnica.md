@@ -36,7 +36,7 @@ flowchart TB
 | Lenguaje | Python 3.11+ |
 | Base de datos | PostgreSQL |
 | Vector store | pgvector (extensión sobre el mismo PostgreSQL) |
-| LLM | Google Gemini (API) |
+| LLM | Google Gemini (API) para aceptación y despliegue; en desarrollo, un servidor local OpenAI-compatible vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`) para validar el flujo sin consumir cuota (R-2.8) |
 | Framework agéntico | Smolagents |
 | UI | Streamlit |
 | Embeddings | Gemini Embeddings API (`text-embedding-004` o equivalente vigente) |
@@ -106,7 +106,13 @@ flowchart TB
 | fecha_prestamo | DATE | |
 | fecha_devolucion_prevista | DATE | |
 | fecha_devolucion_real | DATE | NULL si aún no devuelto |
-| estado | VARCHAR(20) | 'activo' / 'devuelto' / 'vencido' |
+
+> **No hay columna `estado` almacenada** (D7, D51). El estado se calcula en la vista `prestamos_estado`
+> (`id, libro_id, socio_id, fecha_prestamo, fecha_devolucion_prevista, fecha_devolucion_real, estado,
+> dias_atraso`): `devuelto` si `fecha_devolucion_real` no es NULL; `vencido` si es NULL y
+> `fecha_devolucion_prevista < CURRENT_DATE`; `activo` en otro caso. `dias_atraso` es
+> `GREATEST(CURRENT_DATE - fecha_devolucion_prevista, 0)` para los no devueltos. Un valor almacenado
+> nunca diría `vencido` sin un proceso que lo actualice; la vista es la única fuente del estado.
 
 ### 3.2 Relaciones
 
@@ -154,6 +160,15 @@ El agente se implementa como un **`ToolCallingAgent`** de Smolagents (D2) con la
 
 No existe `hybrid_tool`: la combinación de fuentes es una decisión del orquestador, no una tool. El
 agente invoca una o ambas según la clasificación (R-2.4).
+
+**Proveedor configurable (D56).** El proveedor se elige por configuración, no por código:
+`LLM_MODEL` en formato LiteLLM (`gemini/<modelo>` por defecto, o `openai/<id>` con `LLM_API_BASE` para un
+servidor local) y `LLM_API_KEY`. Procedimiento: (1) validar el flujo contra el modelo local; (2) cambiar a
+Gemini con `GEMINI_API_KEY` y repetir el golden set completo; (3) versionar esa corrida en
+`TP/evidencia/` con el modelo usado. Los resultados con el modelo local validan el flujo y **no** el
+criterio de aceptación R-2.1. El clasificador usa salida estructurada nativa con Gemini y `json_object`
+con cualquier otro proveedor, validado contra el mismo vocabulario (`sql`, `rag`, `hybrid`, `none`). Ante
+un límite de cuota (429) se reintenta con la espera que informa la API (D57).
 
 El LLM (Gemini) actúa como **orquestador**: clasifica la consulta mediante salida estructurada
 obligatoria (R-2.7), decide qué tool(s) invocar, genera el SQL y redacta la respuesta final. La

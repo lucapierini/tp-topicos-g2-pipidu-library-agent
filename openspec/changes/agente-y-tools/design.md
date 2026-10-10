@@ -88,6 +88,12 @@ del mismo contenido.
 | D53 | `QUERY_TOO_COMPLEX`: sin `WITH RECURSIVE`, tope de tablas | R-3.17 |
 | D54 | Dependencias de ejecución y desarrollo separadas, con cotas | Art. 8 |
 | D55 | Golden set con entidades concretas y checks independientes del alias | D16 |
+| D56 | Proveedor del LLM configurable (LiteLLM); clasificador agnóstico | D15, R-2.7 |
+| D57 | Reintento ante 429 respetando la espera de la API | D15, Art. 7 |
+| D58 | Fuentes declaradas = invocadas; fallos con plantilla fija | R-2.7, R-5.2, R-5.7 |
+| D59 | Medición sin base: backends falsos y validador real; evidencia versionada | R-2.1 |
+| D60 | Contrato de lectura de `documentos_embeddings` con la ingesta | R-4.2, R-4.4 |
+| D61 | `max_steps + 1` llamadas al modelo en smolagents | D15 |
 
 ## Risks / Trade-offs
 
@@ -95,6 +101,12 @@ del mismo contenido.
 - **[Clasificación de fuente inestable por no determinismo]** → mitigación: temperatura 0, golden set de 13 casos, umbral de aceptación ≥11/13 documentado en `TP/05-validacion.md`.
 - **[Retrieval devuelve fragmentos irrelevantes y el agente alucina]** → mitigación: umbral de similitud mínimo (R-4.6) obliga a declarar "no se encontró información relevante".
 - **[Cloud SQL sin pgvector disponible en la región/cuota]** → mitigación: spike de despliegue en la semana 1, antes de dependencias de mayor tamaño.
+- **[Un modelo local valida el flujo pero no es el modelo definitivo]** → mitigación: R-2.8 separa
+  "validación del flujo" de "aceptación"; la evidencia consigna el modelo (R-6.5) y el golden set se repite
+  con Gemini antes de dar por cumplido R-2.1. Un modelo local más débil genera SQL peor (medido: inventó una
+  columna) pero eso lo frena el validador, no cambia el criterio.
+- **[Cuota gratuita de la API (~5 req/min con `gemini-3-flash-preview`)]** → mitigación: reintento con la
+  espera que informa la API (D57) y medición con un modelo de mayor cuota (`gemini-3.1-flash-lite`).
 - **[Costo de tokens por el ciclo SDD]** → mitigación: artefactos cortos, constitution de 1 página, tareas sin narrativa.
 
 ## Migration Plan
@@ -103,8 +115,13 @@ del mismo contenido.
 2. `db/schema.sql` (incluye `readonly_role`, `documentos_embeddings`, `agent_runs`).
 3. `db/seed_data.py --seed 42` → `db/dump.sql` para el entregable.
 4. `rag/ingest.py` sobre los PDFs.
-5. Despliegue: imagen Docker → Cloud Run; Cloud SQL con pgvector; Secret Manager para `GEMINI_API_KEY`.
-6. Rollback: el despliegue no muta datos; basta con redeployear la imagen anterior.
+5. **Validación del flujo contra un modelo local** (`LLM_MODEL=openai/<id>`, `LLM_API_BASE=http://127.0.0.1:<puerto>/v1`):
+   confirma clasificación previa, tools por fuente, límites y composición sin consumir cuota (R-2.8, D56).
+6. **Medición de aceptación con Gemini** (`GEMINI_API_KEY`, sin cambios de código): se repite el golden set
+   completo y la evidencia se versiona en `TP/evidencia/` con el modelo usado. Los resultados del modelo
+   local no cuentan como aceptación (D59).
+7. Despliegue: imagen Docker → Cloud Run; Cloud SQL con pgvector; Secret Manager para `GEMINI_API_KEY`.
+8. Rollback: el despliegue no muta datos; basta con redeployear la imagen anterior.
 
 ## Open Questions
 
