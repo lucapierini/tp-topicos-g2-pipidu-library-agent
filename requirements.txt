@@ -1,7 +1,7 @@
 # Dependencias de ejecución (imagen de Cloud Run incluida). Para desarrollo: requirements-dev.txt.
 # Cotas: mínimo = versión verificada; máximo = próxima major (Art. 8).
 # `psycopg2-binary>=2.20` no existe (la última es 2.9.x): `pip install -r` fallaba.
-smolagents>=1.20,<2
+smolagents[litellm]>=1.20,<2   # `litellm`: Gemini detrás de ToolCallingAgent (D2)
 google-genai>=2.29,<3
 psycopg2-binary>=2.9,<3
 pypdf>=5.0,<7

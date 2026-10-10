@@ -10,6 +10,7 @@ Forma de `AgentAnswer.evidence` (D52):
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 # Vocabulario único de clasificación (D50): el de la spec (`seleccion-de-fuente`). El enum que
@@ -18,7 +19,8 @@ CLASSIFICATIONS = {"sql", "rag", "hybrid", "none"}
 
 # Una respuesta puede declarar la ausencia de información de forma estructural (D52).
 ANSWER_KIND_ANSWER = "answer"
-ANSWER_KIND_NO_COVERAGE = "no_coverage"
+ANSWER_KIND_NO_COVERAGE = "no_coverage"  # ninguna fuente tiene información suficiente (R-2.5, R-4.6)
+ANSWER_KIND_ERROR = "error"              # una herramienta o el modelo fallaron (R-5.7)
 
 # Respaldo para respuestas que no traen `answer_kind`. El camino principal es el campo
 # estructural: una regex sobre prosa libre es frágil.
@@ -36,6 +38,21 @@ TRACE_CLASSIFICATION = "classification"
 def normalize_classification(value: object) -> str:
     """El modelo puede responder `"SQL"` o `" rag "`: se normaliza antes de comparar."""
     return str(value).strip().lower()
+
+
+@dataclass(frozen=True)
+class ToolSpec:
+    """Descripción de una herramienta, independiente de `smolagents`.
+
+    El orquestador arma `ToolSpec`s y el runner los adapta al framework: así el flujo se prueba
+    sin la librería instalada (Art. 6) y cambiar de framework no toca el orquestador.
+    """
+
+    name: str
+    description: str
+    parameter: str                 # nombre del único argumento (`sql`, `query`)
+    parameter_description: str
+    fn: Callable[[str], str]
 
 
 @dataclass(frozen=True)
@@ -109,14 +126,20 @@ class AgentAnswer:
         if not self.answer.strip():
             problems.append("respuesta vacía")
 
+        # Una respuesta que declara ausencia de información o un error no necesita fuentes ni
+        # evidencia: precisamente declara que no las hay (Art. 4, R-5.7).
+        declared_gap = self.answer_kind in (ANSWER_KIND_NO_COVERAGE, ANSWER_KIND_ERROR)
+
         if self.classification == "none":
             if self.sources:
                 problems.append("classification=none no puede declarar fuentes")
-            declares_absence = self.answer_kind == ANSWER_KIND_NO_COVERAGE or any(
+            declares_absence = declared_gap or any(
                 re.search(p, self.answer, re.I) for p in NO_INFORMATION_PATTERNS
             )
             if not declares_absence:
                 problems.append("classification=none debe declarar ausencia de información (Art. 4)")
+        elif declared_gap:
+            return problems
         else:
             if not self.sources:
                 problems.append("sources vacío sin declarar ausencia (Art. 4)")

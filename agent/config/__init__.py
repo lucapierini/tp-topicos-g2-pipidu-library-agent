@@ -60,7 +60,13 @@ class Config:
     max_steps: int
     temperature: float
     api_timeout_s: int
+    api_max_retries: int  # reintentos ante 429 (cuota gratuita); ver agent/retry.py
     model: str
+    # Proveedor del LLM en formato LiteLLM (`gemini/<modelo>`, `openai/<modelo>` + `llm_api_base` para
+    # un servidor local OpenAI-compatible). Por defecto, Gemini con `GEMINI_MODEL`: cambiar de proveedor
+    # es configuración, no código (D56).
+    llm_model: str
+    llm_api_base: str
 
     # Embeddings (D5)
     embedding_model: str
@@ -74,6 +80,7 @@ class Config:
 
 
 def load_config() -> Config:
+    gemini_model = _env("GEMINI_MODEL", "gemini-3-flash-preview")
     return Config(
         cuatrimestre_start=_env_date("CUATRIMESTRE_START", "2026-08-01"),
         cuatrimestre_end=_env_date("CUATRIMESTRE_END", "2026-11-30"),
@@ -89,7 +96,11 @@ def load_config() -> Config:
         max_steps=_env_int("AGENT_MAX_STEPS", "6"),
         temperature=_env_float("AGENT_TEMPERATURE", "0"),
         api_timeout_s=_env_int("AGENT_API_TIMEOUT_S", "30"),
-        model=_env("GEMINI_MODEL", "gemini-3-flash-preview"),
+        api_max_retries=_env_int("AGENT_API_MAX_RETRIES", "3"),
+        model=gemini_model,
+        # `or`: la plantilla `.env.example` deja `LLM_MODEL=` vacío y un vacío significa "no definido".
+        llm_model=os.environ.get("LLM_MODEL") or f"gemini/{gemini_model}",
+        llm_api_base=_env("LLM_API_BASE", ""),
         embedding_model=_env("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"),
         embedding_dim=_env_int("EMBEDDING_DIM", "768"),
         db_user=_env("POSTGRES_USER", "agent_ro"),
