@@ -1,18 +1,27 @@
 # Tasks
 
+## Estado actual
+
+Avanzado por la parte de agente/tools (2026-10-10): 1.1, 1.4, 2.3, 4.1, 4.2, 4.5, 5.2 y el esqueleto
+del golden set. `pytest -q` → 31 passed, 4 skipped (los skipped son los `llm`, que requieren el agente
+y la API key).
+
+Lo que bloquea la continuación: `db/schema.sql` + `agent_ro` (T2.1, T2.2) y `documentos_embeddings`
+(T3.4). Todo lo demás se puede mockear.
+
 ## 1. Setup y entorno
 
-- [ ] 1.1 Crear la estructura de carpetas (`db/`, `rag/`, `agent/`, `ui/`, `tests/`, `docker/`) y verificar que `tree` muestra la estructura de `openspec/project.md`
-- [ ] 1.2 Definir dependencias y verificar que `pip install -r requirements.txt` instala `smolagents`, `psycopg2-binary`, `pypdf`, `google-genai`, `streamlit`, `pytest`, `faker`
+- [x] 1.1 Crear la estructura de carpetas (`db/`, `rag/`, `agent/`, `ui/`, `tests/`, `docker/`) y verificar que `tree` muestra la estructura de `openspec/project.md`
+- [ ] 1.2 Definir dependencias y verificar que `pip install -r requirements.txt` instala `smolagents`, `psycopg2-binary`, `pypdf`, `google-genai`, `streamlit`, `pytest`, `faker`, `sqlglot`
 - [ ] 1.3 Crear `docker-compose.yml` con Postgres + pgvector y verificar que `docker compose up -d` levanta la base y que `CREATE EXTENSION vector` funciona
-- [ ] 1.4 Crear `.env.example` y `.gitignore` y verificar que `grep -r "GEMINI_API_KEY" --include="*.py"` no encuentra claves hardcodeadas
+- [x] 1.4 Crear `.env.example` y `.gitignore` y verificar que `grep -rE "GEMINI_API_KEY\s*=\s*[\"']" --include="*.py"` no encuentra claves hardcodeadas (leer el nombre de la variable de `os.environ` no cuenta como hardcodeo)
 - [ ] 1.5 Documentar el flujo de arranque en `README.md` y verificar que los comandos del README se ejecutan tal como están escritos
 
 ## 2. Modelo de datos y datos sintéticos
 
 - [ ] 2.1 Escribir `db/schema.sql` con las 6 tablas y verificar que `psql -f db/schema.sql` crea el esquema sin errores de FK
 - [ ] 2.2 Crear el usuario dedicado `agent_ro` con `GRANT SELECT` sobre las 6 tablas, `statement_timeout = 10000` y `search_path` restringido, y verificar que un `INSERT` con ese usuario es rechazado por PostgreSQL (D14, R-3.5)
-- [ ] 2.3 Crear `agent/config.py` con el rango de cuatrimestre (2026-08-01 a 2026-11-30), zona horaria única, top-k, umbral, límite de filas y máximo de intentos, y verificar que ningún valor queda hardcodeado en el código (D6, D12, D15, R-3.11)
+- [x] 2.3 Crear `agent/config.py` con el rango de cuatrimestre (2026-08-01 a 2026-11-30), zona horaria única, top-k, umbral, límite de filas y máximo de intentos, y verificar que ningún valor queda hardcodeado en el código (D6, D12, D15, R-3.11)
 - [ ] 2.4 Implementar `db/seed_data.py` con semilla fija y verificar que dos ejecuciones con `--seed 42` producen el mismo output
 - [ ] 2.5 Verificar el volumen: `SELECT count(*)` ≥ 15 en cada una de las 6 tablas
 - [ ] 2.6 Implementar el estado de vencimiento como vista o columna generada (no como valor escrito por el seed) y verificar que coincide con el caso G3 del golden set (D7, R-3.12)
@@ -32,17 +41,17 @@
 
 ## 4. Tool `execute_sql`
 
-- [ ] 4.1 Definir la whitelist de tablas y columnas en `agent/config/schema_whitelist.py` y verificar que coincide con `db/schema.sql` (R-3.4)
-- [ ] 4.2 Implementar la validación estática con `sqlglot` (parseo del statement raíz, extracción de tablas y columnas) y verificar que los 10 casos adversos de `TP/05-validacion.md` devuelven el error tipado esperado, sin ejecutar ninguna consulta (D4, R-3.2, R-3.3, R-3.7)
+- [x] 4.1 Definir la whitelist de tablas y columnas en `agent/config/schema_whitelist.py` y verificar que coincide con `db/schema.sql` (R-3.4)
+- [x] 4.2 Implementar la validación estática con `sqlglot` (parseo del statement raíz, extracción de tablas y columnas) y verificar que los 10 casos adversos de `TP/05-validacion.md` devuelven el error tipado esperado, sin ejecutar ninguna consulta (D4, R-3.2, R-3.3, R-3.7)
 - [ ] 4.3 Implementar `execute_sql(sql)` que recibe la sentencia ya formada por el agente, ejecuta con el usuario `agent_ro`, aplica límite de 50 filas y timeout de 10 s, y verificar que la tool corre sin credenciales de API (D1, R-3.1, R-3.5, R-3.6)
 - [ ] 4.4 Implementar la regeneración limitada (máximo 2 intentos) y verificar el caso de rechazo-then-éxito y el caso de dos rechazos consecutivos, con reporte del error al usuario (D8, R-3.10, R-5.7)
-- [ ] 4.5 Implementar el contrato `SqlResult` y verificar que `tests/test_sql_tool.py` pasa con los 5 casos SQL del golden set (R-3.1, R-3.9)
+- [x] 4.5 Implementar el contrato `SqlResult` y verificar que `tests/test_sql_tool.py` pasa con los 5 casos SQL del golden set (R-3.1, R-3.9)
 - [ ] 4.6 Verificar el reporte de resultado vacío con un socio sin préstamos (R-3.8)
 
 ## 5. Tool `rag_search_tool`
 
 - [ ] 5.1 Implementar el retrieval top-k por similitud de coseno con umbral desde configuración y verificar que `tests/test_rag_tool.py` pasa (R-4.4)
-- [ ] 5.2 Implementar el contrato `RagResult`/`Chunk` con documento y ubicación por fragmento y verificar que una prueba asserts la referencia de origen (R-4.7)
+- [x] 5.2 Implementar el contrato `RagResult`/`Chunk` con documento y ubicación por fragmento y verificar que una prueba asserts la referencia de origen (R-4.7)
 
 ## 6. Orquestador y selección de fuente
 
@@ -54,7 +63,8 @@
 
 ## 7. Composición de respuesta y trazabilidad
 
-- [ ] 7.1 Implementar `agent/response.py` con el contrato `AgentAnswer` y verificar que toda respuesta del golden set declara fuente (R-5.2)
+- [x] 7.1 Implementar `agent/response.py` con el contrato `AgentAnswer` y verificar que toda respuesta del golden set declara fuente (R-5.2)
+  _(contrato y reglas implementadas en `agent/contracts.py` + `tests/test_contracts.py`; falta la composición real)_
 - [ ] 7.2 Verificar idioma de respuesta con un caso en inglés y uno en castellano (R-5.1)
 - [ ] 7.3 Verificar la evidencia exhibida: SQL muestra la sentencia, RAG muestra el fragmento citado (R-5.3, R-5.4)
 - [ ] 7.4 Crear la tabla `agent_runs` y verificar que una consulta exitosa genera una fila con los ocho campos (R-6.1, R-6.2)
@@ -69,6 +79,7 @@
 ## 9. Integración y despliegue
 
 - [ ] 9.1 Ejecutar el golden set completo contra el sistema integrado y verificar que `tests/test_golden_set.py` pasa sin regresiones, con aserción sobre clasificación, SQL y filas (no sobre la prosa) y rúbrica manual de 3 criterios para el texto (D16)
+  _(esqueleto con los 13 casos y los 4 de retrieval en `tests/golden_set.py`; las afirmaciones están marcadas `llm` y se saltan hasta que exista el agente)_
 - [ ] 9.2 Crear `docker/Dockerfile` y verificar que la imagen se construye y corre localmente
 - [ ] 9.3 Desplegar en Cloud Run + Cloud SQL con Secret Manager y verificar que las mismas 13 preguntas responden igual que en local
 - [ ] 9.4 Exportar `agent_runs` con las 13 consultas y capturas de la UI como evidencias para el informe

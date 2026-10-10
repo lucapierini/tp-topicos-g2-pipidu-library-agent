@@ -179,8 +179,9 @@ _(completar a medida que se implemente cada tarea de `tasks.md`)_
 
 | Fecha | Tarea | Decisión | Motivo |
 |---|---|---|---|
-| — | T1 | — | — |
-| — | T2 | — | — |
+| 2026-10-10 | T4.1 | La whitelist excluye explícitamente `agent_runs` y `documentos_embeddings` | La herramienta SQL lee el dominio, no la trazabilidad ni el repositorio documental. Si el agente pudiera leer `agent_runs`, un usuario podría reconstruir la historia completa de consultas |
+| 2026-10-10 | T4.1 | `prestamos_estado` entra en la whitelist como vista | Es la única forma de que el agente consulte el vencimiento sin un valor almacenado (D7, R-3.12) |
+| 2026-10-10 | T4.2 | Los alias de CTE y de tabla se resuelven con un mapa alias→tabla antes de aplicar la whitelist; una columna proyectada por una CTE no se valida contra el esquema físico | `sqlglot` trata `FROM top` (una CTE) como tabla física: sin el mapa, `WITH top AS (...) SELECT * FROM top` se rechaza falsamente. Lo mismo con `socios s` |
+| 2026-10-10 | T4.2 | El límite de 50 filas lo aplica la ejecución, no la validación estática | S10 es un `SELECT` válido; confundir los dos niveles haría que el test de sanitización afirme algo que la herramienta no hace |
 | — | T3 | — | — |
-| — | T4 | — | — |
 | — | T5 | — | — |

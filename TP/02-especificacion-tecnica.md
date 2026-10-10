@@ -247,25 +247,43 @@ declare explícitamente la ausencia de información.
 ```
 pipidu-library-agent/
 ├── README.md
+├── requirements.txt
+├── pytest.ini
+├── .env.example
 ├── docker/
-│   └── Dockerfile
+│   ├── Dockerfile
+│   └── docker-compose.yml
 ├── db/
-│   ├── schema.sql
-│   └── seed_data.py
+│   ├── schema.sql          # 6 tablas + vista prestamos_estado + usuario agent_ro
+│   ├── seed_data.py
+│   └── dump.sql
 ├── rag/
-│   ├── documents/        # PDFs fuente
-│   └── ingest.py         # pipeline de chunking + embeddings
+│   ├── documents/          # PDFs fuente
+│   ├── chunking.py
+│   └── ingest.py
 ├── agent/
+│   ├── config/
+│   │   ├── __init__.py     # Config desde entorno (D6, D12, D15)
+│   │   └── schema_whitelist.py
+│   ├── contracts.py        # SqlResult, Chunk, RagResult, AgentAnswer
+│   ├── errors.py           # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, TIMEOUT
+│   ├── sql_validator.py    # validación estática con sqlglot (D4)
+│   ├── prompts/system_prompt.md
 │   ├── tools/
-│   │   ├── sql_tool.py
+│   │   ├── sql_tool.py     # execute_sql: valida y ejecuta, no genera SQL (D1)
 │   │   └── rag_tool.py
-│   └── agent.py           # definición del agente Smolagents
+│   └── agent.py            # ToolCallingAgent (D2)
 ├── ui/
 │   └── app.py              # Streamlit
-├── TP/                      # specs SDD (funcional y técnica)
+├── TP/                     # artefactos SDD legibles para la entrega
 ├── informe/
 │   └── informe_tecnico.pdf
 └── tests/
+    ├── golden_set.py       # fixtures compartidas (D16)
+    ├── test_sql_validator.py
+    ├── test_rag_tool.py
+    ├── test_golden_set.py
+    └── test_contracts.py
 ```
 
 ## 9. Plan de pruebas
@@ -280,9 +298,14 @@ pipidu-library-agent/
 2. Actualizaciones incrementales de ambos documentos a medida que se tomen decisiones de diseño durante el desarrollo
 3. Changelog informal de decisiones relevantes (al final de cada documento o en un `CHANGELOG.md` dentro de `TP/`)
 
-## 11. Pendientes técnicos a definir
+## 11. Pendientes técnicos (cerrados el 2026-10-10)
 
-- Definir si se usa SQLAlchemy u otra capa de acceso a datos
-- Definir estrategia concreta de chunking (tamaño/overlap)
-- Definir si el agente mantiene memoria conversacional entre preguntas
-- Definir mecanismo exacto de despliegue en GCP (Cloud Run vs Compute Engine vs GKE)
+Los cuatro pendientes originales se cerraron en `CHANGELOG.md`:
+
+- Capa de acceso a datos: **psycopg2 directo** (D9).
+- Estrategia de chunking: **por cláusula, tope 800 tokens / 150 de solapamiento** (D10).
+- Memoria conversacional: **single-turn**, historial solo visual (D17).
+- Despliegue: **Cloud Run + Cloud SQL + Secret Manager** (D18).
+
+Queda un pendiente numérico, no conceptual: el umbral de similitud definitivo (D12), que se cierra con
+la medición de T3.6.
