@@ -164,9 +164,21 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
 
 - Prompt del sistema restringe la generación a sentencias `SELECT` sobre el esquema documentado, con la
   semántica temporal resuelta desde configuración (rango de cuatrimestre y zona horaria, D6).
-- Validación adicional en código mediante **parseo con `sqlglot`** (D4): statement raíz `SELECT`/`WITH`,
-  extracción de tablas y columnas contra la whitelist, rechazo de `;`, `DROP`, `DELETE`, `UPDATE`,
-  `INSERT`, `TRUNCATE`, `GRANT`, `COPY`, `CALL`, `EXEC` y comentarios — **mitigación de SQL injection vía LLM**.
+- Validación adicional en código mediante **parseo con `sqlglot`** (D4), con `error_level=RAISE` para
+  que una sentencia mal formada falle en vez de degradar a una interpretación genérica:
+  - statement raíz `SELECT`/`WITH` (y operaciones de conjunto): se rechaza cualquier statement que no
+    sea lectura, incluyendo `DROP`, `DELETE`, `UPDATE`, `INSERT`, `TRUNCATE`, `GRANT`, `COPY`, `CALL`,
+    `EXEC` y las cláusulas de bloqueo (`FOR UPDATE`),
+  - rechazo de cláusulas de bloqueo (`FOR UPDATE`),
+  - extracción de tablas y columnas contra la whitelist, con identificadores normalizados a minúsculas
+    (`FROM "Libros"` no se rechaza falsamente),
+  - `SELECT *` se **expande a las columnas de la whitelist** antes de ejecutar: sin esto la whitelist de
+    columnas es evadible y una columna física del esquema se puede alcanzar aunque no esté documentada,
+  - **allowlist de funciones** (R-3.13): `pg_sleep`, `pg_read_file`, `dblink`, `pg_advisory_lock` se
+    rechazan porque el timeout limita el tiempo pero no los efectos,
+  - rechazo de `;` y comentarios — **mitigación de SQL injection vía LLM**.
+- La sentencia registrada y exhibida es la **normalizada** (la que se ejecuta), no la original del
+  modelo; `SqlResult.sql_original` conserva la versión del modelo para la trazabilidad (R-3.9, R-6.4).
 - Conexión a BD con usuario dedicado **`agent_ro`** (`GRANT SELECT` sobre las 6 tablas,
   `statement_timeout = 10000`, `search_path` restringido) como defensa en profundidad (D14).
 - Regeneración de sentencia limitada a **2 intentos** (D8); al segundo rechazo se reporta el error al
@@ -187,12 +199,13 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
 ```python
 @dataclass
 class SqlResult:
-    sql: str | None          # sentencia efectivamente ejecutada
+    sql: str | None          # sentencia efectivamente ejecutada (normalizada, R-3.9)
     rows: list[dict]         # filas devueltas (<= 50)
-    error: str | None        # SQL_NOT_READONLY | TABLE_NOT_ALLOWED | TIMEOUT | None
+    error: str | None        # SQL_NOT_READONLY | TABLE_NOT_ALLOWED | COLUMN_NOT_ALLOWED | FUNCTION_NOT_ALLOWED | TIMEOUT | None
     executed: bool           # False si la validación estática rechazó la sentencia
     attempts: int            # intentos de generación hasta llegar a esta sentencia (D8)
     latency_ms: int
+    sql_original: str | None  # como la produjo el modelo; puede diferir de `sql` (R-6.4)
 ```
 
 **`rag_search_tool(question: str) -> RagResult`**
@@ -266,7 +279,7 @@ pipidu-library-agent/
 │   │   ├── __init__.py     # Config desde entorno (D6, D12, D15)
 │   │   └── schema_whitelist.py
 │   ├── contracts.py        # SqlResult, Chunk, RagResult, AgentAnswer
-│   ├── errors.py           # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, TIMEOUT
+│   ├── errors.py           # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, COLUMN_NOT_ALLOWED, FUNCTION_NOT_ALLOWED, TIMEOUT
 │   ├── sql_validator.py    # validación estática con sqlglot (D4)
 │   ├── prompts/system_prompt.md
 │   ├── tools/

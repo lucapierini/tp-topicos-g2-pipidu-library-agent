@@ -1,4 +1,4 @@
-"""Whitelist de tablas y columnas (T4.1, R-3.4).
+"""Whitelist de tablas, columnas y funciones (T4.1, R-3.4, R-3.13).
 
 Este archivo es un contrato entre el desarrollo del agente y el modelo de datos.
 Si `db/schema.sql` cambia, la whitelist cambia en el mismo commit.
@@ -28,6 +28,9 @@ ALLOWED_TABLES: dict[str, set[str]] = {
         "anio_publicacion", "ejemplares_totales", "ejemplares_disponibles",
     },
     "socios": {
+        # `email` está permitido porque el dominio lo necesita (notificar al socio).
+        # La política de PII se apoya en que `*` se expande a esta lista: una columna
+        # que no está acá es inalcanzable, aunque exista en el esquema físico.
         "id", "nombre", "apellido", "legajo", "tipo_socio", "email", "fecha_alta",
     },
     "prestamos": {
@@ -46,7 +49,26 @@ ALLOWED_TABLES: dict[str, set[str]] = {
 FORBIDDEN_TABLES: set[str] = {
     "agent_runs",
     "documentos_embeddings",
-    "pg_tables",
     "pg_catalog",
     "information_schema",
+}
+
+# Allowlist de funciones (R-3.13). Nombres canónicos según `sqlglot.Func.sql_name()`.
+# Cualquier función fuera de esta lista se rechaza: `pg_sleep`, `pg_read_file`, `dblink`,
+# `pg_advisory_lock` son funciones de efecto, no de cálculo sobre el dominio.
+ALLOWED_FUNCTIONS: set[str] = {
+    # agregación
+    "count", "sum", "avg", "min", "max", "bool_and", "bool_or",
+    "string_agg", "array_agg",
+    # window
+    "row_number", "rank", "dense_rank", "ntile", "lag", "lead", "first_value", "last_value",
+    # escalares
+    "round", "floor", "ceil", "abs", "sign",
+    "lower", "upper", "length", "trim", "ltrim", "rtrim", "replace", "split_part",
+    "substring", "left", "right", "position", "instr", "starts_with",
+    "coalesce", "nullif", "greatest", "least", "cast",
+    # temporales (R-3.11)
+    "current_date", "current_timestamp", "now", "clock_timestamp",
+    "date_trunc", "timestamp_trunc", "date_part", "extract", "to_char", "to_date",
+    "age", "datediff", "make_date",
 }

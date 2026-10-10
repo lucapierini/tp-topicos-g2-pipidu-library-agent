@@ -175,13 +175,20 @@ ediciones divergentes. Se eliminaron `03-especificaciones-por-capacidad.md` y `0
 
 ## Decisiones tomadas durante la implementación
 
-_(completar a medida que se implemente cada tarea de `tasks.md`)_
-
-| Fecha | Tarea | Decisión | Motivo |
-|---|---|---|---|
-| 2026-10-10 | T4.1 | La whitelist excluye explícitamente `agent_runs` y `documentos_embeddings` | La herramienta SQL lee el dominio, no la trazabilidad ni el repositorio documental. Si el agente pudiera leer `agent_runs`, un usuario podría reconstruir la historia completa de consultas |
-| 2026-10-10 | T4.1 | `prestamos_estado` entra en la whitelist como vista | Es la única forma de que el agente consulte el vencimiento sin un valor almacenado (D7, R-3.12) |
-| 2026-10-10 | T4.2 | Los alias de CTE y de tabla se resuelven con un mapa alias→tabla antes de aplicar la whitelist; una columna proyectada por una CTE no se valida contra el esquema físico | `sqlglot` trata `FROM top` (una CTE) como tabla física: sin el mapa, `WITH top AS (...) SELECT * FROM top` se rechaza falsamente. Lo mismo con `socios s` |
-| 2026-10-10 | T4.2 | El límite de 50 filas lo aplica la ejecución, no la validación estática | S10 es un `SELECT` válido; confundir los dos niveles haría que el test de sanitización afirme algo que la herramienta no hace |
+| ID | Fecha | Tarea | Decisión | Motivo |
+|---|---|---|---|---|
+| D21 | 2026-10-10 | T4.1 | La whitelist excluye explícitamente `agent_runs` y `documentos_embeddings` | La herramienta SQL lee el dominio, no la trazabilidad ni el repositorio documental. Si el agente pudiera leer `agent_runs`, un usuario podría reconstruir la historia completa de consultas |
+| D22 | 2026-10-10 | T4.1 | `prestamos_estado` entra en la whitelist como vista | Es la única forma de que el agente consulte el vencimiento sin un valor almacenado (D7, R-3.12) |
+| D23 | 2026-10-10 | T4.2 | Los alias de CTE y de tabla se resuelven con un mapa alias→tabla antes de aplicar la whitelist; una columna proyectada por una CTE no se valida contra el esquema físico | `sqlglot` trata `FROM top` (una CTE) como tabla física: sin el mapa, `WITH top AS (...) SELECT * FROM top` se rechaza falsamente. Lo mismo con `socios s` |
+| D24 | 2026-10-10 | T4.2 | El límite de 50 filas lo aplica la ejecución, no la validación estática | S10 es un `SELECT` válido; confundir los dos niveles haría que el test de sanitización afirme algo que la herramienta no hace |
+| D25 | 2026-10-10 | T4.2 | `SELECT *` se expande a las columnas de la whitelist antes de ejecutar | La whitelist de columnas era evadible: `SELECT * FROM socios` devolvía cualquier columna física del esquema. Expandir la hace inalcanzable y deja la política de PII aplicable (R-3.4) |
+| D26 | 2026-10-10 | T4.2 | Allowlist de funciones con código `FUNCTION_NOT_ALLOWED` | `pg_sleep`, `pg_read_file`, `dblink` y `pg_advisory_lock` pasaban la validación. El timeout limita el tiempo, no los efectos (R-3.13) |
+| D27 | 2026-10-10 | T4.2 | Se rechaza `FOR UPDATE` con `SQL_NOT_READONLY` | Un lock de fila no es lectura, aunque la sentencia empiece con `SELECT` (R-3.2) |
+| D28 | 2026-10-10 | T4.2 | Identificadores normalizados a minúsculas antes de comparar | `FROM "Libros"` se rechazaba falsamente; Postgres resuelve la tabla como `libros` (R-3.4) |
+| D29 | 2026-10-10 | T4.2 | `error_level=RAISE` en el parseo | Por defecto `sqlglot` avisa y degrada a `Command`; una sentencia mal formada se reinterpretaba en vez de fallar (R-3.3) |
+| D30 | 2026-10-10 | T4.2 | Se registra la sentencia **normalizada** como la ejecutada y `SqlResult.sql_original` conserva la del modelo | Con la expansión de `*` la sentencia que corre ya no es idéntica a la que produjo el modelo; sin las dos versiones la evidencia del informe no es verificable (R-3.9, R-6.4) |
+| D31 | 2026-10-10 | T4.2 | Los literales de texto no se modifican por la normalización | La respuesta final debe citar los valores efectivamente devueltos (Art. 4); normalizar identificadores no puede cambiar un valor |
+| — | T3 | — | — | — |
+| — | T5 | — | — | — |
 | — | T3 | — | — |
 | — | T5 | — | — |

@@ -21,12 +21,13 @@ NO_INFORMATION_PATTERNS = (
 
 @dataclass(frozen=True)
 class SqlResult:
-    sql: str | None
+    sql: str | None            # sentencia efectivamente ejecutada (normalizada, R-3.9)
     rows: list[dict]
-    error: str | None
+    error: str | None          # SQL_NOT_READONLY | TABLE_NOT_ALLOWED | COLUMN_NOT_ALLOWED | FUNCTION_NOT_ALLOWED | TIMEOUT
     executed: bool
     attempts: int
     latency_ms: int
+    sql_original: str | None = None  # como la produjo el modelo, para la trazabilidad (R-6.4)
 
 
 @dataclass(frozen=True)

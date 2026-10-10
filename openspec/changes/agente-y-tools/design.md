@@ -53,6 +53,17 @@ del mismo contenido.
 | D18 | Cloud Run + Cloud SQL + Secret Manager | criterio de promoción 1 |
 | D19 | PDFs generados por el integrante de RAG y base de datos | G6–G9, R1–R3 |
 | D20 | Un artefacto, un solo lugar | `TP/README.md` |
+| D21 | Whitelist excluye `agent_runs` y `documentos_embeddings` | R-3.4 |
+| D22 | `prestamos_estado` como vista en la whitelist | R-3.12 |
+| D23 | Mapa alias→tabla antes de la whitelist (CTEs y alias) | R-3.4 |
+| D24 | El límite de 50 filas lo aplica la ejecución, no la validación | R-3.6 |
+| D25 | `SELECT *` se expande a las columnas de la whitelist | R-3.4 |
+| D26 | Allowlist de funciones, código `FUNCTION_NOT_ALLOWED` | R-3.13 |
+| D27 | `FOR UPDATE` rechazado como no-lectura | R-3.2 |
+| D28 | Identificadores normalizados a minúsculas | R-3.4 |
+| D29 | `error_level=RAISE` en el parseo | R-3.3 |
+| D30 | Se registra la sentencia normalizada; `sql_original` conserva la del modelo | R-3.9, R-6.4 |
+| D31 | Los literales no se modifican por la normalización | Art. 4 |
 
 ## Risks / Trade-offs
 

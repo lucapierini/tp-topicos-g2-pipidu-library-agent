@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from agent.config.schema_whitelist import ALLOWED_TABLES, FORBIDDEN_TABLES
+from agent.config.schema_whitelist import ALLOWED_FUNCTIONS, ALLOWED_TABLES, FORBIDDEN_TABLES
 
 SCHEMA = Path(__file__).resolve().parents[1] / "db" / "schema.sql"
 
@@ -46,3 +46,12 @@ def test_prestamos_estado_is_a_view_not_a_stored_state() -> None:
     # porque es la única forma de que el agente consulte el vencimiento.
     assert "prestamos_estado" in ALLOWED_TABLES
     assert "dias_atraso" in ALLOWED_TABLES["prestamos_estado"]
+
+
+def test_function_allowlist_excludes_side_effect_functions() -> None:
+    # R-3.13: el timeout limita el tiempo, no los efectos. Una función de efecto no
+    # puede resolverse con "el timeout la corta".
+    for fn in ("pg_sleep", "pg_read_file", "dblink", "pg_advisory_lock", "lo_import", "system"):
+        assert fn not in ALLOWED_FUNCTIONS
+    for fn in ("count", "max", "round", "coalesce", "current_date", "extract"):
+        assert fn in ALLOWED_FUNCTIONS

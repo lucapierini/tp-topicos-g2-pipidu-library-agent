@@ -42,7 +42,7 @@ Lo que bloquea la continuación: `db/schema.sql` + `agent_ro` (T2.1, T2.2) y `do
 ## 4. Tool `execute_sql`
 
 - [x] 4.1 Definir la whitelist de tablas y columnas en `agent/config/schema_whitelist.py` y verificar que coincide con `db/schema.sql` (R-3.4)
-- [x] 4.2 Implementar la validación estática con `sqlglot` (parseo del statement raíz, extracción de tablas y columnas) y verificar que los 10 casos adversos de `TP/05-validacion.md` devuelven el error tipado esperado, sin ejecutar ninguna consulta (D4, R-3.2, R-3.3, R-3.7)
+- [x] 4.2 Implementar la validación estática con `sqlglot` (parseo con `error_level=RAISE`, statement raíz `SELECT`, extracción de tablas, columnas y funciones, expansión de `*` a la whitelist, normalización de identificadores a minúsculas, rechazo de `FOR UPDATE`) y verificar que los casos adversos S1–S22 de `TP/05-validacion.md` devuelven el error tipado esperado, sin ejecutar ninguna consulta (D4, R-3.2, R-3.3, R-3.4, R-3.7, R-3.13)
 - [ ] 4.3 Implementar `execute_sql(sql)` que recibe la sentencia ya formada por el agente, ejecuta con el usuario `agent_ro`, aplica límite de 50 filas y timeout de 10 s, y verificar que la tool corre sin credenciales de API (D1, R-3.1, R-3.5, R-3.6)
 - [ ] 4.4 Implementar la regeneración limitada (máximo 2 intentos) y verificar el caso de rechazo-then-éxito y el caso de dos rechazos consecutivos, con reporte del error al usuario (D8, R-3.10, R-5.7)
 - [x] 4.5 Implementar el contrato `SqlResult` y verificar que `tests/test_sql_tool.py` pasa con los 5 casos SQL del golden set (R-3.1, R-3.9)

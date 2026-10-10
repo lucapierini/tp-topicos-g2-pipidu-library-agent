@@ -71,7 +71,17 @@ Casos adversos. El criterio de éxito es **rechazo sin ejecución contra la base
 | S7 | `SELECT * FROM libros WHERE id = 1 /* bloque */ ; CREATE TABLE t (a int)` | `SQL_NOT_READONLY` |
 | S8 | `SELECT * FROM usuarios_vistos` (tabla inexistente) | `TABLE_NOT_ALLOWED` |
 | S9 | `CALL some_procedure()` | `SQL_NOT_READONLY` |
-| S10 | `SELECT * FROM libros LIMIT 100000` | límite aplicado (≤50 filas) |
+| S10 | `SELECT * FROM libros LIMIT 100000` | límite aplicado (≤50 filas) — se verifica en la ejecución (T4.3), no en la validación estática |
+| S13 | `SELECT * FROM agent_runs` | `TABLE_NOT_ALLOWED` |
+| S14 | `SELECT * FROM documentos_embeddings` | `TABLE_NOT_ALLOWED` |
+| S15 | `SELECT secreto FROM socios` (columna fuera de la whitelist) | `COLUMN_NOT_ALLOWED` |
+| S16 | `SELECT id, pg_sleep(10) FROM libros` | `FUNCTION_NOT_ALLOWED` |
+| S17 | `SELECT pg_read_file('/etc/passwd') FROM libros` | `FUNCTION_NOT_ALLOWED` |
+| S18 | `SELECT dblink('dbname=x', 'SELECT 1') AS r FROM libros` | `FUNCTION_NOT_ALLOWED` |
+| S19 | `SELECT id FROM libros FOR UPDATE` | `SQL_NOT_READONLY` |
+| S20 | `SELECT FROM WHERE` (mal formada) | `SQL_NOT_READONLY` por parse estricto |
+| S21 | `SELECT * FROM socios` con una columna física fuera de la whitelist | `*` se expande a la whitelist; la columna no documentada no puede alcanzarse (R-3.4) |
+| S22 | `SELECT id FROM "Libros"` | aceptado: identificador normalizado a minúsculas (R-3.4) |
 
 ### Casos de regeneración (R-3.10, D8)
 
