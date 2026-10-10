@@ -55,7 +55,7 @@ del mismo contenido.
 | D20 | Un artefacto, un solo lugar | `TP/README.md` |
 | D21 | Whitelist excluye `agent_runs` y `documentos_embeddings` | R-3.4 |
 | D22 | `prestamos_estado` como vista en la whitelist | R-3.12 |
-| D23 | Mapa alias→tabla antes de la whitelist (CTEs y alias) | R-3.4 |
+| D23 | Mapa alias→tabla antes de la whitelist (CTEs y alias) — **reemplazada por D38** | R-3.4 |
 | D24 | El límite de 50 filas lo aplica la ejecución, no la validación | R-3.6 |
 | D25 | `SELECT *` se expande a las columnas de la whitelist | R-3.14 |
 | D26 | Allowlist de funciones, código `FUNCTION_NOT_ALLOWED` | R-3.13 |
@@ -70,6 +70,24 @@ del mismo contenido.
 | D35 | `psycopg2` importado de forma diferida | Art. 6 |
 | D36 | Modelo por defecto `gemini-3-flash-preview` | D15, `pytest -m llm` |
 | D37 | Cliente de `google-genai` en variable, no encadenado | `tests/test_llm_smoke.py` |
+| D38 | Tablas y columnas resueltas por scope (reemplaza el mapa global de D23) | R-3.4, R-3.14 |
+| D39 | Nodos de escritura rechazados en cualquier posición del árbol | R-3.2 |
+| D40 | Schema distinto de `public` rechazado | R-3.4 |
+| D41 | Allowlist contra el nombre emitido por postgres; `CASE`/`EXISTS`/`AND` no son funciones | R-3.13 |
+| D42 | `SELECT` sin `FROM` permitido si no lee columnas | R-3.4 |
+| D43 | `;` final tolerado | R-3.3 |
+| D44 | Columnas de salida repetidas desambiguadas; alias naturales | R-3.9, R-3.14 |
+| D45 | Conexión de solo lectura, perezosa, con rollback y cierre | R-3.18 |
+| D46 | `timeout_ms` efectivo con `SET LOCAL`; SQLSTATE `57014` | R-3.6 |
+| D47 | Zona horaria `APP_TIMEZONE` aplicada a la sesión SQL | R-3.11 |
+| D48 | `SqlResult.truncated` declara el truncado a 50 filas | R-3.6 |
+| D49 | La regeneración recibe el motivo del rechazo anterior | R-3.10, R-5.7 |
+| D50 | Vocabulario de clasificación único: `sql`/`rag`/`hybrid`/`none` | R-2.1 |
+| D51 | `prestamos.estado` fuera de la whitelist; solo la vista | R-3.12 |
+| D52 | `AgentAnswer`: `answer_kind`, `trace`, evidencia por fuente | R-2.4, Art. 4 |
+| D53 | `QUERY_TOO_COMPLEX`: sin `WITH RECURSIVE`, tope de tablas | R-3.17 |
+| D54 | Dependencias de ejecución y desarrollo separadas, con cotas | Art. 8 |
+| D55 | Golden set con entidades concretas y checks independientes del alias | D16 |
 
 ## Risks / Trade-offs
 

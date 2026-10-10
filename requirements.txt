@@ -1,9 +1,10 @@
-smolagents>=1.20
-google-genai>=1.0
-psycopg2-binary>=2.20
-pypdf>=5.0
-streamlit>=1.40
-sqlglot>=30.0
-python-dotenv>=1.0
-pytest>=8.0
-faker>=27.0
+# Dependencias de ejecución (imagen de Cloud Run incluida). Para desarrollo: requirements-dev.txt.
+# Cotas: mínimo = versión verificada; máximo = próxima major (Art. 8).
+# `psycopg2-binary>=2.20` no existe (la última es 2.9.x): `pip install -r` fallaba.
+smolagents>=1.20,<2
+google-genai>=2.29,<3
+psycopg2-binary>=2.9,<3
+pypdf>=5.0,<7
+streamlit>=1.40,<2
+sqlglot>=30.22,<31
+python-dotenv>=1.2,<2

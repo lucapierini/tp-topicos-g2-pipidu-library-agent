@@ -39,9 +39,23 @@ rechazar cláusulas de bloqueo como `FOR UPDATE`, que no son lectura.
 - **THEN** rechaza la ejecución
 - **AND** devuelve el error `SQL_NOT_READONLY`
 
+#### Scenario: escritura dentro de una CTE
+- **GIVEN** la sentencia `WITH d AS (DELETE FROM prestamos RETURNING id) SELECT id FROM d`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución aunque la raíz sea un `SELECT`
+- **AND** devuelve el error `SQL_NOT_READONLY`
+
+#### Scenario: `SELECT ... INTO`
+- **GIVEN** la sentencia `SELECT id INTO nueva FROM libros`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `SQL_NOT_READONLY`
+
 ### Requirement: R-3.3 — Rechazo de múltiples statements y comentarios
-La herramienta SHALL rechazar sentencias que contengan `;`, comentarios `--` o `/*`, o instrucciones
-`INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `TRUNCATE`, `GRANT`, `COPY`, `CALL` o `EXEC`.
+La herramienta SHALL rechazar las entradas con más de una sentencia, los comentarios `--` o `/*`, y las
+instrucciones `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `TRUNCATE`, `GRANT`, `COPY`,
+`CALL` o `EXEC`, en cualquier posición de la sentencia. Un único `;` final se tolera: no separa
+sentencias y los modelos lo emiten con frecuencia. La herramienta SHALL NO lanzar excepciones ante
+una entrada malformada (sentencia vacía, literal sin cerrar): la rechaza con `SQL_NOT_READONLY`.
 
 #### Scenario: inyección por statement múltiple
 - **GIVEN** la sentencia `SELECT 1; DROP TABLE libros`
@@ -78,6 +92,29 @@ documentado (las funciones se rigen por R-3.13). La whitelist cubre el modelo co
 - **THEN** rechaza la ejecución
 - **AND** devuelve el error `COLUMN_NOT_ALLOWED`
 
+#### Scenario: columna sin calificar en una consulta con varias tablas
+- **GIVEN** la sentencia `SELECT secreto FROM socios s JOIN prestamos p ON p.socio_id = s.id`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `COLUMN_NOT_ALLOWED`
+- **AND** una columna presente en más de una tabla sin calificar se rechaza por ambigua
+
+#### Scenario: una CTE homónima no oculta una tabla prohibida
+- **GIVEN** una subquery que define una CTE llamada `agent_runs` y un `FROM` externo que lee la tabla `agent_runs`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `TABLE_NOT_ALLOWED`
+- **AND** las tablas y las columnas se resuelven por scope, no con un mapa global de alias
+
+#### Scenario: tabla de otro schema
+- **GIVEN** la sentencia `SELECT id FROM otro_schema.libros`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `TABLE_NOT_ALLOWED`
+- **AND** solo se aceptan referencias sin schema o con `public`
+
+#### Scenario: función de tabla
+- **GIVEN** la sentencia `SELECT * FROM libros, generate_series(1, 10)`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `FUNCTION_NOT_ALLOWED`
+
 ### Requirement: R-3.14 — Expansión de `SELECT *`
 La herramienta SHALL expandir `SELECT *` a las columnas de la whitelist antes de ejecutar, de modo que
 una columna física del esquema fuera de la whitelist sea inalcanzable.
@@ -87,6 +124,18 @@ una columna física del esquema fuera de la whitelist sea inalcanzable.
 - **WHEN** la herramienta evalúa la sentencia
 - **THEN** la sentencia ejecutada es la expandida a las columnas de la whitelist
 - **AND** la columna no documentada no aparece en el resultado
+
+#### Scenario: `*` sobre una CTE o una subquery
+- **GIVEN** la sentencia `WITH top AS (SELECT libro_id, count(*) AS c FROM prestamos GROUP BY libro_id) SELECT * FROM top`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** expande `*` a las columnas que proyecta la CTE (`libro_id`, `c`) y no a las de las tablas internas
+- **AND** `t.*` sobre una subquery se acepta sin error
+
+#### Scenario: columnas repetidas tras un JOIN
+- **GIVEN** la sentencia `SELECT * FROM libros l JOIN autores a ON a.id = l.autor_id`
+- **WHEN** la herramienta expande `*`
+- **THEN** las columnas repetidas se nombran `<tabla>_<columna>` (`l_id`, `a_id`)
+- **AND** ninguna fila devuelta pierde un valor por colisión de nombres (Art. 4)
 
 ### Requirement: R-3.15 — Normalización de identificadores
 La herramienta SHALL normalizar los identificadores a minúsculas antes de aplicar la whitelist y SHALL
@@ -130,6 +179,13 @@ La herramienta SHALL aplicar un límite máximo de 50 filas devueltas y un timeo
 - **GIVEN** una sentencia que supera los 10 segundos de ejecución
 - **WHEN** se alcanza el límite
 - **THEN** la herramienta devuelve el error `TIMEOUT`
+- **AND** la conexión queda utilizable para la consulta siguiente
+
+#### Scenario: resultado truncado
+- **GIVEN** una sentencia cuyo resultado tiene más de 50 filas
+- **WHEN** se ejecuta
+- **THEN** la herramienta devuelve 50 filas y declara el resultado como truncado
+- **AND** la respuesta final no presenta las 50 filas como el total
 
 ### Requirement: R-3.7 — Validación previa a la ejecución
 La herramienta SHALL devolver un error tipado ante una validación fallida y NO ejecutar la sentencia.
@@ -181,6 +237,12 @@ estática la rechaza. Si el segundo intento también es rechazado, el sistema SH
 - **THEN** el sistema no ejecuta ninguna sentencia
 - **AND** la respuesta informa el motivo del rechazo al usuario
 
+#### Scenario: la regeneración recibe el motivo del rechazo
+- **GIVEN** un primer intento rechazado
+- **WHEN** el agente regenera la sentencia
+- **THEN** recibe el código de error y el motivo del intento anterior
+- **AND** el resultado final conserva el motivo y la sentencia original del último intento
+
 ### Requirement: R-3.13 — Whitelist de funciones
 La herramienta SHALL ejecutar únicamente funciones incluidas en una allowlist documentada (agregación,
 escalares y temporales). Las funciones de efecto SHALL rechazarse antes de ejecutar, porque el timeout
@@ -197,6 +259,23 @@ limita el tiempo pero no los efectos.
 - **WHEN** la herramienta evalúa la sentencia
 - **THEN** la acepta
 
+#### Scenario: construcciones de control y operadores
+- **GIVEN** una sentencia con `CASE`, `EXISTS`, `AND` u `OR`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** no las trata como funciones y las acepta
+- **AND** `string_agg`, `bool_and`, `to_char`, `to_date`, `position`, `concat` e `initcap` se aceptan
+
+#### Scenario: nombre de función entre comillas o niladico
+- **GIVEN** la sentencia `SELECT "pg_sleep"(1) FROM libros` o `SELECT current_user FROM libros`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `FUNCTION_NOT_ALLOWED`
+
+#### Scenario: la allowlist solo contiene nombres de PostgreSQL
+- **GIVEN** cada función de la allowlist
+- **WHEN** se evalúa una sentencia que la usa
+- **THEN** la herramienta la acepta
+- **AND** la allowlist no contiene nombres de otros dialectos
+
 ### Requirement: R-3.11 — Semántica temporal definida por configuración
 El sistema SHALL resolver las expresiones temporales de las consultas usando los rangos definidos en
 configuración, no una interpretación libre del modelo.
@@ -211,6 +290,12 @@ configuración, no una interpretación libre del modelo.
 - **WHEN** el usuario pregunta por un préstamo "hace 20 días"
 - **THEN** el cálculo se realiza sobre `CURRENT_DATE` con la zona horaria configurada
 
+#### Scenario: la zona horaria no depende del servidor
+- **GIVEN** una base cuyo servidor opera en UTC
+- **WHEN** la herramienta abre la conexión
+- **THEN** la sesión usa la zona horaria configurada (`APP_TIMEZONE`)
+- **AND** `CURRENT_DATE` cambia de día a medianoche en esa zona, no a las 21:00
+
 ### Requirement: R-3.12 — Estado de vencimiento calculado
 El estado de vencimiento de un préstamo SHALL determinarse por cálculo a partir de las fechas, no por
 un valor almacenado manualmente.
@@ -220,6 +305,12 @@ un valor almacenado manualmente.
 - **WHEN** se consulta qué socios tienen préstamos vencidos
 - **THEN** el préstamo se reporta como vencido por cálculo
 - **AND** el resultado coincide con el caso G3 del golden set
+
+#### Scenario: el estado no se lee de la tabla
+- **GIVEN** la sentencia `SELECT estado FROM prestamos`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `COLUMN_NOT_ALLOWED`
+- **AND** el estado solo es consultable desde la vista `prestamos_estado`
 
 ### Requirement: R-3.16 — Error de ejecución
 La herramienta SHALL devolver el error tipado `EXECUTION_ERROR` cuando una sentencia válida falla al
@@ -235,3 +326,32 @@ ejecutarse, sin reinterpretar el mensaje de la base ni completar información de
 - **GIVEN** una sentencia rechazada por la validación estática
 - **WHEN** la herramienta la procesa
 - **THEN** no se abre ninguna conexión ni se envía la sentencia
+
+### Requirement: R-3.17 — Complejidad acotada
+La herramienta SHALL rechazar con `QUERY_TOO_COMPLEX` las sentencias con `WITH RECURSIVE` o con más
+referencias a tablas que el máximo configurado (por defecto 8), porque el timeout limita el tiempo
+pero no evita ocupar la base con un producto cartesiano accidental.
+
+#### Scenario: recursión
+- **GIVEN** una sentencia con `WITH RECURSIVE`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `QUERY_TOO_COMPLEX`
+
+#### Scenario: demasiadas tablas
+- **GIVEN** una sentencia con más referencias a tablas que el máximo configurado
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `QUERY_TOO_COMPLEX`
+
+### Requirement: R-3.18 — Conexión de solo lectura y sin fugas
+La herramienta SHALL abrir una única conexión por instancia, de solo lectura, con el timeout, el
+`search_path` y la zona horaria configurados, y SHALL liberar la transacción después de cada ejecución,
+incluso ante un error, para que la consulta siguiente no falle por una transacción abortada.
+
+#### Scenario: error seguido de una consulta válida
+- **GIVEN** una ejecución que falló o superó el timeout
+- **WHEN** se ejecuta una segunda sentencia válida sobre la misma instancia
+- **THEN** la segunda se ejecuta con normalidad
+
+#### Scenario: la herramienta es perezosa
+- **WHEN** se importa el módulo de la herramienta
+- **THEN** no se lee la configuración de conexión ni se abre ninguna conexión

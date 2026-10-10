@@ -82,6 +82,21 @@ Casos adversos. El criterio de éxito es **rechazo sin ejecución contra la base
 | S20 | `SELECT FROM WHERE` (mal formada) | `SQL_NOT_READONLY` por parse estricto |
 | S21 | `SELECT * FROM socios` con una columna física fuera de la whitelist | `*` se expande a la whitelist; la columna no documentada no puede alcanzarse (R-3.4) |
 | S22 | `SELECT id FROM "Libros"` | aceptado: identificador normalizado a minúsculas (R-3.4) |
+| S23 | `SELECT l.id FROM libros l, (WITH agent_runs AS (SELECT id FROM libros) SELECT id FROM agent_runs) t, agent_runs` | `TABLE_NOT_ALLOWED`: la CTE homónima no oculta la tabla (D38) |
+| S24 | `WITH d AS (DELETE FROM prestamos RETURNING id) SELECT id FROM d` | `SQL_NOT_READONLY`: escritura dentro de una CTE (D39) |
+| S25 | `SELECT secreto FROM socios s JOIN prestamos p ON p.socio_id = s.id` | `COLUMN_NOT_ALLOWED`: columna sin calificar en un JOIN (D38) |
+| S26 | `SELECT id FROM otro_schema.libros` | `TABLE_NOT_ALLOWED` (D40) |
+| S27 | `SELECT * FROM libros, generate_series(1, 10)` | `FUNCTION_NOT_ALLOWED`: función de tabla (R-3.13) |
+| S28 | `SELECT "pg_sleep"(1) FROM libros` | `FUNCTION_NOT_ALLOWED`: el nombre entre comillas no la oculta (D41) |
+| S29 | `WITH RECURSIVE r AS (...) SELECT n FROM r` | `QUERY_TOO_COMPLEX` (R-3.17) |
+| S30 | `SELECT estado FROM prestamos` | `COLUMN_NOT_ALLOWED`: el estado se lee de la vista (D51) |
+| S31 | `SELECT 'abc FROM libros` y `""` | `SQL_NOT_READONLY`, sin lanzar excepción (R-3.3) |
+| S32 | `CASE`, `EXISTS`, `AND`/`OR`, `string_agg`, `to_char`, `SELECT t.* FROM (…) t` | aceptados (D41, D38) |
+| S33 | `SELECT * FROM libros l JOIN autores a ON a.id = l.autor_id` | aceptado; salida con `l_id` y `a_id`, sin pérdida de datos (D44) |
+
+Los casos S23–S33 y el alcance de la allowlist (cada función permitida es alcanzable) están en
+`tests/test_sql_validator_hardening.py`. Las consultas de referencia G1–G5 y G10–G12 también deben
+pasar la validación.
 
 ### Casos de regeneración (R-3.10, D8)
 
