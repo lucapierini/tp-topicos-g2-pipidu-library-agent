@@ -179,6 +179,9 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
   - rechazo de `;` y comentarios — **mitigación de SQL injection vía LLM**.
 - La sentencia registrada y exhibida es la **normalizada** (la que se ejecuta), no la original del
   modelo; `SqlResult.sql_original` conserva la versión del modelo para la trazabilidad (R-3.9, R-6.4).
+- El fallo de ejecución se reporta como `EXECUTION_ERROR` (R-3.16): la herramienta no reinterpreta el
+  mensaje de la base ni completa hechos desde fuera del resultado. Una sentencia rechazada por la
+  validación nunca abre conexión.
 - Conexión a BD con usuario dedicado **`agent_ro`** (`GRANT SELECT` sobre las 6 tablas,
   `statement_timeout = 10000`, `search_path` restringido) como defensa en profundidad (D14).
 - Regeneración de sentencia limitada a **2 intentos** (D8); al segundo rechazo se reporta el error al
@@ -201,7 +204,7 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
 class SqlResult:
     sql: str | None          # sentencia efectivamente ejecutada (normalizada, R-3.9)
     rows: list[dict]         # filas devueltas (<= 50)
-    error: str | None        # SQL_NOT_READONLY | TABLE_NOT_ALLOWED | COLUMN_NOT_ALLOWED | FUNCTION_NOT_ALLOWED | TIMEOUT | None
+    error: str | None        # SQL_NOT_READONLY | TABLE_NOT_ALLOWED | COLUMN_NOT_ALLOWED | FUNCTION_NOT_ALLOWED | TIMEOUT | EXECUTION_ERROR | None
     executed: bool           # False si la validación estática rechazó la sentencia
     attempts: int            # intentos de generación hasta llegar a esta sentencia (D8)
     latency_ms: int
@@ -279,7 +282,7 @@ pipidu-library-agent/
 │   │   ├── __init__.py     # Config desde entorno (D6, D12, D15)
 │   │   └── schema_whitelist.py
 │   ├── contracts.py        # SqlResult, Chunk, RagResult, AgentAnswer
-│   ├── errors.py           # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, COLUMN_NOT_ALLOWED, FUNCTION_NOT_ALLOWED, TIMEOUT
+│   ├── errors.py           # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, COLUMN_NOT_ALLOWED, FUNCTION_NOT_ALLOWED, TIMEOUT, EXECUTION_ERROR
 │   ├── sql_validator.py    # validación estática con sqlglot (D4)
 │   ├── prompts/system_prompt.md
 │   ├── tools/

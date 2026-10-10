@@ -65,6 +65,9 @@ del mismo contenido.
 | D30 | Se registra la sentencia normalizada; `sql_original` conserva la del modelo | R-3.9, R-6.4 |
 | D31 | Los literales no se modifican por la normalización | Art. 4 |
 | D32 | Sin política de PII: acceso uniforme a la información del dominio | Art. 11, R-3.4 |
+| D33 | Fallo de ejecución con código `EXECUTION_ERROR` | R-3.16 |
+| D34 | `pytest` excluye por defecto `integration` y `llm` | Art. 6 |
+| D35 | `psycopg2` importado de forma diferida | Art. 6 |
 
 ## Risks / Trade-offs
 

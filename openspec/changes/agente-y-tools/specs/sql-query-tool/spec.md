@@ -220,3 +220,18 @@ un valor almacenado manualmente.
 - **WHEN** se consulta qué socios tienen préstamos vencidos
 - **THEN** el préstamo se reporta como vencido por cálculo
 - **AND** el resultado coincide con el caso G3 del golden set
+
+### Requirement: R-3.16 — Error de ejecución
+La herramienta SHALL devolver el error tipado `EXECUTION_ERROR` cuando una sentencia válida falla al
+ejecutarse, sin reinterpretar el mensaje de la base ni completar información desde fuera del resultado.
+
+#### Scenario: fallo al ejecutar
+- **GIVEN** una sentencia que pasó la validación estática y falla al ejecutarse
+- **WHEN** la herramienta captura el error
+- **THEN** devuelve `executed = False` con `EXECUTION_ERROR`
+- **AND** no se infiere ningún hecho a partir del fallo
+
+#### Scenario: la validación falla antes de tocar la base
+- **GIVEN** una sentencia rechazada por la validación estática
+- **WHEN** la herramienta la procesa
+- **THEN** no se abre ninguna conexión ni se envía la sentencia

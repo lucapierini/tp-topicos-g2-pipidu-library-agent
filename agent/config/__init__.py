@@ -52,6 +52,12 @@ class Config:
     embedding_model: str
     embedding_dim: int
 
+    # Conexión (R-3.5, D14). El rol es de solo lectura; la contraseña se lee del entorno (Art. 9).
+    db_user: str
+    db_name: str
+    db_host: str
+    db_port: int
+
 
 def load_config() -> Config:
     return Config(
@@ -69,4 +75,8 @@ def load_config() -> Config:
         model=_env("GEMINI_MODEL", "gemini-2.5-flash"),
         embedding_model=_env("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"),
         embedding_dim=_env_int("EMBEDDING_DIM", "768"),
+        db_user=_env("POSTGRES_USER", "agent_ro"),
+        db_name=_env("POSTGRES_DB", "pipidu"),
+        db_host=_env("POSTGRES_HOST", "localhost"),
+        db_port=_env_int("POSTGRES_PORT", "5432"),
     )

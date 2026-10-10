@@ -1,4 +1,4 @@
-"""Códigos de error tipados de la herramienta SQL (R-3.2, R-3.3, R-3.4, R-3.6, R-3.13)."""
+"""Códigos de error tipados de la herramienta SQL (R-3.2, R-3.3, R-3.4, R-3.6, R-3.13, R-3.16)."""
 from __future__ import annotations
 
 SQL_NOT_READONLY = "SQL_NOT_READONLY"
@@ -6,3 +6,4 @@ TABLE_NOT_ALLOWED = "TABLE_NOT_ALLOWED"
 COLUMN_NOT_ALLOWED = "COLUMN_NOT_ALLOWED"
 FUNCTION_NOT_ALLOWED = "FUNCTION_NOT_ALLOWED"
 TIMEOUT = "TIMEOUT"
+EXECUTION_ERROR = "EXECUTION_ERROR"

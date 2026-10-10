@@ -189,6 +189,9 @@ ediciones divergentes. Se eliminaron `03-especificaciones-por-capacidad.md` y `0
 | D30 | 2026-10-10 | T4.2 | Se registra la sentencia **normalizada** como la ejecutada y `SqlResult.sql_original` conserva la del modelo | Con la expansión de `*` la sentencia que corre ya no es idéntica a la que produjo el modelo; sin las dos versiones la evidencia del informe no es verificable (R-3.9, R-6.4) |
 | D31 | 2026-10-10 | T4.2 | Los literales de texto no se modifican por la normalización | La respuesta final debe citar los valores efectivamente devueltos (Art. 4); normalizar identificadores no puede cambiar un valor |
 | D32 | 2026-10-10 | — | No hay política de PII ni roles de acceso diferenciados: todos los usuarios acceden a toda la información del dominio | La consigna 2026 no lo detalla. La whitelist de tablas y columnas es control de alcance y de inyección (R-3.4), no de privacidad. Si la consigna introdujera un requisito de privacidad, es un cambio de spec (Art. 10) |
+| D33 | 2026-10-10 | T4.3 | El fallo de ejecución se reporta con el código `EXECUTION_ERROR` (R-3.16) | Los códigos existentes cubren la validación estática; un fallo al ejecutar (conexión, restricción, sintaxis) no tiene código y sin él la herramienta termina interpretando el mensaje de la base |
+| D34 | 2026-10-10 | T4.3 | `pytest` por defecto excluye `integration` y `llm` (`addopts = -m "not integration and not llm"`) | Art. 6 exige que los tests corran sin base ni credenciales. Con la conexión inyectable, la política de clamp/regeneración se prueba offline con un fake; lo que sí necesita base queda en `-m integration` |
+| D35 | 2026-10-10 | T4.3 | `psycopg2` se importa de forma diferida dentro de `_connect()` | Si el import estuviera al nivel de módulo, los tests offline no podrían importar el executor sin el paquete instalado |
 | — | T3 | — | — | — |
 | — | T5 | — | — | — |
 | — | T3 | — | — |
