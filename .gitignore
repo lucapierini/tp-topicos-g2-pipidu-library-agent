@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Secretos (Art. 9 de TP/00-constitucion.md)
+.env
+!.env.example
+
+# Evidencias locales
+*.log
+.pytest_cache/
+
+# Config local de asistentes de IA (cada integrante puede usar uno distinto)
+.pi/
+.claude/
+.cursor/

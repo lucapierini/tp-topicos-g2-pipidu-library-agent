@@ -1,0 +1,4 @@
+# Normaliza line endings: los artefactos SDD se comparan en diffs y se leen entre
+# integrantes con sistemas distintos.
+* text=auto eol=lf
+*.pdf binary
