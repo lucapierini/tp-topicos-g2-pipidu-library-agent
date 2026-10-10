@@ -1,16 +1,20 @@
-from dotenv import load_dotenv
-import os, json
+import json
+import os
 
-load_dotenv(".env")
 from google import genai
 from google.genai import types
+
+from agent.config import ENV_FILE  # carga `.env` con path explícito
+from agent.contracts import CLASSIFICATIONS
+
+assert ENV_FILE  # el import ya ejecutó load_dotenv(ENV_FILE)
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 schema = types.Schema(
     type=types.Type.OBJECT,
     properties={
-        "classification": types.Schema(type=types.Type.STRING, enum=["sql", "rag", "sql+rag", "none"]),
+        "classification": types.Schema(type=types.Type.STRING, enum=sorted(CLASSIFICATIONS)),
         "question": types.Schema(type=types.Type.STRING),
     },
     required=["classification", "question"],

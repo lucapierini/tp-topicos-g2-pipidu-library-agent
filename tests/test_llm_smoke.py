@@ -17,6 +17,7 @@ from google import genai  # noqa: E402
 from google.genai import types  # noqa: E402
 
 from agent.config import load_config  # noqa: E402
+from agent.contracts import CLASSIFICATIONS, normalize_classification  # noqa: E402
 
 
 def client():
@@ -36,7 +37,8 @@ def test_clasificacion_estructurada_devuelve_el_enum() -> None:
         type=types.Type.OBJECT,
         properties={
             "classification": types.Schema(
-                type=types.Type.STRING, enum=["sql", "rag", "sql+rag", "none"]
+                # Mismo vocabulario que la spec y `agent.contracts.CLASSIFICATIONS` (D50).
+                type=types.Type.STRING, enum=sorted(CLASSIFICATIONS)
             ),
             "question": types.Schema(type=types.Type.STRING),
         },
@@ -52,7 +54,7 @@ def test_clasificacion_estructurada_devuelve_el_enum() -> None:
         ),
     )
     out = json.loads(r.text)
-    assert out["classification"] == "sql"
+    assert normalize_classification(out["classification"]) == "sql"
     assert out["question"]
 
 
