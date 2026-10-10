@@ -51,6 +51,28 @@ def test_prestamos_estado_is_a_view_not_a_stored_state() -> None:
     assert "dias_atraso" in ALLOWED_TABLES["prestamos_estado"]
 
 
+def test_estado_se_lee_solo_de_la_vista_calculada() -> None:
+    # D51: la tabla no expone `estado`; si lo hiciera, el modelo podría leer un valor almacenado
+    # que nunca dice `vencido` en vez de calcularlo (R-3.12).
+    assert "estado" not in ALLOWED_TABLES["prestamos"]
+    assert "estado" in ALLOWED_TABLES["prestamos_estado"]
+
+
+def test_sqlglot_schema_mirrors_the_whitelist() -> None:
+    from agent.config.schema_whitelist import sqlglot_schema
+
+    schema = sqlglot_schema()
+    assert set(schema) == set(ALLOWED_TABLES)
+    for table, columns in ALLOWED_TABLES.items():
+        assert set(schema[table]) == columns
+
+
+def test_allowlist_only_contains_postgres_function_names() -> None:
+    # `instr`, `datediff` y `timestamp_trunc` son de otros dialectos: no existen en PostgreSQL.
+    for name in ("instr", "datediff", "timestamp_trunc"):
+        assert name not in ALLOWED_FUNCTIONS
+
+
 def test_function_allowlist_excludes_side_effect_functions() -> None:
     # R-3.13: el timeout limita el tiempo, no los efectos. Una función de efecto no
     # puede resolverse con "el timeout la corta".

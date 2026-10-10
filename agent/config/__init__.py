@@ -8,14 +8,19 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from datetime import date
+from pathlib import Path
 
 try:
     from dotenv import load_dotenv
 except ImportError:  # pragma: no cover - dotenv es dependencia de desarrollo
     load_dotenv = None
 
+# Path explícito: `find_dotenv()` falla al ejecutar desde stdin o desde otro cwd.
+# `.env` está en .gitignore (Art. 9). `override=False`: el entorno real gana sobre el archivo.
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
 if load_dotenv is not None:
-    load_dotenv()  # .env está en .gitignore (Art. 9)
+    load_dotenv(ENV_FILE, override=False)
 
 
 def _env(name: str, default: str) -> str:
@@ -49,6 +54,7 @@ class Config:
     max_rows: int
     statement_timeout_ms: int
     max_sql_attempts: int
+    max_table_refs: int  # R-3.17: cota de complejidad (producto cartesiano accidental)
 
     # Orquestador (D15)
     max_steps: int
@@ -71,12 +77,15 @@ def load_config() -> Config:
     return Config(
         cuatrimestre_start=_env_date("CUATRIMESTRE_START", "2026-08-01"),
         cuatrimestre_end=_env_date("CUATRIMESTRE_END", "2026-11-30"),
-        timezone=_env("TZ", "America/Argentina/Buenos_Aires"),
+        # `APP_TIMEZONE` y no `TZ`: `TZ` es una variable estándar del sistema (Cloud Run la fija
+        # en UTC) y el cuatrimestre se razona en hora argentina (D6, D47).
+        timezone=_env("APP_TIMEZONE", "America/Argentina/Buenos_Aires"),
         top_k=_env_int("RAG_TOP_K", "5"),
         similarity_threshold=_env_float("RAG_SIMILARITY_THRESHOLD", "0.35"),
         max_rows=_env_int("SQL_MAX_ROWS", "50"),
         statement_timeout_ms=_env_int("SQL_STATEMENT_TIMEOUT_MS", "10000"),
         max_sql_attempts=_env_int("SQL_MAX_ATTEMPTS", "2"),
+        max_table_refs=_env_int("SQL_MAX_TABLE_REFS", "8"),
         max_steps=_env_int("AGENT_MAX_STEPS", "6"),
         temperature=_env_float("AGENT_TEMPERATURE", "0"),
         api_timeout_s=_env_int("AGENT_API_TIMEOUT_S", "30"),

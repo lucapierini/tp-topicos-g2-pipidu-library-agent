@@ -34,9 +34,12 @@ ALLOWED_TABLES: dict[str, set[str]] = {
         # una columna física del esquema que no esté acá es inalcanzable para el agente.
         "id", "nombre", "apellido", "legajo", "tipo_socio", "email", "fecha_alta",
     },
+    # `estado` NO está en la whitelist de la tabla (D51): el vencimiento se calcula en la vista
+    # `prestamos_estado` (D7, R-3.12). Si la tabla expusiera una columna almacenada, el modelo
+    # podría leerla en vez de calcularlo y el resultado dejaría de ser verificable.
     "prestamos": {
         "id", "libro_id", "socio_id", "fecha_prestamo", "fecha_devolucion_prevista",
-        "fecha_devolucion_real", "estado",
+        "fecha_devolucion_real",
     },
     # Vista calculada (D7, R-3.12). El estado se deriva de las fechas.
     "prestamos_estado": {
@@ -54,9 +57,12 @@ FORBIDDEN_TABLES: set[str] = {
     "information_schema",
 }
 
-# Allowlist de funciones (R-3.13). Nombres canónicos según `sqlglot.Func.sql_name()`.
+# Allowlist de funciones (R-3.13, D41). Los nombres son los que emite el dialecto
+# **postgres** de sqlglot, es decir, los que efectivamente llegan a la base: no los nombres
+# internos de `sqlglot` (`string_agg` es `GroupConcat`, `to_char` es `TimeToStr`).
 # Cualquier función fuera de esta lista se rechaza: `pg_sleep`, `pg_read_file`, `dblink`,
 # `pg_advisory_lock` son funciones de efecto, no de cálculo sobre el dominio.
+# `CASE`, `EXISTS` e `IF` no son funciones: son construcciones de control y no se filtran acá.
 ALLOWED_FUNCTIONS: set[str] = {
     # agregación
     "count", "sum", "avg", "min", "max", "bool_and", "bool_or",
@@ -65,11 +71,20 @@ ALLOWED_FUNCTIONS: set[str] = {
     "row_number", "rank", "dense_rank", "ntile", "lag", "lead", "first_value", "last_value",
     # escalares
     "round", "floor", "ceil", "abs", "sign",
-    "lower", "upper", "length", "trim", "ltrim", "rtrim", "replace", "split_part",
-    "substring", "left", "right", "position", "instr", "starts_with",
+    "lower", "upper", "initcap", "length", "trim", "ltrim", "rtrim", "replace", "split_part",
+    "substring", "left", "right", "position", "starts_with",
+    "concat", "concat_ws",
     "coalesce", "nullif", "greatest", "least", "cast",
     # temporales (R-3.11)
     "current_date", "current_timestamp", "now", "clock_timestamp",
-    "date_trunc", "timestamp_trunc", "date_part", "extract", "to_char", "to_date",
-    "age", "datediff", "make_date",
+    "date_trunc", "date_part", "extract", "to_char", "to_date",
+    "age", "make_date",
 }
+
+
+def sqlglot_schema() -> dict[str, dict[str, str]]:
+    """La whitelist en la forma que consume `sqlglot.optimizer.qualify_columns` (D38).
+
+    El tipo es irrelevante para la validación; solo importa qué columnas existen.
+    """
+    return {table: {column: "text" for column in sorted(columns)} for table, columns in ALLOWED_TABLES.items()}

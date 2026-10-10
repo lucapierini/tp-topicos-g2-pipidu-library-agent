@@ -6,6 +6,7 @@ El criterio de éxito es rechazo sin ejecución contra la base.
 from __future__ import annotations
 
 import pytest
+from sqlglot import parse_one
 
 from agent.errors import (
     COLUMN_NOT_ALLOWED,
@@ -25,10 +26,8 @@ ADVERSARIAL = [
     ("S7", "SELECT * FROM libros /* bloque */ ; CREATE TABLE t (a int)", SQL_NOT_READONLY),
     ("S8", "SELECT * FROM usuarios_vistos", TABLE_NOT_ALLOWED),
     ("S9", "CALL some_procedure()", SQL_NOT_READONLY),
-    ("S10", "SELECT * FROM agent_runs", TABLE_NOT_ALLOWED),
-    ("S11", "SELECT * FROM documentos_embeddings", TABLE_NOT_ALLOWED),
-    ("S12", "SELECT secreto FROM socios", COLUMN_NOT_ALLOWED),
-    # IDs alineados con la tabla de `TP/05-validacion.md`.
+    # S10–S12 son casos de ejecución/regeneración en `TP/05-validacion.md` (tests de executor).
+    # IDs alineados con esa tabla; antes S10–S12 repetían S13–S15 y contaban doble.
     ("S13", "SELECT * FROM agent_runs", TABLE_NOT_ALLOWED),
     ("S14", "SELECT * FROM documentos_embeddings", TABLE_NOT_ALLOWED),
     ("S15", "SELECT secreto FROM socios", COLUMN_NOT_ALLOWED),
@@ -76,9 +75,8 @@ def test_star_expands_to_whitelisted_columns() -> None:
     result = validate_sql("SELECT * FROM socios")
     assert result.ok
     assert result.normalized_sql is not None
-    for column in result.normalized_sql.split("FROM")[0].split(","):
-        name = column.strip().split(".")[-1]
-        assert name in {"id", "nombre", "apellido", "legajo", "tipo_socio", "email", "fecha_alta"}
+    projected = {e.alias_or_name for e in parse_one(result.normalized_sql, read="postgres").expressions}
+    assert projected == {"id", "nombre", "apellido", "legajo", "tipo_socio", "email", "fecha_alta"}
 
 
 def test_star_expansion_blocks_columns_that_exist_in_schema_but_not_in_whitelist() -> None:
