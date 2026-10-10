@@ -180,7 +180,15 @@ Corridas registradas:
 | Fecha | Modelo | Clasificación | Híbridos (2 tools) | `none` sin tools | Antes de tools | SQL rechazado | Cuenta como aceptación |
 |---|---|---|---|---|---|---|---|
 | 2026-10-10 | `gemini-3.1-flash-lite` | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí (backends falsos: sin evaluar contenido) |
-| 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 3/3 (solo G1, G6, G13) | no medido | 1/1 | 3/3 | 1/1 (G1 inventó `titulo_dummy`; el validador lo frenó y regeneró) | No: validación del flujo. Corrida parcial **sin archivo de evidencia**; la de los 13 casos está pendiente |
+| 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 12/13 clasificados + 1 error del clasificador (G12) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` |
+
+Lectura de la corrida local: el error de G12 fue técnico, no de clasificación: el modelo razona y con
+`max_tokens=1024` el servidor devolvió `finish_reason=length` con el JSON incompleto (3 de 3 intentos). Con
+el tope en 4096 el clasificador completa, pero **clasifica G12 como `rag` y se esperaba `hybrid`**: el
+resultado efectivo con el tope corregido sería 11/13 clasificados bien, en el límite del criterio. Es un
+dato de un modelo local con cuantización agresiva; no se extrapola a Gemini (D56). Además el modelo local
+repite consultas (hasta 11 llamadas a tools en G11 y 253 s en G5): el flujo funciona, pero la latencia
+local no representa la del modelo definitivo.
 
 ---
 

@@ -94,7 +94,7 @@ def test_litellm_classifier_sends_the_local_endpoint_and_a_token_budget_for_reas
     assert call["model"] == "openai/qwen-local"
     assert call["api_base"] == "http://127.0.0.1:8080/v1"
     assert call["temperature"] == 0
-    assert call["max_tokens"] >= 512, "un modelo que razona devuelve content=None con un tope bajo"
+    assert call["max_tokens"] >= 2048, "con 1024 un modelo que razona dejó el JSON incompleto (G12)"
     assert call["messages"][0]["role"] == "system" and call["messages"][1]["content"] == "¿Cuál es el horario?"
     assert result.label == "rag"
 
@@ -118,6 +118,13 @@ def test_litellm_classifier_rejects_unusable_output(content) -> None:
 def test_litellm_classifier_wraps_transport_errors() -> None:
     completion = FakeCompletion(None, error=ConnectionError("servidor local caído"))
     with pytest.raises(ClassificationError, match="ConnectionError"):
+        LiteLLMClassifier(local_config(), completion=completion).classify("q")
+
+
+def test_the_underlying_reason_is_not_hidden_behind_the_exception_class() -> None:
+    # Con solo el nombre de la clase, un `finish_reason=length` parecía una clasificación inválida.
+    completion = FakeCompletion(None, error=RuntimeError("structured output was incomplete (finish_reason=length)"))
+    with pytest.raises(ClassificationError, match="finish_reason=length"):
         LiteLLMClassifier(local_config(), completion=completion).classify("q")
 
 

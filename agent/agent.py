@@ -336,7 +336,7 @@ class LibraryAgent:
         except Exception as exc:  # noqa: BLE001 - R-5.7: el fallo se reporta, no se adivina
             return self._gap_answer(
                 text, "none", "es", ANSWER_KIND_ERROR, [],
-                MESSAGES["es"]["classify_failed"].format(detail=type(exc).__name__),
+                MESSAGES["es"]["classify_failed"].format(detail=f"{type(exc).__name__}: {exc}"[:200]),
             )
 
         trace = [TRACE_CLASSIFICATION]

@@ -79,8 +79,9 @@ class LiteLLMClassifier:
     """
 
     # Los modelos que razonan antes de contestar gastan tokens en eso: con un tope bajo devuelven
-    # `content: None` (observado con Strata y `max_tokens=16`).
-    MAX_TOKENS = 1024
+    # `content: None` (observado con Strata y `max_tokens=16`) o `finish_reason=length` con el JSON
+    # incompleto (G12 con `max_tokens=1024`, 3 de 3 intentos). Con 2048 completó la misma consulta.
+    MAX_TOKENS = 4096
 
     def __init__(self, config: Config | None = None, completion=None) -> None:
         self.cfg = config or load_config()
@@ -116,7 +117,10 @@ class LiteLLMClassifier:
         except ClassificationError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise ClassificationError(f"falló la llamada de clasificación: {type(exc).__name__}") from exc
+            # El motivo se conserva: "ClassificationError" a secas escondió un `finish_reason=length`.
+            raise ClassificationError(
+                f"falló la llamada de clasificación: {type(exc).__name__}: {str(exc)[:200]}"
+            ) from exc
         return parse_classification(extract_json(content))
 
 

@@ -94,6 +94,7 @@ del mismo contenido.
 | D59 | Medición sin base: backends falsos y validador real; evidencia versionada | R-2.1 |
 | D60 | Contrato de lectura de `documentos_embeddings` con la ingesta | R-4.2, R-4.4 |
 | D61 | `max_steps + 1` llamadas al modelo en smolagents | D15 |
+| D62 | Clasificador no-Gemini con 4096 tokens y motivo real del fallo | R-2.8, R-5.7 |
 
 ## Risks / Trade-offs
 

@@ -1,0 +1,312 @@
+{
+  "date": "2026-10-10T23:15:02+00:00",
+  "model": "openai/qwen3.8-flash-next-iq2_xs",
+  "api_base": "http://127.0.0.1:8080/v1",
+  "config": {
+    "max_steps": 6,
+    "temperature": 0.0,
+    "max_sql_attempts": 2,
+    "api_max_retries": 3
+  },
+  "backends": "sql=FakeConn (validador real), rag=FakeRetriever; el contenido no se evalúa",
+  "summary": {
+    "classification_correct": "12/13",
+    "acceptance_min": 11,
+    "hybrids_with_both_tools": "2/3",
+    "none_without_tools": "1/1",
+    "classified_before_tools": "12/13",
+    "classifier_errors": 1,
+    "valid_answers": "13/13",
+    "cases_with_sql_rejected": "0/7",
+    "seconds_total": 694.1
+  },
+  "cases": [
+    {
+      "case_id": "G1",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT DISTINCT pe.estado AS estado_valor FROM prestamos_estado pe",
+      "sql_rejections": [],
+      "seconds": 45.1,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G2",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT l.titulo, p.fecha_prestamo FROM prestamos p JOIN libros l ON l.id = p.libro_id WHERE p.fecha_prestamo BETWEEN '2026-08-01' AND '2026-11-30' ORDER BY l.titulo, p.fecha_prestamo",
+      "sql_rejections": [],
+      "seconds": 32.4,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G3",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT s.apellido, s.nombre, s.tipo_socio, pe.dias_atraso, pe.fecha_devolucion_prevista, l.titulo FROM prestamos_estado pe JOIN socios s ON s.id = pe.socio_id JOIN libros l ON l.id = pe.libro_id WHERE pe.estado = 'vencido' ORDER BY pe.dias_atraso DESC",
+      "sql_rejections": [],
+      "seconds": 60.1,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G4",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT count(l.id) AS libros, coalesce(sum(l.ejemplares_disponibles), 0) AS disponibles FROM libros l JOIN categorias c ON c.id = l.categoria_id WHERE lower(c.nombre) = 'ciencias de la computación'",
+      "sql_rejections": [],
+      "seconds": 40.7,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G5",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT a.id, a.nombre, a.apellido, a.nacionalidad FROM autores a LIMIT 10",
+      "sql_rejections": [],
+      "seconds": 253.8,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G6",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 14.7,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G7",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents",
+        "retrieve_documents",
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 25.4,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G8",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents",
+        "retrieve_documents",
+        "retrieve_documents",
+        "retrieve_documents",
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 37.8,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G9",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents",
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 17.4,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G10",
+      "expected": "hybrid",
+      "got": "hybrid",
+      "tools": [
+        "execute_sql",
+        "retrieve_documents",
+        "execute_sql",
+        "retrieve_documents",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql",
+        "execute_sql"
+      ],
+      "sources": [
+        "sql",
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT l.titulo, s.apellido, s.nombre, s.tipo_socio, pe.fecha_prestamo, pe.fecha_devolucion_prevista, cast(CURRENT_DATE - pe.fecha_devolucion_prevista AS integer) AS dias_atraso_calculado, pe.estado, pe.dias_atraso AS dias_atraso_view FROM prestamos_estado pe JOIN socios s ON s.id = pe.socio_id JOIN libros l ON l.id = pe.libro_id WHERE s.apellido ILIKE 'Perez' AND pe.fecha_devolucion_real IS NULL ORDER BY pe.fecha_prestamo",
+      "sql_rejections": [],
+      "seconds": 64.2,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G11",
+      "expected": "hybrid",
+      "got": "hybrid",
+      "tools": [
+        "execute_sql",
+        "retrieve_documents",
+        "execute_sql",
+        "retrieve_documents",
+        "execute_sql",
+        "retrieve_documents",
+        "execute_sql",
+        "execute_sql",
+        "retrieve_documents",
+        "execute_sql",
+        "retrieve_documents"
+      ],
+      "sources": [
+        "sql",
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT s.id, s.nombre, s.apellido, s.tipo_socio FROM socios s ORDER BY s.id LIMIT 10",
+      "sql_rejections": [],
+      "seconds": 53.2,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    },
+    {
+      "case_id": "G12",
+      "expected": "hybrid",
+      "got": "(error)",
+      "tools": [],
+      "sources": [],
+      "valid": true,
+      "kind": "error",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 44.4,
+      "error": "No pude interpretar la consulta: ClassificationError",
+      "violations": [],
+      "before_tools": false
+    },
+    {
+      "case_id": "G13",
+      "expected": "none",
+      "got": "none",
+      "tools": [],
+      "sources": [],
+      "valid": true,
+      "kind": "no_coverage",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 4.9,
+      "error": "",
+      "violations": [],
+      "before_tools": true
+    }
+  ]
+}
