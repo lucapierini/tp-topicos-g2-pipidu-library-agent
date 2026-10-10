@@ -39,6 +39,32 @@ El registro SHALL consignar la cantidad de intentos de generación de sentencia 
 - **WHEN** se consulta el registro
 - **THEN** se observan los dos intentos con su resultado individual
 
+### Requirement: R-6.6 — El registro no condiciona la respuesta ni expone la historia
+El sistema SHALL contestar la consulta aunque el registro falle y declarar el fallo, y SHALL escribir
+el registro con un rol que solo puede insertar. La herramienta SQL SHALL NO poder leer `agent_runs`.
+
+#### Scenario: la base de trazabilidad no responde
+- **GIVEN** una consulta resuelta correctamente y la base de trazabilidad caída
+- **WHEN** el sistema intenta registrarla
+- **THEN** la respuesta se entrega igual, con su fuente y su evidencia
+- **AND** la respuesta consigna que el registro falló, y no se afirma que quedó registrada
+
+#### Scenario: el rol de registro solo inserta
+- **GIVEN** el rol con el que se escribe `agent_runs`
+- **WHEN** intenta leer, modificar o borrar filas, o leer las tablas del dominio
+- **THEN** la base rechaza la operación por falta de permisos
+
+#### Scenario: la herramienta SQL no ve la trazabilidad
+- **GIVEN** el rol de solo lectura con el que se ejecuta el SQL del agente
+- **WHEN** una sentencia referencia `agent_runs`
+- **THEN** el validador la rechaza con `TABLE_NOT_ALLOWED`
+- **AND** aunque llegara a la base, el rol no tiene permiso de lectura
+
+#### Scenario: consulta vacía
+- **GIVEN** una consulta vacía o de solo espacios
+- **WHEN** el sistema la rechaza (R-1.2)
+- **THEN** no se registra ninguna fila, porque no hubo consulta procesada
+
 ### Requirement: R-6.5 — Identificación del modelo usado
 El registro SHALL consignar el identificador del modelo y el endpoint (local o API externa) que resolvieron
 la consulta, porque la validez de una medición depende del modelo que la produjo.

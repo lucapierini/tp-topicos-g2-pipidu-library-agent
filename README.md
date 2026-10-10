@@ -40,7 +40,11 @@ cp .env.example .env          # GEMINI_API_KEY y credenciales de BD
 # LLM_MODEL=openai/<id> y LLM_API_BASE=http://127.0.0.1:<puerto>/v1; la aceptación se mide después con
 # Gemini (dejar LLM_MODEL y LLM_API_BASE vacíos). Los resultados locales no cuentan como aceptación.
 python scripts/measure_golden.py --out TP/evidencia/<corrida>.json   # mide R-2.1 con el modelo configurado
-docker compose up -d          # Postgres + pgvector
+docker compose up -d --wait   # Postgres + pgvector + esquema + roles + agent_runs + datos de desarrollo
+# (opcional) traer la base compartida de Neon: definir NEON_DATABASE_URL en .env y
+bash scripts/replicate_neon.sh --check   # versión y objetos de Neon; sin --check vuelca y restaura
+python -m pytest -m integration          # permisos por rol, esquema vs whitelist, flujo con datos reales
+python scripts/measure_golden.py --db    # golden set contra la base local (registra en agent_runs)
 make seed                     # datos sintéticos (semilla 42)
 make ingest                   # chunking + embeddings
 make ui                       # Streamlit

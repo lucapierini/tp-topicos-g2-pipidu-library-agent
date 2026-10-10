@@ -34,8 +34,10 @@ _(ninguna — es el primer change del proyecto)_
 
 ## Impact
 
-- Nuevas tablas: las 6 del modelo relacional + `documentos_embeddings` (pgvector) + `agent_runs`.
-- Nuevo rol de base de datos `readonly_role`.
+- Esquema compartido (D64): `autores`, `editoriales`, `categorias`, `libros`, `libros_autores`, `socios`,
+  `prestamos`, la vista `v_prestamos_estado` y el repositorio documental `documentos` +
+  `documentos_chunks` (pgvector). Este change agrega `agent_runs` (`db/migrations/001_agent_runs.sql`).
+- Roles de base de datos: `agent_ro` (solo lectura) y `agent_logger` (solo `INSERT` en `agent_runs`, D63).
 - Nuevas dependencias: `smolagents[litellm]`, `psycopg2-binary`, `pypdf`, `google-genai`, `streamlit`, `sqlglot`, `pytest`.
 - Nuevas variables de entorno: `GEMINI_API_KEY`, credenciales de Cloud SQL y, para cambiar de proveedor sin
   tocar código, `LLM_MODEL`, `LLM_API_BASE` y `LLM_API_KEY` (R-2.8). El flujo se valida primero contra un

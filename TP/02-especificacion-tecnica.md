@@ -79,12 +79,18 @@ flowchart TB
 | id | SERIAL PK | |
 | titulo | VARCHAR(200) | |
 | isbn | VARCHAR(20) | único |
-| autor_id | FK → autores.id | |
 | editorial_id | FK → editoriales.id | |
 | categoria_id | FK → categorias.id | |
-| anio_publicacion | INT | |
-| ejemplares_totales | INT | |
-| ejemplares_disponibles | INT | |
+| anio_publicacion | INT | CHECK 1400–2100 |
+| ejemplares_totales | INT | CHECK ≥ 0 |
+| ejemplares_disponibles | INT | CHECK 0 ≤ disponibles ≤ totales |
+
+**`libros_autores`** (relación N:M: un libro puede tener varios autores)
+| Columna | Tipo | Notas |
+|---|---|---|
+| libro_id | FK → libros.id | PK compuesta; `ON DELETE CASCADE` |
+| autor_id | FK → autores.id | PK compuesta; `ON DELETE RESTRICT` |
+| orden | SMALLINT | posición del autor en el libro (1 por defecto) |
 
 **`socios`**
 | Columna | Tipo | Notas |
@@ -106,21 +112,67 @@ flowchart TB
 | fecha_prestamo | DATE | |
 | fecha_devolucion_prevista | DATE | |
 | fecha_devolucion_real | DATE | NULL si aún no devuelto |
+| estado | VARCHAR(20) | `activo` / `devuelto` (CHECK). **Nunca `vencido`**; ver la vista |
 
-> **No hay columna `estado` almacenada** (D7, D51). El estado se calcula en la vista `prestamos_estado`
-> (`id, libro_id, socio_id, fecha_prestamo, fecha_devolucion_prevista, fecha_devolucion_real, estado,
-> dias_atraso`): `devuelto` si `fecha_devolucion_real` no es NULL; `vencido` si es NULL y
-> `fecha_devolucion_prevista < CURRENT_DATE`; `activo` en otro caso. `dias_atraso` es
-> `GREATEST(CURRENT_DATE - fecha_devolucion_prevista, 0)` para los no devueltos. Un valor almacenado
-> nunca diría `vencido` sin un proceso que lo actualice; la vista es la única fuente del estado.
+> **El vencimiento no se almacena** (D7, D64). La tabla guarda `activo`/`devuelto`, ligado a
+> `fecha_devolucion_real` por un CHECK (`devuelto` ⇔ fecha real no nula). El estado `vencido` se calcula
+> en la vista **`v_prestamos_estado`** (`id, libro_id, socio_id, fecha_prestamo,
+> fecha_devolucion_prevista, fecha_devolucion_real, estado, estado_calculado, dias_atraso`):
+> `estado_calculado` es `devuelto` si `estado = 'devuelto'`, `vencido` si la fecha prevista es anterior a
+> `CURRENT_DATE`, y `activo` en otro caso. `dias_atraso` es los días vencidos de un préstamo activo, o
+> los días de retraso con que se devolvió uno devuelto tarde (0 si no hubo). La vista es la única fuente
+> de "vencido": `prestamos.estado = 'vencido'` nunca devuelve filas.
 
 ### 3.2 Relaciones
 
-- `libros.autor_id` → `autores.id` (N:1)
 - `libros.editorial_id` → `editoriales.id` (N:1)
 - `libros.categoria_id` → `categorias.id` (N:1)
+- `libros_autores.libro_id` → `libros.id` y `libros_autores.autor_id` → `autores.id` (N:M)
 - `prestamos.libro_id` → `libros.id` (N:1)
 - `prestamos.socio_id` → `socios.id` (N:1)
+- `documentos_chunks.documento_id` → `documentos.id` (N:1, `ON DELETE CASCADE`)
+
+### 3.2.1 Repositorio documental (RAG)
+
+| Tabla | Columnas relevantes |
+|---|---|
+| `documentos` | `id`, `nombre_archivo` (único), `tipo` (`reglamento`/`manual`/`politica`/`resena`), `bucket_key`, `sha256`, `creado_en` |
+| `documentos_chunks` | `id`, `documento_id`, `chunk_index` (único por documento), `contenido`, `embedding vector(768)`, `metadata jsonb` |
+
+La herramienta de recuperación lee estas dos tablas (D66). La ubicación citable de un fragmento
+(R-4.7) sale de `metadata` (`seccion`, `ubicacion` o `pagina`); si la ingesta no la guarda, la cita queda
+como "fragmento N". El índice HNSW usa `vector_cosine_ops` (D13). La herramienta SQL **no** puede leerlas
+(D21).
+
+### 3.2.2 Trazabilidad `agent_runs` (R-6.x)
+
+Una fila por consulta, resuelta o no (`db/migrations/001_agent_runs.sql`). Se escribe con el rol
+`agent_logger`, que solo puede `INSERT`; `agent_ro` no la ve (D63).
+
+| Columna | Origen / requisito |
+|---|---|
+| `created_at` | timestamp (R-6.1) |
+| `question`, `classification`, `answer`, `latency_ms` | R-6.1 |
+| `tools` | herramientas invocadas, en orden (R-6.1) |
+| `generated_sql` / `executed_sql` | sentencia del modelo / normalizada que corrió (R-6.1, R-3.9) |
+| `chunks` (jsonb) | fragmentos recuperados (R-6.1) |
+| `status` | `ok` \| `no_coverage` \| `error` (R-6.3) |
+| `error_code`, `error_detail` | motivo del rechazo o fallo (R-6.3) |
+| `attempts` (jsonb) | cada intento de generación con su resultado (R-6.4) |
+| `model_id`, `endpoint` | modelo y `local` \| `api` (R-6.5) |
+| `sources`, `trace` | fuentes efectivamente usadas; orden de eventos con la clasificación primero |
+
+El registro se arma solo desde el `AgentAnswer`. Si la base de trazabilidad no responde, la consulta se
+contesta igual y el fallo queda en `evidence["run_recording_error"]`: registrar no puede romper la
+respuesta, pero tampoco se finge que se registró.
+
+### 3.2.3 Entorno local con Docker
+
+`docker compose up -d --wait db` levanta PostgreSQL + pgvector y ejecuta `db/init/10-roles.sh`: crea
+los roles `agent_ro` y `agent_logger`, aplica `db/schema.sql`, `db/migrations/001_agent_runs.sql`, los
+permisos (`db/post_restore.sql`) y, por defecto, `db/dev_seed.sql` (pocas filas deterministas con
+fechas relativas a `CURRENT_DATE`). `scripts/replicate_neon.sh` trae el esquema y los datos de Neon con
+`pg_dump` desde un contenedor, solo lectura y sin imprimir la connection string.
 
 ### 3.3 Datos sintéticos
 
@@ -144,7 +196,8 @@ Total: entre 4 y 6 PDFs (mínimo exigido: 2).
 1. Extracción de texto de los PDFs (`pypdf` / `pdfplumber`).
 2. Chunking (ej. 500-1000 tokens con overlap).
 3. Generación de embeddings (Gemini Embeddings API).
-4. Almacenamiento en `pgvector` (tabla `documentos_embeddings` con columna `vector`).
+4. Almacenamiento en `pgvector`: un registro en `documentos` y un fragmento por fila en
+   `documentos_chunks` (`embedding vector(768)`, `metadata jsonb` con la ubicación citable). Ver §3.2.1.
 5. Retrieval por similitud coseno (top-k) en tiempo de consulta.
 
 ## 5. Arquitectura del agente
@@ -197,7 +250,9 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
 - El fallo de ejecución se reporta como `EXECUTION_ERROR` (R-3.16): la herramienta no reinterpreta el
   mensaje de la base ni completa hechos desde fuera del resultado. Una sentencia rechazada por la
   validación nunca abre conexión.
-- Conexión a BD con usuario dedicado **`agent_ro`** (`GRANT SELECT` sobre las 6 tablas,
+- Conexión a BD con usuario dedicado **`agent_ro`** (`GRANT SELECT` sobre las 7 tablas del dominio y la
+  vista `v_prestamos_estado`; sobre `documentos_chunks` solo para la herramienta de recuperación;
+  sin acceso a `agent_runs`, que escribe `agent_logger` con solo `INSERT`, D63),
   `statement_timeout = 10000`, `search_path` restringido) como defensa en profundidad (D14).
 - Regeneración de sentencia limitada a **2 intentos** (D8); al segundo rechazo se reporta el error al
   usuario (R-3.10, R-5.7).
@@ -285,7 +340,11 @@ pipidu-library-agent/
 │   ├── Dockerfile
 │   └── docker-compose.yml
 ├── db/
-│   ├── schema.sql          # 6 tablas + vista prestamos_estado + usuario agent_ro
+│   ├── schema.sql          # 7 tablas del dominio + documentos(+chunks) + vista v_prestamos_estado
+│   ├── migrations/         # 001_agent_runs.sql (trazabilidad, R-6.x)
+│   ├── init/               # roles agent_ro / agent_logger y orden de inicialización (Docker)
+│   ├── post_restore.sql    # permisos de agent_ro tras crear o restaurar el esquema
+│   ├── dev_seed.sql        # datos de desarrollo (no es el seed entregable)
 │   ├── seed_data.py
 │   └── dump.sql
 ├── rag/

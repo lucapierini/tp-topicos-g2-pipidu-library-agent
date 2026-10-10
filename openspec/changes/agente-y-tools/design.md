@@ -53,8 +53,8 @@ del mismo contenido.
 | D18 | Cloud Run + Cloud SQL + Secret Manager | criterio de promoción 1 |
 | D19 | PDFs generados por el integrante de RAG y base de datos | G6–G9, R1–R3 |
 | D20 | Un artefacto, un solo lugar | `TP/README.md` |
-| D21 | Whitelist excluye `agent_runs` y `documentos_embeddings` | R-3.4 |
-| D22 | `prestamos_estado` como vista en la whitelist | R-3.12 |
+| D21 | Whitelist excluye `agent_runs`, `documentos` y `documentos_chunks` | R-3.4 |
+| D22 | La vista de estado calculado (`v_prestamos_estado`) en la whitelist | R-3.12 |
 | D23 | Mapa alias→tabla antes de la whitelist (CTEs y alias) — **reemplazada por D38** | R-3.4 |
 | D24 | El límite de 50 filas lo aplica la ejecución, no la validación | R-3.6 |
 | D25 | `SELECT *` se expande a las columnas de la whitelist | R-3.14 |
@@ -83,7 +83,7 @@ del mismo contenido.
 | D48 | `SqlResult.truncated` declara el truncado a 50 filas | R-3.6 |
 | D49 | La regeneración recibe el motivo del rechazo anterior | R-3.10, R-5.7 |
 | D50 | Vocabulario de clasificación único: `sql`/`rag`/`hybrid`/`none` | R-2.1 |
-| D51 | `prestamos.estado` fuera de la whitelist; solo la vista | R-3.12 |
+| D51 | ~~`prestamos.estado` fuera de la whitelist~~ — reemplazado por D64 | R-3.12 |
 | D52 | `AgentAnswer`: `answer_kind`, `trace`, evidencia por fuente | R-2.4, Art. 4 |
 | D53 | `QUERY_TOO_COMPLEX`: sin `WITH RECURSIVE`, tope de tablas | R-3.17 |
 | D54 | Dependencias de ejecución y desarrollo separadas, con cotas | Art. 8 |
@@ -92,9 +92,15 @@ del mismo contenido.
 | D57 | Reintento ante 429 respetando la espera de la API | D15, Art. 7 |
 | D58 | Fuentes declaradas = invocadas; fallos con plantilla fija | R-2.7, R-5.2, R-5.7 |
 | D59 | Medición sin base: backends falsos y validador real; evidencia versionada | R-2.1 |
-| D60 | Contrato de lectura de `documentos_embeddings` con la ingesta | R-4.2, R-4.4 |
+| D60 | ~~Contrato de lectura de `documentos_embeddings`~~ — reemplazado por D66 | R-4.2, R-4.4 |
 | D61 | `max_steps + 1` llamadas al modelo en smolagents | D15 |
 | D62 | Clasificador no-Gemini con 4096 tokens y motivo real del fallo | R-2.8, R-5.7 |
+| D63 | Dos roles: `agent_ro` (lectura) y `agent_logger` (solo `INSERT` en `agent_runs`) | R-3.5, R-6.2 |
+| D64 | Se adopta el esquema real compartido (N:M autores, vista `v_prestamos_estado`, `estado` solo activo/devuelto); reemplaza D51 | R-3.4, R-3.12 |
+| D65 | `db/schema.sql` normalizado desde el DDL exportado, base local en Docker y datos de desarrollo | T1.3, T2.1 |
+| D66 | La recuperación lee `documentos_chunks` + `documentos`; la ubicación sale de `metadata` | R-4.2, R-4.7 |
+| D67 | `agent_runs` se arma solo desde el `AgentAnswer` y su fallo no rompe la respuesta | R-6.1, R-6.3 |
+| D68 | `POSTGRES_HOST=127.0.0.1` por defecto (en Windows `localhost` cuesta ~2 s por conexión) | T1.3 |
 
 ## Risks / Trade-offs
 
@@ -113,7 +119,8 @@ del mismo contenido.
 ## Migration Plan
 
 1. `docker compose up` con Postgres + pgvector en local.
-2. `db/schema.sql` (incluye `readonly_role`, `documentos_embeddings`, `agent_runs`).
+2. `db/schema.sql` (esquema compartido normalizado, D65) y `db/migrations/001_agent_runs.sql`; roles
+   `agent_ro` y `agent_logger` con `db/init/10-roles.sh`. Todo se levanta con `docker compose up -d --wait`.
 3. `db/seed_data.py --seed 42` → `db/dump.sql` para el entregable.
 4. `rag/ingest.py` sobre los PDFs.
 5. **Validación del flujo contra un modelo local** (`LLM_MODEL=openai/<id>`, `LLM_API_BASE=http://127.0.0.1:<puerto>/v1`):

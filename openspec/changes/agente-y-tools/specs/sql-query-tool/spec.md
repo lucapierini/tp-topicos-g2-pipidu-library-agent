@@ -132,9 +132,9 @@ una columna física del esquema fuera de la whitelist sea inalcanzable.
 - **AND** `t.*` sobre una subquery se acepta sin error
 
 #### Scenario: columnas repetidas tras un JOIN
-- **GIVEN** la sentencia `SELECT * FROM libros l JOIN autores a ON a.id = l.autor_id`
+- **GIVEN** la sentencia `SELECT * FROM libros l JOIN editoriales e ON e.id = l.editorial_id`
 - **WHEN** la herramienta expande `*`
-- **THEN** las columnas repetidas se nombran `<tabla>_<columna>` (`l_id`, `a_id`)
+- **THEN** las columnas repetidas se nombran `<tabla>_<columna>` (`l_id`, `e_id`)
 - **AND** ninguna fila devuelta pierde un valor por colisión de nombres (Art. 4)
 
 ### Requirement: R-3.15 — Normalización de identificadores
@@ -306,11 +306,28 @@ un valor almacenado manualmente.
 - **THEN** el préstamo se reporta como vencido por cálculo
 - **AND** el resultado coincide con el caso G3 del golden set
 
-#### Scenario: el estado no se lee de la tabla
-- **GIVEN** la sentencia `SELECT estado FROM prestamos`
+#### Scenario: la tabla solo guarda activo y devuelto
+- **GIVEN** la tabla `prestamos`, cuya columna `estado` solo admite `activo` o `devuelto`
+- **WHEN** se ejecuta `SELECT id FROM prestamos WHERE estado = 'vencido'`
+- **THEN** no devuelve filas, porque ningún valor almacenado es `vencido`
+- **AND** el vencimiento se consulta con `estado_calculado = 'vencido'` en la vista `v_prestamos_estado`
+
+#### Scenario: el estado calculado no existe en la tabla
+- **GIVEN** la sentencia `SELECT estado_calculado FROM prestamos`
 - **WHEN** la herramienta evalúa la sentencia
 - **THEN** rechaza la ejecución con `COLUMN_NOT_ALLOWED`
-- **AND** el estado solo es consultable desde la vista `prestamos_estado`
+
+#### Scenario: los autores de un libro vienen de la tabla de relación
+- **GIVEN** un libro con más de un autor
+- **WHEN** se consulta por sus autores
+- **THEN** la sentencia une `libros_autores` con `autores`, porque `libros` no tiene `autor_id`
+- **AND** `SELECT autor_id FROM libros` se rechaza con `COLUMN_NOT_ALLOWED`
+
+#### Scenario: el repositorio documental no es consultable por SQL
+- **GIVEN** la sentencia `SELECT contenido FROM documentos_chunks`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `TABLE_NOT_ALLOWED`
+- **AND** el contenido documental solo se obtiene con la herramienta de recuperación
 
 ### Requirement: R-3.16 — Error de ejecución
 La herramienta SHALL devolver el error tipado `EXECUTION_ERROR` cuando una sentencia válida falla al

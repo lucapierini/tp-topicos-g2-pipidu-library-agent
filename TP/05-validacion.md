@@ -89,10 +89,12 @@ Casos adversos. El criterio de éxito es **rechazo sin ejecución contra la base
 | S27 | `SELECT * FROM libros, generate_series(1, 10)` | `FUNCTION_NOT_ALLOWED`: función de tabla (R-3.13) |
 | S28 | `SELECT "pg_sleep"(1) FROM libros` | `FUNCTION_NOT_ALLOWED`: el nombre entre comillas no la oculta (D41) |
 | S29 | `WITH RECURSIVE r AS (...) SELECT n FROM r` | `QUERY_TOO_COMPLEX` (R-3.17) |
-| S30 | `SELECT estado FROM prestamos` | `COLUMN_NOT_ALLOWED`: el estado se lee de la vista (D51) |
+| S30 | `SELECT estado_calculado FROM prestamos` | `COLUMN_NOT_ALLOWED`: el estado calculado solo existe en la vista (D64) |
 | S31 | `SELECT 'abc FROM libros` y `""` | `SQL_NOT_READONLY`, sin lanzar excepción (R-3.3) |
 | S32 | `CASE`, `EXISTS`, `AND`/`OR`, `string_agg`, `to_char`, `SELECT t.* FROM (…) t` | aceptados (D41, D38) |
-| S33 | `SELECT * FROM libros l JOIN autores a ON a.id = l.autor_id` | aceptado; salida con `l_id` y `a_id`, sin pérdida de datos (D44) |
+| S33 | `SELECT * FROM libros l JOIN editoriales e ON e.id = l.editorial_id` | aceptado; salida con `l_id` y `e_id`, sin pérdida de datos (D44) |
+| S34 | `SELECT l.autor_id FROM libros l` | `COLUMN_NOT_ALLOWED`: los autores están en `libros_autores` (D64) |
+| S35 | `SELECT contenido FROM documentos_chunks` | `TABLE_NOT_ALLOWED`: el repositorio documental no se consulta por SQL (D21) |
 
 Los casos S23–S33 y el alcance de la allowlist (cada función permitida es alcanzable) están en
 `tests/test_sql_validator_hardening.py`. Las consultas de referencia G1–G5 y G10–G12 también deben
@@ -181,6 +183,17 @@ Corridas registradas:
 |---|---|---|---|---|---|---|---|
 | 2026-10-10 | `gemini-3.1-flash-lite` | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí (backends falsos: sin evaluar contenido) |
 | 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 12/13 clasificados + 1 error del clasificador (G12) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` |
+
+Corrida con **base real** (PostgreSQL local con `db/dev_seed.sql`, rol `agent_ro`; recuperación todavía
+falsa), `gemini-3.1-flash-lite`, casos SQL G1–G5, con `scripts/measure_golden.py --db`:
+
+| Clasificación | Antes de tools | Contenido (`check` del golden set) | SQL rechazado | Consultas en `agent_runs` |
+|---|---|---|---|---|
+| 5/5 | 5/5 | **5/5** | 0/5 | 5/5 |
+
+Es la primera medición de **contenido**: el SQL que genera el modelo corre contra el esquema real y
+devuelve lo esperado. Los casos RAG e híbridos siguen sin evaluarse en contenido (faltan los PDFs).
+Datos de desarrollo, no el seed entregable: el volumen de T2.5 sigue pendiente.
 
 Lectura de la corrida local: el error de G12 fue técnico, no de clasificación: el modelo razona y con
 `max_tokens=1024` el servidor devolvió `finish_reason=length` con el JSON incompleto (3 de 3 intentos). Con
