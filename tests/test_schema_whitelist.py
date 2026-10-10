@@ -18,6 +18,9 @@ SCHEMA = Path(__file__).resolve().parents[1] / "db" / "schema.sql"
 
 @pytest.mark.skipif(not SCHEMA.exists(), reason="db/schema.sql todavía no existe (T2.1)")
 def test_whitelist_matches_schema_sql() -> None:
+    # Art. 11: la whitelist no oculta columnas por política, debe cubrir el modelo completo.
+    # Si el esquema tiene una columna, la whitelist la incluye; si no, la columna es
+    # inalcanzable para el agente y el test se rompe en el mismo commit.
     text = SCHEMA.read_text(encoding="utf-8")
     tables = set(re.findall(r"CREATE TABLE(?: IF NOT EXISTS)?\s+(\w+)", text, flags=re.I))
     views = set(re.findall(r"CREATE VIEW(?: IF NOT EXISTS)?\s+(\w+)", text, flags=re.I))

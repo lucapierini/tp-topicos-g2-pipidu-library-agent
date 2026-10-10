@@ -68,8 +68,18 @@ API keys y credenciales vía variables de entorno (`.env` en `.gitignore`) o GCP
 
 ## Art. 10 — Disciplina de alcance
 
-Lo que no está en la spec no se implementa. Las exclusiones de `03-especificaciones-por-capacidad.md`
-son vinculantes. Un feature no pedido se trata como un cambio de spec, no como una mejora.
+Lo que no está en la spec no se implementa. Las exclusiones de `01-especificacion-funcional.md` §5.5 son
+vinculantes. Un feature no pedido se trata como un cambio de spec, no como una mejora.
+
+## Art. 11 — Acceso uniforme a la información del dominio
+
+No hay política de privacidad ni roles de acceso diferenciados: todos los usuarios del agente acceden a
+toda la información del dominio, salvo que la consigna del trabajo práctico detalle lo contrario (la
+consigna 2026 no lo detalla).
+
+La whitelist de tablas y columnas es un control de **alcance y de inyección** (R-3.4), no un control de
+privacidad. Si la consigna introdujera un requisito de privacidad, se trata como un cambio de spec
+(Art. 10), no como una mejora.
 
 ---
 

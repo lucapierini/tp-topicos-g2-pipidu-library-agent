@@ -80,6 +80,8 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 - Fine-tuning del modelo.
 - Escritura sobre la base de datos.
 - Autenticación, usuarios y roles de aplicación.
+- Política de privacidad o restricción de columnas por PII: todos los usuarios acceden a toda la
+  información del dominio (Art. 11). La whitelist es control de alcance y de inyección.
 - Streaming de respuestas parciales y reintentos ante fallo de API. La **regeneración de SQL** sí está
   permitida, limitada a 2 intentos (D8); al segundo rechazo se reporta el error al usuario.
 - Formatos documentales distintos de PDF.

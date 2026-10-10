@@ -28,9 +28,10 @@ ALLOWED_TABLES: dict[str, set[str]] = {
         "anio_publicacion", "ejemplares_totales", "ejemplares_disponibles",
     },
     "socios": {
-        # `email` está permitido porque el dominio lo necesita (notificar al socio).
-        # La política de PII se apoya en que `*` se expande a esta lista: una columna
-        # que no está acá es inalcanzable, aunque exista en el esquema físico.
+        # No hay política de PII (Art. 11): todos los usuarios acceden a toda la información
+        # del dominio. La whitelist es control de alcance y de inyección, no de privacidad.
+        # Aun así la lista es vinculante porque `SELECT *` se expande a ella (R-3.4, D25):
+        # una columna física del esquema que no esté acá es inalcanzable para el agente.
         "id", "nombre", "apellido", "legajo", "tipo_socio", "email", "fecha_alta",
     },
     "prestamos": {

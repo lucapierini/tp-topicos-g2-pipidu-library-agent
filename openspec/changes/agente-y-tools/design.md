@@ -64,6 +64,7 @@ del mismo contenido.
 | D29 | `error_level=RAISE` en el parseo | R-3.3 |
 | D30 | Se registra la sentencia normalizada; `sql_original` conserva la del modelo | R-3.9, R-6.4 |
 | D31 | Los literales no se modifican por la normalización | Art. 4 |
+| D32 | Sin política de PII: acceso uniforme a la información del dominio | Art. 11, R-3.4 |
 
 ## Risks / Trade-offs
 
