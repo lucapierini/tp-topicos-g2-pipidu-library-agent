@@ -74,6 +74,10 @@ class Config:
 
     # Conexión (R-3.5, D14). El rol es de solo lectura; la contraseña se lee del entorno (Art. 9).
     db_user: str
+    # Rol que escribe `agent_runs` (solo INSERT). Distinto de `db_user`, que es de solo lectura (R-3.5).
+    log_db_user: str
+    # Dónde se registra cada consulta (R-6.2): `pg`, `memory` (mediciones y tests) u `off`.
+    runs_backend: str
     db_name: str
     db_host: str
     db_port: int
@@ -104,7 +108,11 @@ def load_config() -> Config:
         embedding_model=_env("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"),
         embedding_dim=_env_int("EMBEDDING_DIM", "768"),
         db_user=_env("POSTGRES_USER", "agent_ro"),
+        log_db_user=_env("POSTGRES_LOG_USER", "agent_logger"),
+        runs_backend=os.environ.get("AGENT_RUNS_BACKEND") or "pg",
         db_name=_env("POSTGRES_DB", "pipidu"),
-        db_host=_env("POSTGRES_HOST", "localhost"),
+        # `127.0.0.1` y no `localhost`: en Windows `localhost` intenta primero IPv6 y cada conexión pierde
+        # ~2 s (medido); Docker publica el puerto solo en IPv4 loopback.
+        db_host=_env("POSTGRES_HOST", "127.0.0.1"),
         db_port=_env_int("POSTGRES_PORT", "5432"),
     )

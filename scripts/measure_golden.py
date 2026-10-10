@@ -26,6 +26,7 @@ from agent.agent import LibraryAgent  # noqa: E402
 from agent.classifier import build_classifier  # noqa: E402
 from agent.config import load_config  # noqa: E402
 from agent.contracts import AgentAnswer, RagResult  # noqa: E402
+from agent.runs import InMemoryRunRecorder, PgRunRecorder  # noqa: E402
 from agent.tools.sql_tool import SqlExecutor  # noqa: E402
 from tests.fakes import FakeConn, FakeRetriever, make_chunk  # noqa: E402
 from tests.golden_set import ACCEPTANCE_MIN, GOLDEN_SET  # noqa: E402
@@ -49,13 +50,20 @@ class CaseReport:
     error: str = ""
     violations: list[str] = field(default_factory=list)
     before_tools: bool = False
+    run_id: int | None = None          # fila de agent_runs (R-6.2)
+    rows: int = 0
+    content_ok: bool | None = None     # check del golden set; solo casos SQL y con --db
 
     @property
     def classified_ok(self) -> bool:
         return self.got == self.expected
 
 
-def build_agent() -> LibraryAgent:
+def build_agent(use_db: bool = False) -> LibraryAgent:
+    """`use_db=True`: ejecuta el SQL contra la base local (rol `agent_ro`) y registra en `agent_runs`.
+
+    La recuperación sigue siendo falsa hasta que existan los PDFs indexados.
+    """
     cfg = load_config()
     conn = FakeConn(rows=CANNED_ROWS, columns=CANNED_COLUMNS)
     retriever = FakeRetriever(RagResult(
@@ -66,13 +74,15 @@ def build_agent() -> LibraryAgent:
     ))
     return LibraryAgent(
         classifier=build_classifier(cfg),
-        sql_backend=SqlExecutor(cfg, conn),
+        sql_backend=SqlExecutor(cfg) if use_db else SqlExecutor(cfg, conn),
         retriever=retriever,
+        # Con base real la corrida deja su traza en `agent_runs`; sin base, en memoria.
+        recorder=PgRunRecorder(cfg) if use_db else InMemoryRunRecorder(),
         config=cfg,
     )
 
 
-def run_case(agent: LibraryAgent, case) -> CaseReport:
+def run_case(agent: LibraryAgent, case, with_content: bool = False) -> CaseReport:
     report = CaseReport(case_id=case.id, expected=case.expected_classification)
     started = time.perf_counter()
     try:
@@ -98,7 +108,16 @@ def run_case(agent: LibraryAgent, case) -> CaseReport:
         f"{e['error']}: {e['sql_original']}" for e in answer.evidence.get("sql_errors", [])
     ]
     report.before_tools = answer.classified_before_tools
+    report.run_id = answer.run_id
+    report.rows = len(answer.evidence.get("rows", []))
+    if with_content and case.expected_classification == "sql":
+        # Solo los casos SQL: con base real sus filas son reales. RAG e híbridos usan fragmentos falsos.
+        report.content_ok = bool(case.check(answer.as_outcome()))
     return report
+
+
+def _ratio(values: list[bool]) -> str:
+    return f"{sum(values)}/{len(values)}" if values else "no evaluado"
 
 
 def summarize(reports: list[CaseReport]) -> dict:
@@ -113,6 +132,8 @@ def summarize(reports: list[CaseReport]) -> dict:
         "classified_before_tools": f"{sum(r.before_tools for r in reports)}/{len(reports)}",
         "classifier_errors": sum(r.got == "(error)" for r in reports),
         "valid_answers": f"{sum(r.valid for r in reports)}/{len(reports)}",
+        "sql_content_ok": _ratio([r.content_ok for r in reports if r.content_ok is not None]),
+        "runs_recorded": f"{sum(r.run_id is not None for r in reports)}/{len(reports)}",
         "cases_with_sql_rejected": f"{sum(bool(r.sql_rejections) for r in sql_cases)}/{len(sql_cases)}",
         "seconds_total": round(sum(r.seconds for r in reports), 1),
     }
@@ -122,17 +143,20 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", help="archivo JSON donde guardar la evidencia")
     parser.add_argument("--only", help="IDs separados por coma, p. ej. G1,G6")
+    parser.add_argument("--db", action="store_true",
+                        help="ejecutar el SQL contra la base local y registrar en agent_runs "
+                             "(docker compose up -d); evalúa el contenido de los casos SQL")
     args = parser.parse_args()
 
     selected = {s.strip() for s in args.only.split(",")} if args.only else None
     cases = [c for c in GOLDEN_SET if selected is None or c.id in selected]
 
-    agent = build_agent()
+    agent = build_agent(use_db=args.db)
     reports: list[CaseReport] = []
     print(f"modelo: {agent.cfg.llm_model} | api_base={agent.cfg.llm_api_base or '-'} | "
           f"max_steps={agent.cfg.max_steps} | temperature={agent.cfg.temperature}\n")
     for case in cases:
-        report = run_case(agent, case)
+        report = run_case(agent, case, with_content=args.db)
         reports.append(report)
         mark = "OK " if report.classified_ok else "ERR"
         print(f"[{mark}] {case.id:<4} esperado={report.expected:<6} obtuvo={report.got or '-':<6} "
@@ -155,7 +179,12 @@ def main() -> int:
             "api_base": cfg.llm_api_base or None,
             "config": {"max_steps": cfg.max_steps, "temperature": cfg.temperature,
                        "max_sql_attempts": cfg.max_sql_attempts, "api_max_retries": cfg.api_max_retries},
-            "backends": "sql=FakeConn (validador real), rag=FakeRetriever; el contenido no se evalúa",
+            "backends": (
+                "sql=PostgreSQL local (rol agent_ro, dev_seed.sql), rag=FakeRetriever; "
+                "el contenido se evalúa solo en los casos SQL"
+                if args.db else
+                "sql=FakeConn (validador real), rag=FakeRetriever; el contenido no se evalúa"
+            ),
             "summary": summary,
             "cases": [r.__dict__ for r in reports],
         }

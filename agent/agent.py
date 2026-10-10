@@ -19,9 +19,11 @@ sin base, sin API y sin `smolagents` (Art. 6).
 from __future__ import annotations
 
 import json
+import logging
 import os
+import time
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Protocol
 
 from agent.classifier import Classification, Classifier, build_classifier
@@ -39,6 +41,9 @@ from agent.contracts import (
 )
 from agent.errors import NO_RELEVANT_RESULTS
 from agent.prompts import render_system_prompt
+from agent.runs import RunRecorder, build_recorder, record_from_answer
+
+logger = logging.getLogger("agent.agent")
 
 TOOL_EXECUTE_SQL = "execute_sql"
 TOOL_RETRIEVE = "retrieve_documents"
@@ -201,6 +206,7 @@ class LibraryAgent:
         sql_backend: SqlBackend | None = None,
         retriever: Retriever | None = None,
         runner: AgentRunner | None = None,
+        recorder: RunRecorder | None = None,
         config: Config | None = None,
     ) -> None:
         self.cfg = config or load_config()
@@ -208,6 +214,9 @@ class LibraryAgent:
         self._sql_backend = sql_backend
         self._retriever = retriever
         self._runner = runner
+        self._recorder = recorder
+        # `recorder=None` explícito no significa "sin registro": significa "el de la configuración".
+        self._recorder_resolved = recorder is not None
 
     # Los backends reales se crean al primer uso: construir el agente no abre conexiones.
     @property
@@ -237,6 +246,13 @@ class LibraryAgent:
         if self._runner is None:
             self._runner = SmolagentsRunner(self.cfg)
         return self._runner
+
+    @property
+    def recorder(self) -> RunRecorder | None:
+        if not self._recorder_resolved:
+            self._recorder = build_recorder(self.cfg)  # `pg` | `memory` | `off`
+            self._recorder_resolved = True
+        return self._recorder
 
     # ------------------------------------------------------------------ herramientas
 
@@ -329,14 +345,39 @@ class LibraryAgent:
     def answer(self, question: str) -> AgentAnswer:
         text = (question or "").strip()
         if not text:
+            # R-1.2: no se invoca nada ni se registra: no hay consulta que trazar.
             raise EmptyQuestionError("La consulta está vacía.")
 
+        started = time.perf_counter()
+        result = self._resolve(text)
+        return self._persist(result, int((time.perf_counter() - started) * 1000))
+
+    def _persist(self, answer: AgentAnswer, latency_ms: int) -> AgentAnswer:
+        """Registra la consulta en `agent_runs` (R-6.2, R-6.3).
+
+        Registrar no puede romper la respuesta: si falla, la consulta igual se contesta y el fallo
+        queda declarado en la evidencia, sin fingir que se registró.
+        """
+        recorder = self.recorder
+        if recorder is None:
+            return answer
+        try:
+            run_id = recorder.record(record_from_answer(answer, latency_ms))
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("no se pudo registrar la consulta en agent_runs: %s", type(exc).__name__)
+            evidence = {**answer.evidence, "run_recording_error": f"{type(exc).__name__}: {exc}"[:200]}
+            return replace(answer, evidence=evidence)
+        return replace(answer, run_id=run_id)
+
+    def _resolve(self, text: str) -> AgentAnswer:
         try:
             classification = self.classifier.classify(text)
         except Exception as exc:  # noqa: BLE001 - R-5.7: el fallo se reporta, no se adivina
+            detail = f"{type(exc).__name__}: {exc}"[:200]
             return self._gap_answer(
                 text, "none", "es", ANSWER_KIND_ERROR, [],
-                MESSAGES["es"]["classify_failed"].format(detail=f"{type(exc).__name__}: {exc}"[:200]),
+                MESSAGES["es"]["classify_failed"].format(detail=detail),
+                error=("CLASSIFICATION_ERROR", detail),
             )
 
         trace = [TRACE_CLASSIFICATION]
@@ -373,16 +414,22 @@ class LibraryAgent:
 
     def _gap_answer(
         self, question: str, label: str, language: str, kind: str, trace: list[str], message: str,
-        evidence: dict | None = None,
+        evidence: dict | None = None, error: tuple[str, str] | None = None,
     ) -> AgentAnswer:
-        """Respuesta que declara una ausencia o un error: plantilla fija, sin fuentes (R-5.2)."""
+        """Respuesta que declara una ausencia o un error: plantilla fija, sin fuentes (R-5.2).
+
+        `error` es (código, detalle): queda en la evidencia y de ahí en `agent_runs` (R-6.3).
+        """
         labels = SOURCE_LABELS[language]
+        merged = {**(evidence or {}), "model": self._model_info()}
+        if error is not None:
+            merged["error"] = {"code": error[0], "detail": error[1]}
         return AgentAnswer(
             question=question,
             classification=label,
             sources=[],
             answer=f"{message}\n\n{labels['prefix']}: {labels['none']}",
-            evidence={**(evidence or {}), "model": self._model_info()},
+            evidence=merged,
             answer_kind=kind,
             trace=trace,
         )
@@ -426,6 +473,21 @@ class LibraryAgent:
         ]
         if failed:
             evidence["sql_errors"] = failed  # R-6.4: lo que generó el modelo y se rechazó
+        if session.sql_results:
+            # R-6.4: cada intento de generación con su resultado, en orden (los rechazados y el que corrió).
+            evidence["sql_attempts"] = [
+                {
+                    "attempt": index,
+                    "sql_original": r.sql_original,
+                    "executed_sql": r.sql,
+                    "executed": r.executed,
+                    "error": r.error,
+                    "detail": r.detail,
+                    "rows": len(r.rows),
+                    "latency_ms": r.latency_ms,
+                }
+                for index, r in enumerate(session.sql_results, start=1)
+            ]
         if sources and set(sources) != expected:
             # R-2.7: la fuente declarada es la efectivamente invocada; la diferencia se registra.
             evidence["inconsistency"] = {"classified": label, "invoked": sources}
@@ -435,16 +497,21 @@ class LibraryAgent:
             return self._gap_answer(
                 question, label, language, ANSWER_KIND_ERROR, full_trace,
                 msg["run_failed"].format(detail=run_error), evidence,
+                error=("RUN_ERROR", run_error),
             )
         if not sources:
             kind, message = self._empty_outcome(label, session, msg)
-            return self._gap_answer(question, label, language, kind, full_trace, message, evidence)
+            return self._gap_answer(
+                question, label, language, kind, full_trace, message, evidence,
+                error=self._empty_error(label, session),
+            )
 
         body = (model_text or "").strip()
         if not body:
             return self._gap_answer(
                 question, label, language, ANSWER_KIND_ERROR, full_trace,
                 msg["run_failed"].format(detail="el modelo no devolvió una respuesta"), evidence,
+                error=("EMPTY_MODEL_RESPONSE", "el modelo no devolvió una respuesta"),
             )
 
         notes = []
@@ -468,6 +535,20 @@ class LibraryAgent:
             answer_kind=ANSWER_KIND_ANSWER,
             trace=full_trace,
         )
+
+    def _empty_error(self, label: str, session: ToolSession) -> tuple[str, str] | None:
+        """(código, detalle) para `agent_runs` cuando no hubo evidencia; `None` si fue falta de cobertura."""
+        if "sql" in SOURCES_BY_CLASSIFICATION[label] and not session.sql_results:
+            return "TOOL_NOT_CALLED", "no se invocó execute_sql"
+        if session.sql_failures:
+            last = session.sql_results[-1]
+            return last.error or "EXECUTION_ERROR", last.detail or ""
+        if session.rag_results:
+            error = session.rag_results[-1].error
+            if error == NO_RELEVANT_RESULTS:
+                return None
+            return error or "RETRIEVAL_ERROR", "falló la recuperación de documentos"
+        return "TOOL_NOT_CALLED", "no se invocó ninguna herramienta"
 
     def _empty_outcome(self, label: str, session: ToolSession, msg: dict) -> tuple[str, str]:
         """(answer_kind, mensaje) cuando ninguna herramienta aportó evidencia utilizable."""
