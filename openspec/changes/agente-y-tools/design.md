@@ -68,6 +68,8 @@ del mismo contenido.
 | D33 | Fallo de ejecución con código `EXECUTION_ERROR` | R-3.16 |
 | D34 | `pytest` excluye por defecto `integration` y `llm` | Art. 6 |
 | D35 | `psycopg2` importado de forma diferida | Art. 6 |
+| D36 | Modelo por defecto `gemini-3-flash-preview` | D15, `pytest -m llm` |
+| D37 | Cliente de `google-genai` en variable, no encadenado | `tests/test_llm_smoke.py` |
 
 ## Risks / Trade-offs
 

@@ -192,6 +192,8 @@ ediciones divergentes. Se eliminaron `03-especificaciones-por-capacidad.md` y `0
 | D33 | 2026-10-10 | T4.3 | El fallo de ejecución se reporta con el código `EXECUTION_ERROR` (R-3.16) | Los códigos existentes cubren la validación estática; un fallo al ejecutar (conexión, restricción, sintaxis) no tiene código y sin él la herramienta termina interpretando el mensaje de la base |
 | D34 | 2026-10-10 | T4.3 | `pytest` por defecto excluye `integration` y `llm` (`addopts = -m "not integration and not llm"`) | Art. 6 exige que los tests corran sin base ni credenciales. Con la conexión inyectable, la política de clamp/regeneración se prueba offline con un fake; lo que sí necesita base queda en `-m integration` |
 | D35 | 2026-10-10 | T4.3 | `psycopg2` se importa de forma diferida dentro de `_connect()` | Si el import estuviera al nivel de módulo, los tests offline no podrían importar el executor sin el paquete instalado |
+| D36 | 2026-10-10 | T6.3 | El modelo por defecto pasa a `gemini-3-flash-preview` | `gemini-2.5-flash` devuelve 404 para cuentas nuevas (verificado con la API real en `pytest -m llm`). El modelo se lee de `GEMINI_MODEL`, así que el cambio es de configuración, no de código |
+| D37 | 2026-10-10 | T6.3 | El cliente de `google-genai` se mantiene en una variable, no en una llamada encadenada | `genai.Client(...).models.generate_content(...)` libera el `Client` antes de la llamada y su `__del__` cierra el httpx: `RuntimeError: client has been closed`. Reproducido y verificado |
 | — | T3 | — | — | — |
 | — | T5 | — | — | — |
 | — | T3 | — | — |

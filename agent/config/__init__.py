@@ -9,6 +9,14 @@ import os
 from dataclasses import dataclass
 from datetime import date
 
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - dotenv es dependencia de desarrollo
+    load_dotenv = None
+
+if load_dotenv is not None:
+    load_dotenv()  # .env está en .gitignore (Art. 9)
+
 
 def _env(name: str, default: str) -> str:
     return os.environ.get(name, default)
@@ -72,7 +80,7 @@ def load_config() -> Config:
         max_steps=_env_int("AGENT_MAX_STEPS", "6"),
         temperature=_env_float("AGENT_TEMPERATURE", "0"),
         api_timeout_s=_env_int("AGENT_API_TIMEOUT_S", "30"),
-        model=_env("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=_env("GEMINI_MODEL", "gemini-3-flash-preview"),
         embedding_model=_env("GEMINI_EMBEDDING_MODEL", "gemini-embedding-001"),
         embedding_dim=_env_int("EMBEDDING_DIM", "768"),
         db_user=_env("POSTGRES_USER", "agent_ro"),
