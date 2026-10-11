@@ -39,8 +39,8 @@ openspec/      raíz operativa de SDD (esta carpeta)
 ## Convenciones
 
 - Idioma de los artefactos: español. Encabezados estructurales y `SHALL`/`MUST` en inglés.
-- IDs de requisito: `R-<capacidad>.<n>`, declarados en `TP/03` y replicados en el nombre de cada
-  `### Requirement:` para mantener trazabilidad.
+- IDs de requisito: `R-<capacidad>.<n>`, declarados en cada `specs/<capacidad>/spec.md` del change y
+  replicados en el nombre de cada `### Requirement:` para mantener trazabilidad.
 - Criterios de aceptación en formato GIVEN / WHEN / THEN.
 - Commits: `T<n>: <resumen>`.
 - Cada tarea de `tasks.md` debe trazar a un requisito.

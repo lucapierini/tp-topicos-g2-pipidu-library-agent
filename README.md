@@ -59,10 +59,12 @@ python -m ruff check .                   # lint
 # Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3), UI Streamlit (T8.1)
 ```
 
-## Criterios de promoción cubiertos
+## Criterios de promoción
 
-- [x] Despliegue en la nube (GCP)
-- [x] Interfaz gráfica (Streamlit)
-- [x] Framework agéntico (Smolagents)
-- [x] SDD (artefactos en `TP/` y `openspec/`)
-- [ ] Observabilidad (LangSmith) — excluido explícitamente
+El enunciado pide al menos dos de cinco. Estado real:
+
+- [x] Framework agéntico (Smolagents): implementado
+- [x] SDD (artefactos en `TP/` y `openspec/`): implementados
+- [ ] Interfaz gráfica (Streamlit): planificada, pendiente (tareas 8.x)
+- [ ] Despliegue en la nube (GCP): planificado, pendiente (tareas 9.2, 9.3, 9.6, 9.7)
+- [ ] Observabilidad (LangSmith): excluida explícitamente

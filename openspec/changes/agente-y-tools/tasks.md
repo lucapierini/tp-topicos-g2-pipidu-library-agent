@@ -28,6 +28,14 @@ dos tools, 1/1 `none` sin tools, 0/8 SQL rechazado (`TP/evidencia/`), con backen
 no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el modelo definitivo si cambia
 (T6.7), verificar idioma y evidencia con casos reales (7.2, 7.3) y la UI (8.x).
 
+**Verificación contra el enunciado (2026-10-11):** se cruzaron los criterios de aprobación, promoción y
+entregables de `TP/Enunciado TP - 2026.pdf` con lo implementado. Quedaron cubiertos el agente, el
+framework agéntico y SDD; se agregaron las tareas 2.9, 7.6, 7.7 y 9.6–9.9 (idioma inglés, export de
+`agent_runs`, volumen de `documentos`, base en la nube, roles en la base compartida, entregables de datos
+y coloquio) y se corrigió el README, que marcaba como cubiertos la UI y el despliegue. Medición con el
+modelo definitivo (`gemini-3.1-flash-lite`, base local y RAG simulado): 13/13 en clasificación y en
+contenido (D71, D72). `pytest -q` → 376 passed; `pytest -m integration` → 28 passed.
+
 ## 1. Setup y entorno
 
 - [x] 1.1 Crear la estructura de carpetas (`db/`, `rag/`, `agent/`, `ui/`, `tests/`, `docker/`) y verificar que `tree` muestra la estructura de `openspec/project.md`
@@ -39,14 +47,15 @@ no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el mo
 
 ## 2. Modelo de datos y datos sintéticos
 
-- [x] 2.1 Escribir `db/schema.sql` con las 6 tablas y verificar que `psql -f db/schema.sql` crea el esquema sin errores de FK
+- [x] 2.1 Escribir `db/schema.sql` con las 7 tablas del dominio (`autores`, `categorias`, `editoriales`, `libros`, `libros_autores`, `socios`, `prestamos`) más `documentos` y `documentos_chunks` (D64) y verificar que `psql -f db/schema.sql` crea el esquema sin errores de FK
 - [x] 2.2 Crear el usuario dedicado `agent_ro` con `GRANT SELECT` sobre las 6 tablas, `statement_timeout = 10000` y `search_path` restringido, y verificar que un `INSERT` con ese usuario es rechazado por PostgreSQL (D14, R-3.5)
 - [x] 2.3 Crear `agent/config/__init__.py` con el rango de cuatrimestre (2026-08-01 a 2026-11-30), zona horaria única, top-k, umbral, límite de filas y máximo de intentos, y verificar que ningún valor queda hardcodeado en el código (D6, D12, D15, R-3.11)
 - [ ] 2.4 Implementar `db/seed_data.py` con semilla fija y verificar que dos ejecuciones con `--seed 42` producen el mismo output
-- [ ] 2.5 Verificar el volumen: `SELECT count(*)` ≥ 15 en cada una de las 6 tablas
+- [ ] 2.5 Verificar el volumen: `SELECT count(*)` ≥ 15 en cada una de las 7 tablas del dominio (el enunciado exige más de 15 registros por tabla); el caso de `documentos` se resuelve en 2.9
 - [x] 2.6 Implementar el estado de vencimiento como vista o columna generada (no como valor escrito por el seed) y verificar que coincide con el caso G3 del golden set (D7, R-3.12)
 - [ ] 2.7 Verificar las reglas de consistencia: ningún `ejemplares_disponibles > ejemplares_totales`, y todo préstamo vencido cumple `fecha_devolucion_real IS NULL AND CURRENT_DATE > fecha_devolucion_prevista`
 - [ ] 2.8 Generar `db/dump.sql` como entregable y verificar que restaura el mismo conteo por tabla
+- [ ] 2.9 Decidir y documentar el volumen de `documentos`: con 4–6 PDFs queda por debajo de 15 registros, y el enunciado pide "al menos 15 registros" en cada tabla del modelo. Opciones: cargar ≥ 15 documentos, o justificar en el informe que `documentos` es el índice del repositorio RAG y no una tabla del modelo relacional; verificar que la decisión figura en `TP/CHANGELOG.md` y en el informe (enunciado, criterios de aprobación 1)
 
 ## 3. Pipeline de ingesta RAG
 
@@ -82,7 +91,7 @@ no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el mo
 - [x] 6.5 Verificar el caso `none`: no invoca herramientas y no inventa (R-2.5)
 - [x] 6.6 Validar el flujo completo contra un **modelo local** (`LLM_MODEL`, `LLM_API_BASE`) con `scripts/measure_golden.py` y verificar clasificación previa a las tools, herramientas por fuente y SQL aceptado por el validador. No cuenta como aceptación (R-2.8)
 - [x] 6.7 Repetir la medición con **Gemini** (`GEMINI_API_KEY`, sin cambios de código), versionar la corrida en `TP/evidencia/` consignando el modelo y verificar ≥ 11/13, 3/3 híbridos y 1/1 `none` (R-2.1, R-2.8, R-6.5)
-  _(modelo definitivo `gemini-3.1-flash-lite` (D71): 13/13, 3/3 y 1/1, con la última corrida sobre base local y RAG simulado (`TP/05` §4.1). `gemini-3-flash-preview` no entra en la cuota gratuita de 20 requests por día (D70). Salvedades vigentes: el retrieval es simulado, el contenido de G11 falla por el criterio del check y las esperas por cuota inflan la latencia)_
+  _(modelo definitivo `gemini-3.1-flash-lite` (D71): 13/13, 3/3 y 1/1, con la última corrida sobre base local y RAG simulado (`TP/05` §4.1). `gemini-3-flash-preview` no entra en la cuota gratuita de 20 requests por día (D70). Contenido 13/13 con el criterio de D72. Salvedades vigentes: el retrieval es simulado y las esperas por cuota inflan la latencia)_
 
 ## 7. Composición de respuesta y trazabilidad
 
@@ -92,6 +101,8 @@ no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el mo
 - [ ] 7.3 Verificar la evidencia exhibida: SQL muestra la sentencia, RAG muestra el fragmento citado (R-5.3, R-5.4)
 - [x] 7.4 Crear la tabla `agent_runs` y verificar que una consulta exitosa genera una fila con los ocho campos (R-6.1, R-6.2)
 - [x] 7.5 Verificar que una consulta rechazada también genera una fila con el motivo (R-6.3)
+- [ ] 7.6 Agregar al golden set dos casos en **inglés** (uno SQL y uno RAG, ids `B1` y `B2`), **fuera** de los 13 que miden R-2.1 para no cambiar el criterio ≥ 11/13, y verificar con el modelo definitivo que se clasifican bien y la respuesta sale en inglés. El enunciado pide "castellano o inglés" y los 13 casos actuales están en castellano; 7.2 depende de esto (R-5.1)
+- [ ] 7.7 Implementar `scripts/export_runs.py` que vuelque `agent_runs` a un archivo versionado en `TP/evidencia/`, y verificar que contiene las 13 consultas del golden set con sus campos. El fixture de integración hace `TRUNCATE agent_runs` (`tests/test_runs_integration.py`), así que exportar **antes** de correr `pytest -m integration`; la tabla no es una evidencia durable (R-6.1, R-6.2)
 
 ## 8. Interfaz Streamlit
 
@@ -105,8 +116,13 @@ no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el mo
   _(esqueleto con los 13 casos y los 4 de retrieval en `tests/golden_set.py`; las afirmaciones están marcadas `llm` y se saltan hasta que exista el agente)_
 - [ ] 9.2 Crear `docker/Dockerfile` y verificar que la imagen se construye y corre localmente
 - [ ] 9.3 Desplegar en Cloud Run + Cloud SQL con Secret Manager y verificar que las mismas 13 preguntas responden igual que en local
-- [ ] 9.4 Exportar `agent_runs` con las 13 consultas y capturas de la UI como evidencias para el informe
+- [ ] 9.4 Exportar `agent_runs` con las 13 consultas (con 7.7) y capturas de funcionamiento como evidencias para el informe. El enunciado pide "capturas, logs": si la UI (8.x) no llega, las capturas son de la terminal con `scripts/measure_golden.py`
 - [ ] 9.5 Redactar el informe técnico (máx. 10 páginas) con modelo de datos, arquitectura, consultas de ejemplo y evidencias, y verificar que cubre los 4 puntos exigidos por el enunciado
+
+- [ ] 9.6 Decidir dónde vive la base en la nube: la de **Neon** que ya comparte el equipo o **Cloud SQL** (D18). El enunciado exige que el agente y la base estén en un servicio cloud; Neon ya cumple la parte de la base y evita el riesgo de pgvector en Cloud SQL. Verificar que la decisión queda en `TP/CHANGELOG.md` con su motivo y, si cambia D18, que se registra como reemplazo
+- [ ] 9.7 Aplicar en la base compartida los roles `agent_ro` y `agent_logger`, sus permisos y `db/migrations/001_agent_runs.sql` (hoy solo existen en el Docker local), con `PGSSLMODE=require`, y verificar que `pytest -m integration` pasa contra esa base y que `agent_ro` no puede escribir ni leer `agent_runs` (D14, D63). Requiere al dueño de la base
+- [ ] 9.8 Verificar los entregables de datos ("Datos empleados: bases de datos y archivos PDF"): `db/dump.sql` y `rag/documents/*.pdf` están versionados y ninguna regla de `.gitignore` los excluye; desde un clon limpio, `docker compose up -d --wait` y la ingesta reproducen la base (2.8, 3.1)
+- [ ] 9.9 Preparar el coloquio (23 o 30/10/2026, criterio de aprobación): guion de demostración con una consulta SQL, una RAG, una híbrida y una sin cobertura; respuestas preparadas sobre las decisiones técnicas (`TP/CHANGELOG.md`), los límites del sistema (retrieval simulado hasta la ingesta, cuota de la API, modelo local vs definitivo) y qué mide cada evidencia
 
 ## Workflow follow-up
 
