@@ -390,7 +390,8 @@ class LibraryAgent:
         session = ToolSession()
         tools = self._tools_for(classification.label, session)
         system_prompt = render_system_prompt(
-            self.cfg, classification=classification.label, tools=[t.name for t in tools]
+            self.cfg, classification=classification.label, tools=[t.name for t in tools],
+            language=classification.language,
         )
         run_error: str | None = None
         model_text = ""
@@ -421,7 +422,7 @@ class LibraryAgent:
         `error` es (código, detalle): queda en la evidencia y de ahí en `agent_runs` (R-6.3).
         """
         labels = SOURCE_LABELS[language]
-        merged = {**(evidence or {}), "model": self._model_info()}
+        merged = {**(evidence or {}), "model": self._model_info(), "language": language}
         if error is not None:
             merged["error"] = {"code": error[0], "detail": error[1]}
         return AgentAnswer(
@@ -452,7 +453,7 @@ class LibraryAgent:
         sources = [s for s, used in (("sql", bool(executed)), ("rag", bool(chunks))) if used]
         expected = SOURCES_BY_CLASSIFICATION[label]
 
-        evidence: dict[str, Any] = {"model": self._model_info()}
+        evidence: dict[str, Any] = {"model": self._model_info(), "language": language}
         if executed:
             last = executed[-1]
             evidence.update(

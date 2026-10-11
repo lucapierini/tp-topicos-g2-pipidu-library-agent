@@ -50,11 +50,25 @@ def schema_description() -> str:
     return "\n".join(lines)
 
 
+# Instrucción explícita de idioma (R-5.1). Con la regla genérica "en el idioma de la consulta" el
+# modelo respondió en castellano a consultas en inglés: el prompt, las herramientas y los documentos
+# están en castellano y arrastran la respuesta.
+LANGUAGE_RULES = {
+    "es": "**Respondé en castellano.**",
+    "en": (
+        "**Answer in English.** The question is in English: write the whole answer in English, even "
+        "though the tools and the documents are in Spanish. Translate their content; keep titles, "
+        "names and quoted values exactly as the tool returned them."
+    ),
+}
+
+
 def render_system_prompt(
-    config: Config | None = None, *, classification: str, tools: list[str]
+    config: Config | None = None, *, classification: str, tools: list[str], language: str = "es"
 ) -> str:
     cfg = config or load_config()
     return Template(_read("system_prompt.md")).safe_substitute(
+        language_rule=LANGUAGE_RULES.get(language, LANGUAGE_RULES["es"]),
         classification=classification,
         tools=", ".join(f"`{t}`" for t in tools) or "ninguna",
         schema=schema_description(),

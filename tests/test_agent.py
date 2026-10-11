@@ -203,6 +203,40 @@ def test_rag_answer_cites_document_and_location() -> None:
     assert answer.is_valid(), answer.violations()
 
 
+@pytest.mark.parametrize(
+    ("language", "closing"), [("es", "Fuente: SQL"), ("en", "Source: SQL")], ids=["es", "en"],
+)
+def test_the_answer_declares_and_uses_the_language_of_the_question(language, closing) -> None:
+    # R-5.1: la evidencia registra el idioma con el que se compuso la respuesta (el enunciado pide
+    # castellano o inglés); la plantilla fija sale en ese idioma aunque la prosa la haya escrito el modelo.
+    agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], language=language)
+
+    answer = agent.answer("Which books are on loan?" if language == "en" else "¿Qué libros hay prestados?")
+
+    assert answer.evidence["language"] == language
+    assert answer.answer.endswith(closing)
+
+
+def test_the_detected_language_reaches_the_model_prompt() -> None:
+    # La etiqueta fija sale en inglés por plantilla, pero la prosa la escribe el modelo: sin la
+    # instrucción en el prompt respondía en castellano a una consulta en inglés (corrida 2026-10-11).
+    agent, runner, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], language="en")
+
+    agent.answer("Which books are on loan?")
+
+    assert "Answer in English" in runner.system_prompt
+    assert "Respondé en castellano" not in runner.system_prompt
+
+
+def test_a_gap_answer_in_english_declares_the_language_too() -> None:
+    agent, _, _ = build("none", language="en")
+
+    answer = agent.answer("What is the price of this book?")
+
+    assert answer.evidence["language"] == "en"
+    assert answer.answer.endswith("Source: none")
+
+
 def test_rag_without_relevant_results_declares_no_coverage() -> None:
     # R-4.6: el agente no fabrica una respuesta.
     empty = FakeRetriever(RagResult(chunks=[], error=NO_RELEVANT_RESULTS, latency_ms=1))

@@ -16,6 +16,20 @@ def system_prompt(label="hybrid", tools=("execute_sql", "retrieve_documents")) -
     return render_system_prompt(load_config(), classification=label, tools=list(tools))
 
 
+def test_the_prompt_states_the_language_of_the_answer_explicitly() -> None:
+    # R-5.1: con una instrucción genérica ("en el idioma de la consulta") el modelo respondió en
+    # castellano a dos preguntas en inglés, porque las herramientas y el prompt están en castellano.
+    english = render_system_prompt(load_config(), classification="sql", tools=["execute_sql"], language="en")
+    spanish = render_system_prompt(load_config(), classification="sql", tools=["execute_sql"], language="es")
+
+    assert "Answer in English" in english and "Respondé en castellano" not in english
+    assert "Respondé en castellano" in spanish and "Answer in English" not in spanish
+
+
+def test_the_language_defaults_to_spanish() -> None:
+    assert "Respondé en castellano" in system_prompt()
+
+
 def test_schema_lists_exactly_the_whitelisted_columns() -> None:
     # Si la whitelist cambia, el prompt cambia con ella: el modelo nunca ve una columna rechazable.
     description = schema_description()

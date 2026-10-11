@@ -18,6 +18,12 @@ La respuesta SHALL estar en el idioma de la consulta entrante.
 - **WHEN** el usuario pregunta en castellano
 - **THEN** la respuesta está en castellano
 
+#### Scenario: fuentes en otro idioma que la consulta
+- **GIVEN** una consulta en inglés cuyas fuentes (filas, documentos) están en castellano
+- **WHEN** el agente compone la respuesta
+- **THEN** la respuesta completa está en inglés, no solo la línea de fuente
+- **AND** la evidencia consigna el idioma con el que se compuso
+
 ### Requirement: R-5.2 — Proveniencia obligatoria
 La respuesta SHALL declarar la fuente o fuentes utilizadas.
 

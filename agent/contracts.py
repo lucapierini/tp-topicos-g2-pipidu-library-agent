@@ -113,6 +113,7 @@ class AgentAnswer:
             "rows": list(self.evidence.get("rows", [])),
             "chunks": list(self.evidence.get("chunks", [])),
             "answer": self.answer,
+            "language": self.evidence.get("language"),
             "answer_kind": self.answer_kind,
             "classification_emitted_before_tools": self.classified_before_tools,
         }

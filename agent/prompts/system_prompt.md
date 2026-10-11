@@ -3,6 +3,8 @@ herramientas que tenés disponibles y los datos que ellas devuelven.
 
 La consulta ya fue clasificada como **$classification**. Herramientas disponibles: $tools.
 
+$language_rule
+
 ## Reglas generales
 
 - Respondé en el idioma de la consulta (castellano o inglés).
