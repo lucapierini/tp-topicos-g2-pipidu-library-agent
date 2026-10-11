@@ -184,6 +184,21 @@ Corridas registradas:
 |---|---|---|---|---|---|---|---|
 | 2026-10-10 | `gemini-3.1-flash-lite` | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí (backends falsos: sin evaluar contenido) |
 | 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 12/13 clasificados + 1 error del clasificador (G12) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` |
+| 2026-10-11 | Strata `qwen3.8-flash-next-iq2_xs` (local), base local + RAG simulado (`--db --rag-mock`, D69) | 12/13 clasificados + 1 error del clasificador (G12, timeout) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo y del contenido. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-11_db-mock.json` |
+
+Lectura de la corrida del 2026-10-11 (Strata, `--db --rag-mock`):
+
+- **Contenido (`check` del golden set): 12/13** — SQL 5/5, RAG 4/4, híbridos 2/3, `none` 1/1. Es la primera
+  vez que se evalúa el contenido de RAG e híbridos; los fragmentos salen del corpus simulado, así que
+  prueba que el agente invoca la tool y cita, no la calidad del retrieval (D69).
+- **G12 no se clasificó: timeout de la API** (`APITimeoutError`, 91,6 s con reintentos). Es un fallo
+  técnico del modelo local, no una clasificación errónea; la corrida del 2026-10-10 sí lo había
+  clasificado, pero como `rag`. No se puede afirmar nada nuevo sobre G12 con este modelo.
+- **Llamadas repetidas a la tool SQL:** G4 y G5 invocaron `execute_sql` dos veces y G11 tres, sin
+  rechazos del validador (0/7). Es el comportamiento pendiente de limitar con un modelo débil; no afecta
+  la corrección del contenido.
+- Las 13 consultas quedaron en `agent_runs` (13/13).
+- El seed de desarrollo se recargó ese día: sus fechas son relativas a `CURRENT_DATE` y envejecen.
 
 Corrida con **base real** (PostgreSQL local con `db/dev_seed.sql`, rol `agent_ro`; recuperación todavía
 falsa), `gemini-3.1-flash-lite`, casos SQL G1–G5, con `scripts/measure_golden.py --db`:
