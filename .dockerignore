@@ -1,0 +1,23 @@
+# Contexto de build: nada que no deba entrar a la imagen (Art. 9: secretos fuera).
+.git
+.gitignore
+.venv
+.env
+.env.*
+!.env.example
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Documentación y entregables: no son parte de la imagen
+TP/
+openspec/
+AGENTS.md
+CLAUDE.md
+README.md
+
+# Datos y dumps locales
+db/dumps/
+rag/documents/

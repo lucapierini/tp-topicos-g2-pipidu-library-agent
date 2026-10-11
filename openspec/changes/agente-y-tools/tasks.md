@@ -118,7 +118,8 @@ instruido en el prompt (7.2, 7.6, D73) y export de `agent_runs` (7.7) hechos; 9.
 
 - [ ] 9.1 Ejecutar el golden set completo contra el sistema integrado y verificar que `tests/test_golden_set.py` pasa sin regresiones, con aserción sobre clasificación, SQL y filas (no sobre la prosa) y rúbrica manual de 3 criterios para el texto (D16)
   _(esqueleto con los 13 casos y los 4 de retrieval en `tests/golden_set.py`; las afirmaciones están marcadas `llm` y se saltan hasta que exista el agente)_
-- [ ] 9.2 Crear `docker/Dockerfile` y verificar que la imagen se construye y corre localmente
+- [x] 9.2 Crear `docker/Dockerfile` y verificar que la imagen se construye y corre localmente
+  _(`docker/Dockerfile` (etapas `base`, `measure`, `runtime`), `.dockerignore` y `tests/test_dockerfile.py`. Verificado con Docker 2026-10-11: ambas etapas construyen; `runtime` corre como uid 10001 y sin `tests/` ni `.env`; `measure` corrió G1, G6 y G13 dentro del contenedor contra la base del host (`POSTGRES_HOST=host.docker.internal`) y la API de Gemini, con las variables por `--env-file`: 3/3 en clasificación y contenido, 3/3 en `agent_runs`. Pendiente fuera de 9.2: el `CMD` de `runtime` es provisorio hasta que exista `ui/app.py` (8.1) y la imagen no es desplegable en Cloud Run hasta entonces)_
 - [ ] 9.3 Desplegar en Cloud Run + Cloud SQL con Secret Manager y verificar que las mismas 13 preguntas responden igual que en local
 - [ ] 9.4 Exportar `agent_runs` con las 13 consultas (con 7.7) y capturas de funcionamiento como evidencias para el informe. El enunciado pide "capturas, logs": si la UI (8.x) no llega, las capturas son de la terminal con `scripts/measure_golden.py`
 - [ ] 9.5 Redactar el informe técnico (máx. 10 páginas) con modelo de datos, arquitectura, consultas de ejemplo y evidencias, y verificar que cubre los 4 puntos exigidos por el enunciado

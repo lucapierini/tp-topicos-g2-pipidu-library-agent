@@ -106,6 +106,7 @@ del mismo contenido.
 | D71 | Modelo definitivo y por defecto: `gemini-3.1-flash-lite` (reemplaza D36) | R-2.1, R-2.8 |
 | D72 | El check de los híbridos exige SQL ejecutado y fragmento citado, no filas no vacías | R-3.8, D16 |
 | D73 | Idioma de la respuesta instruido en el prompt, declarado en la evidencia y verificado con casos en inglés aparte | R-5.1, D16 |
+| D74 | Dockerfile multi-etapa (`base`, `measure`, `runtime`), sin secretos y sin tests en la imagen desplegada | D18, Art. 8, Art. 9 |
 
 ## Risks / Trade-offs
 
