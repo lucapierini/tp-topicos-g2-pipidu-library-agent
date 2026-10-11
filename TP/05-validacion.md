@@ -185,6 +185,7 @@ Corridas registradas:
 | 2026-10-10 | `gemini-3.1-flash-lite` | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí (backends falsos: sin evaluar contenido) |
 | 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 12/13 clasificados + 1 error del clasificador (G12) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` |
 | 2026-10-11 | Strata `qwen3.8-flash-next-iq2_xs` (local), base local + RAG simulado (`--db --rag-mock`, D69) | 12/13 clasificados + 1 error del clasificador (G12, timeout) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo y del contenido. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-11_db-mock.json` |
+| 2026-10-11 | `gemini-3.1-flash-lite`, base local + RAG simulado (`--db --rag-mock`, D69) | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí para R-2.1 si es el modelo definitivo (decisión de 6.7 pendiente); el retrieval es simulado. Evidencia: `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json` |
 
 Lectura de la corrida del 2026-10-11 (Strata, `--db --rag-mock`):
 
@@ -199,6 +200,22 @@ Lectura de la corrida del 2026-10-11 (Strata, `--db --rag-mock`):
   la corrección del contenido.
 - Las 13 consultas quedaron en `agent_runs` (13/13).
 - El seed de desarrollo se recargó ese día: sus fechas son relativas a `CURRENT_DATE` y envejecen.
+
+Lectura de la corrida del 2026-10-11 con `gemini-3.1-flash-lite` (`--db --rag-mock`):
+
+- **Clasificación 13/13, híbridos 3/3, `none` 1/1, 13/13 antes de tools, 0/8 SQL rechazado, 13/13 en
+  `agent_runs`.** El contenido da 12/13: SQL 5/5, RAG 4/4, `none` 1/1, híbridos 2/3.
+- **G11 falla el `check` de contenido y no es un error del agente.** Resolvió el socio con más
+  préstamos y después consultó si tenía préstamos vencidos (relevante para la norma de renovación); esa
+  segunda consulta dio 0 filas, que es la respuesta correcta. `_both_sources` exige `rows` no vacío y
+  `as_outcome()` toma las filas de la **última** sentencia, así que una verificación que da 0 filas se
+  lee como "sin filas". La falla es del criterio (D16, R-3.8): se reproduce en las dos pasadas y no se
+  modificó el `check` para que pase.
+- **Latencia: 464 s en total, por la cuota de la API, no por el modelo.** Con instrumentación se
+  observaron esperas de 31 s y 34,7 s (nuestro reintento, D57) y de 148 s (el reintento propio de
+  `smolagents`, que no respeta el tope de 60 s de D57). Los casos individuales tardan 3–10 s. Las esperas
+  caen en casos distintos según la corrida, por eso G6 y G11 aparecen como 218 s y 177 s en el JSON
+  guardado.
 
 Corrida con **base real** (PostgreSQL local con `db/dev_seed.sql`, rol `agent_ro`; recuperación todavía
 falsa), `gemini-3.1-flash-lite`, casos SQL G1–G5, con `scripts/measure_golden.py --db`:
