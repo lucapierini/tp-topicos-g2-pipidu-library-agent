@@ -82,6 +82,7 @@ no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el mo
 - [x] 6.5 Verificar el caso `none`: no invoca herramientas y no inventa (R-2.5)
 - [x] 6.6 Validar el flujo completo contra un **modelo local** (`LLM_MODEL`, `LLM_API_BASE`) con `scripts/measure_golden.py` y verificar clasificación previa a las tools, herramientas por fuente y SQL aceptado por el validador. No cuenta como aceptación (R-2.8)
 - [ ] 6.7 Repetir la medición con **Gemini** (`GEMINI_API_KEY`, sin cambios de código), versionar la corrida en `TP/evidencia/` consignando el modelo y verificar ≥ 11/13, 3/3 híbridos y 1/1 `none` (R-2.1, R-2.8, R-6.5)
+  _(parcial: `gemini-3.1-flash-lite` dio 13/13, 3/3 y 1/1 (`TP/05` §4.1). Abierta porque el modelo por defecto, `gemini-3-flash-preview`, no entra en la cuota gratuita de 20 requests por día (D70): falta decidir el modelo definitivo y repetir la medición con él)_
 
 ## 7. Composición de respuesta y trazabilidad
 

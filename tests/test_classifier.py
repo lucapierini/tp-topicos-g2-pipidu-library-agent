@@ -154,6 +154,14 @@ def test_gemini_classifier_wraps_transport_errors() -> None:
         GeminiClassifier(load_config(), client=client).classify("¿hola?")
 
 
+def test_gemini_classifier_keeps_the_reason_of_an_api_error(monkeypatch) -> None:
+    # `ClientError` a secas escondió una cuota diaria agotada: 10 de 13 casos parecían fallas del modelo.
+    monkeypatch.setattr("agent.retry.time.sleep", lambda _seconds: None)
+    quota = RuntimeError("429 RESOURCE_EXHAUSTED: Quota exceeded, limit: 20, model: gemini-3-flash")
+    with pytest.raises(ClassificationError, match="429 RESOURCE_EXHAUSTED.*limit: 20"):
+        GeminiClassifier(load_config(), client=FakeGenaiClient(error=quota)).classify("¿hola?")
+
+
 def test_gemini_classifier_requires_the_key_from_the_environment(monkeypatch) -> None:
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     with pytest.raises(ClassificationError, match="GEMINI_API_KEY"):

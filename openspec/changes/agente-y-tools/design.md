@@ -102,6 +102,7 @@ del mismo contenido.
 | D67 | `agent_runs` se arma solo desde el `AgentAnswer` y su fallo no rompe la respuesta | R-6.1, R-6.3 |
 | D68 | `POSTGRES_HOST=127.0.0.1` por defecto (en Windows `localhost` cuesta ~2 s por conexión) | T1.3 |
 | D69 | Corpus simulado de RAG para medir contenido sin PDFs; no calibra el umbral | R-2.8, D59 |
+| D70 | El clasificador de Gemini conserva el motivo del fallo de la API | R-5.7, D62 |
 
 ## Risks / Trade-offs
 
@@ -113,8 +114,10 @@ del mismo contenido.
   "validación del flujo" de "aceptación"; la evidencia consigna el modelo (R-6.5) y el golden set se repite
   con Gemini antes de dar por cumplido R-2.1. Un modelo local más débil genera SQL peor (medido: inventó una
   columna) pero eso lo frena el validador, no cambia el criterio.
-- **[Cuota gratuita de la API (~5 req/min con `gemini-3-flash-preview`)]** → mitigación: reintento con la
-  espera que informa la API (D57) y medición con un modelo de mayor cuota (`gemini-3.1-flash-lite`).
+- **[Cuota gratuita de la API: ~5 req/min y 20 req/día con `gemini-3-flash-preview`]** → mitigación:
+  reintento con la espera que informa la API (D57) y medición con un modelo de mayor cuota
+  (`gemini-3.1-flash-lite`). El golden set usa ~50 llamadas: **no entra** en 20 por día, así que con la
+  clave gratuita el modelo por defecto no puede completar la medición de aceptación (D70).
 - **[Costo de tokens por el ciclo SDD]** → mitigación: artefactos cortos, constitution de 1 página, tareas sin narrativa.
 
 ## Migration Plan

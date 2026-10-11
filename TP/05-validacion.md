@@ -186,6 +186,7 @@ Corridas registradas:
 | 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 12/13 clasificados + 1 error del clasificador (G12) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` |
 | 2026-10-11 | Strata `qwen3.8-flash-next-iq2_xs` (local), base local + RAG simulado (`--db --rag-mock`, D69) | 12/13 clasificados + 1 error del clasificador (G12, timeout) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo y del contenido. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-11_db-mock.json` |
 | 2026-10-11 | `gemini-3.1-flash-lite`, base local + RAG simulado (`--db --rag-mock`, D69) | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí para R-2.1 si es el modelo definitivo (decisión de 6.7 pendiente); el retrieval es simulado. Evidencia: `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json` |
+| 2026-10-11 | `gemini-3-flash-preview` (default del código), `--db --rag-mock` | **no evaluable**: 3 casos respondidos y 10 errores del clasificador | — | — | — | — | No. Cuota diaria gratuita agotada (HTTP 429, 20 requests por día y por modelo); no hay evidencia de comportamiento del modelo. Sin archivo de evidencia |
 
 Lectura de la corrida del 2026-10-11 (Strata, `--db --rag-mock`):
 

@@ -185,5 +185,8 @@ class GeminiClassifier:
         except ClassificationError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise ClassificationError(f"falló la llamada de clasificación: {type(exc).__name__}") from exc
+            # El motivo se conserva (igual que en LiteLLM): `ClientError` a secas escondió una cuota agotada.
+            raise ClassificationError(
+                f"falló la llamada de clasificación: {type(exc).__name__}: {str(exc)[:200]}"
+            ) from exc
         return parse_classification(response.text)
