@@ -16,23 +16,31 @@ Python 3.11+ · PostgreSQL + pgvector · Gemini · Smolagents · Streamlit · GC
 ```
 TP/            artefactos SDD (constitución, specs, validación, changelog, enunciado)
 openspec/      raíz operativa de SDD (project.md, config.yaml, changes/)
-db/            schema.sql, seed_data.py, dump.sql
-rag/           documents/ (PDFs), ingest.py, chunking.py
-agent/         agent.py, prompts/, tools/sql_tool.py, tools/rag_tool.py, response.py
-ui/            app.py
-tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py
-docker/        Dockerfile
+db/            schema.sql, dev_seed.sql, migrations/, init/, post_restore.sql (+ seed_data.py, dump.sql: pendientes)
+rag/           documents/ (PDFs), ingest.py, chunking.py (pendientes)
+agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
+               config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
+scripts/       measure_golden.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+ui/            app.py (pendiente)
+tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py, test_agent.py, test_runs.py, ...
+docker/        Dockerfile (pendiente)
+docker-compose.yml   Postgres + pgvector local
 ```
 
 ## Estado
 
-Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`). Implementación pendiente.
+Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`). El agente y sus tools están
+implementados (validador y executor de SQL, tool de RAG, clasificador, orquestador, `agent_runs`).
+Pendiente: la medición de aceptación con el modelo definitivo (T6.7), la ingesta de PDFs y el seed
+entregable, la UI y el despliegue. El detalle está en
+[`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
 El change activo es [`agente-y-tools`](openspec/changes/agente-y-tools/), validado con
 `openspec validate --strict`.
 
 ## Instalación y ejecución
 
-_(se completa con la tarea 1.5 de `openspec/changes/agente-y-tools/tasks.md`)_
+El flujo de arranque cubre hasta lo implementado. `seed`, `ingest` y la UI se agregan cuando existan
+(T2.4, T3.3, T8.1); la tarea 1.5 de `openspec/changes/agente-y-tools/tasks.md` sigue abierta por eso.
 
 ```bash
 cp .env.example .env          # GEMINI_API_KEY y credenciales de BD
@@ -45,10 +53,9 @@ docker compose up -d --wait   # Postgres + pgvector + esquema + roles + agent_ru
 bash scripts/replicate_neon.sh --check   # versión y objetos de Neon; sin --check vuelca y restaura
 python -m pytest -m integration          # permisos por rol, esquema vs whitelist, flujo con datos reales
 python scripts/measure_golden.py --db    # golden set contra la base local (registra en agent_runs)
-make seed                     # datos sintéticos (semilla 42)
-make ingest                   # chunking + embeddings
-make ui                       # Streamlit
-make test                     # golden set + sanitización
+python -m pytest -q                      # suite offline: sin base ni credenciales
+python -m ruff check .                   # lint
+# Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3), UI Streamlit (T8.1)
 ```
 
 ## Criterios de promoción cubiertos

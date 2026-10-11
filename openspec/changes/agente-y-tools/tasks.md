@@ -35,12 +35,13 @@ no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el mo
 - [x] 1.3 Crear `docker-compose.yml` con Postgres + pgvector y verificar que `docker compose up -d` levanta la base y que `CREATE EXTENSION vector` funciona
 - [x] 1.4 Crear `.env.example` y `.gitignore` y verificar que `grep -rE "GEMINI_API_KEY\s*=\s*[\"']" --include="*.py"` no encuentra claves hardcodeadas (leer el nombre de la variable de `os.environ` no cuenta como hardcodeo)
 - [ ] 1.5 Documentar el flujo de arranque en `README.md` y verificar que los comandos del README se ejecutan tal como están escritos
+  _(parcial: el README solo lista comandos que existen; `pytest` y `ruff` verificados. Abierta porque faltan `seed`, `ingest` y la UI (T2.4, T3.3, T8.1) y los comandos de `docker compose` no se reejecutaron tal como están escritos)_
 
 ## 2. Modelo de datos y datos sintéticos
 
 - [x] 2.1 Escribir `db/schema.sql` con las 6 tablas y verificar que `psql -f db/schema.sql` crea el esquema sin errores de FK
 - [x] 2.2 Crear el usuario dedicado `agent_ro` con `GRANT SELECT` sobre las 6 tablas, `statement_timeout = 10000` y `search_path` restringido, y verificar que un `INSERT` con ese usuario es rechazado por PostgreSQL (D14, R-3.5)
-- [x] 2.3 Crear `agent/config.py` con el rango de cuatrimestre (2026-08-01 a 2026-11-30), zona horaria única, top-k, umbral, límite de filas y máximo de intentos, y verificar que ningún valor queda hardcodeado en el código (D6, D12, D15, R-3.11)
+- [x] 2.3 Crear `agent/config/__init__.py` con el rango de cuatrimestre (2026-08-01 a 2026-11-30), zona horaria única, top-k, umbral, límite de filas y máximo de intentos, y verificar que ningún valor queda hardcodeado en el código (D6, D12, D15, R-3.11)
 - [ ] 2.4 Implementar `db/seed_data.py` con semilla fija y verificar que dos ejecuciones con `--seed 42` producen el mismo output
 - [ ] 2.5 Verificar el volumen: `SELECT count(*)` ≥ 15 en cada una de las 6 tablas
 - [x] 2.6 Implementar el estado de vencimiento como vista o columna generada (no como valor escrito por el seed) y verificar que coincide con el caso G3 del golden set (D7, R-3.12)
@@ -62,8 +63,8 @@ no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el mo
 
 - [x] 4.1 Definir la whitelist de tablas y columnas en `agent/config/schema_whitelist.py` y verificar que coincide con `db/schema.sql` (R-3.4)
 - [x] 4.2 Implementar la validación estática con `sqlglot` (parseo con `error_level=RAISE`, statement raíz `SELECT`, extracción de tablas, columnas y funciones, expansión de `*` a la whitelist (R-3.14), normalización de identificadores a minúsculas (R-3.15), rechazo de `FOR UPDATE`) y verificar que los casos adversos S1–S22 de `TP/05-validacion.md` devuelven el error tipado esperado, sin ejecutar ninguna consulta (D4, R-3.2, R-3.3, R-3.4, R-3.7, R-3.13)
-- [x] 4.3 Implementar `execute_sql(sql)` que recibe la sentencia ya formada por el agente, ejecuta con el usuario `agent_ro`, aplica límite de 50 filas y timeout de 10 s, y verificar que la tool corre sin credenciales de API (D1, R-3.1, R-3.5, R-3.6, R-3.16) — *implementado en `agent/tools/sql_tool.py`; la verificación con base real queda pendiente (T2.1, T2.2)*
-- [x] 4.4 Implementar la regeneración limitada (máximo 2 intentos) y verificar el caso de rechazo-then-éxito y el caso de dos rechazos consecutivos, con reporte del error al usuario (D8, R-3.10, R-5.7) — *implementado en `run_with_regeneration()`; falta conectarlo al orquestador*
+- [x] 4.3 Implementar `execute_sql(sql)` que recibe la sentencia ya formada por el agente, ejecuta con el usuario `agent_ro`, aplica límite de 50 filas y timeout de 10 s, y verificar que la tool corre sin credenciales de API (D1, R-3.1, R-3.5, R-3.6, R-3.16) — *implementado en `agent/tools/sql_tool.py`; verificado con Postgres real en `tests/test_sql_tool.py` y `tests/test_runs_integration.py` (`pytest -m integration`, rol `agent_ro`, D45, D46)*
+- [x] 4.4 Implementar la regeneración limitada (máximo 2 intentos) y verificar el caso de rechazo-then-éxito y el caso de dos rechazos consecutivos, con reporte del error al usuario (D8, R-3.10, R-5.7) — *el tope lo aplica el orquestador (`ToolSession`, `SQL_MAX_ATTEMPTS`) y se verifica en `tests/test_agent.py` (regeneración con motivo, intentos agotados); `run_with_regeneration()` queda como utilidad de la tool para uso fuera del agente*
 - [x] 4.5 Implementar el contrato `SqlResult` y verificar que `tests/test_sql_tool.py` pasa con los 5 casos SQL del golden set (R-3.1, R-3.9)
 - [x] 4.6 Verificar el reporte de resultado vacío con un socio sin préstamos (R-3.8)
 
@@ -84,8 +85,8 @@ no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el mo
 
 ## 7. Composición de respuesta y trazabilidad
 
-- [x] 7.1 Implementar `agent/response.py` con el contrato `AgentAnswer` y verificar que toda respuesta del golden set declara fuente (R-5.2)
-  _(contrato y reglas implementadas en `agent/contracts.py` + `tests/test_contracts.py`; falta la composición real)_
+- [x] 7.1 Implementar el contrato `AgentAnswer` y verificar que toda respuesta del golden set declara fuente (R-5.2)
+  _(contrato y reglas en `agent/contracts.py` + `tests/test_contracts.py`; composición en `LibraryAgent._compose`, `agent/agent.py`; la medición con modelos reales, 13/13 con fuente declarada antes de tools, está en `TP/05` §4.1)_
 - [ ] 7.2 Verificar idioma de respuesta con un caso en inglés y uno en castellano (R-5.1)
 - [ ] 7.3 Verificar la evidencia exhibida: SQL muestra la sentencia, RAG muestra el fragmento citado (R-5.3, R-5.4)
 - [x] 7.4 Crear la tabla `agent_runs` y verificar que una consulta exitosa genera una fila con los ocho campos (R-6.1, R-6.2)

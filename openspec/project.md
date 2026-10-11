@@ -26,7 +26,9 @@ Entrega: 16/10/2026 23:59 (GMT-03). Coloquio: 23/10 o 30/10/2026.
 ```
 db/            schema.sql, seed_data.py, dump.sql
 rag/           documents/ (PDFs), ingest.py, chunking.py
-agent/         agent.py, prompts/, tools/sql_tool.py, tools/rag_tool.py, response.py
+agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
+               config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
+scripts/       measure_golden.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 ui/            app.py
 tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py
 docker/        Dockerfile
