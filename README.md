@@ -53,6 +53,7 @@ docker compose up -d --wait   # Postgres + pgvector + esquema + roles + agent_ru
 bash scripts/replicate_neon.sh --check   # versión y objetos de Neon; sin --check vuelca y restaura
 python -m pytest -m integration          # permisos por rol, esquema vs whitelist, flujo con datos reales
 python scripts/measure_golden.py --db    # golden set contra la base local (registra en agent_runs)
+python scripts/measure_golden.py --db --rag-mock   # + recuperación simulada: contenido de los 13 casos, sin PDFs
 python -m pytest -q                      # suite offline: sin base ni credenciales
 python -m ruff check .                   # lint
 # Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3), UI Streamlit (T8.1)

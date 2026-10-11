@@ -172,7 +172,8 @@ Reglas:
    el modelo, el endpoint, la fecha, la configuración y el resultado por caso (R-6.5).
 3. Hasta que existan el seed y los PDFs los backends de datos son falsos y el validador de SQL es el
    real: la corrida mide clasificación, herramientas invocadas, orden y SQL aceptado, **no** el contenido
-   (D59). Los `check` de contenido del golden set corren cuando haya base.
+   (D59). Los `check` de contenido corren con `--db` (casos SQL) y con `--rag-mock` (casos RAG; D69); un
+   híbrido se evalúa solo con ambos.
 4. Un modelo local más débil puede clasificar bien y aun así generar peor SQL; que el validador rechace sus
    errores es el comportamiento esperado, no una falla de la prueba.
 5. Si el modelo definitivo cambia (p. ej. por cuota), la medición de aceptación se repite completa.
@@ -194,6 +195,19 @@ falsa), `gemini-3.1-flash-lite`, casos SQL G1–G5, con `scripts/measure_golden.
 Es la primera medición de **contenido**: el SQL que genera el modelo corre contra el esquema real y
 devuelve lo esperado. Los casos RAG e híbridos siguen sin evaluarse en contenido (faltan los PDFs).
 Datos de desarrollo, no el seed entregable: el volumen de T2.5 sigue pendiente.
+
+**Recuperación simulada (D69).** `--rag-mock` reemplaza el fragmento fijo por un corpus de 7 fragmentos de
+prueba (`tests/rag_fixture.py`) con un `RagRetriever` real. Combinado con `--db`, permite evaluar el
+contenido de los 13 casos. Qué mide y qué no:
+
+| Mide | No mide |
+|---|---|
+| Que el agente decida la fuente, invoque la tool y cite documento y ubicación | Calidad del retrieval semántico (top-1 de R1–R3 con embeddings reales, 3.7) |
+| Que la composición declare fuente y evidencia en RAG e híbridos | Calibración del umbral 0,35 (3.6, D12): el del mock es 0,15 y no es comparable |
+| El caso sin cobertura (G13/R4) con la política de no-relevancia | El contenido real del reglamento: los fragmentos son de prueba |
+
+Toda fila medida con `--rag-mock` debe decirlo en la columna "Cuenta como aceptación". Los umbrales y el
+top-1 reales siguen pendientes de los PDFs (T3.x).
 
 Lectura de la corrida local: el error de G12 fue técnico, no de clasificación: el modelo razona y con
 `max_tokens=1024` el servidor devolvió `finish_reason=length` con el JSON incompleto (3 de 3 intentos). Con

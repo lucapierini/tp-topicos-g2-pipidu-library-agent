@@ -101,6 +101,7 @@ del mismo contenido.
 | D66 | La recuperación lee `documentos_chunks` + `documentos`; la ubicación sale de `metadata` | R-4.2, R-4.7 |
 | D67 | `agent_runs` se arma solo desde el `AgentAnswer` y su fallo no rompe la respuesta | R-6.1, R-6.3 |
 | D68 | `POSTGRES_HOST=127.0.0.1` por defecto (en Windows `localhost` cuesta ~2 s por conexión) | T1.3 |
+| D69 | Corpus simulado de RAG para medir contenido sin PDFs; no calibra el umbral | R-2.8, D59 |
 
 ## Risks / Trade-offs
 

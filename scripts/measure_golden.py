@@ -2,13 +2,15 @@
 
 Qué es real: el clasificador (Gemini), el loop del agente (smolagents + LiteLLM), el system prompt, el
 validador estático de SQL y la composición de la respuesta.
-Qué es falso: las filas que devuelve la base y los fragmentos que devuelve la recuperación. Por eso
-**no** se evalúa el contenido (los `check` del golden set quedan para cuando exista el seed y los PDFs),
-sino lo que el orquestador sí controla: clasificación, herramientas invocadas, orden y SQL válido.
+Qué es falso por defecto: las filas que devuelve la base y los fragmentos que devuelve la recuperación.
+Por eso **no** se evalúa el contenido, sino lo que el orquestador sí controla: clasificación,
+herramientas invocadas, orden y SQL válido. Con `--db` las filas son reales (rol `agent_ro`) y con
+`--rag-mock` los fragmentos salen del corpus simulado de `tests/rag_fixture.py` (D69); el `check` de
+contenido de cada caso se evalúa solo si sus fuentes no son falsas.
 
 Uso (desde la raíz del repo, con GEMINI_API_KEY en .env):
 
-    .venv/Scripts/python scripts/measure_golden.py [--out evidencia.json] [--only G1,G6]
+    .venv/Scripts/python scripts/measure_golden.py [--out evidencia.json] [--only G1,G6] [--db] [--rag-mock]
 """
 from __future__ import annotations
 
@@ -30,6 +32,7 @@ from agent.runs import InMemoryRunRecorder, PgRunRecorder  # noqa: E402
 from agent.tools.sql_tool import SqlExecutor  # noqa: E402
 from tests.fakes import FakeConn, FakeRetriever, make_chunk  # noqa: E402
 from tests.golden_set import ACCEPTANCE_MIN, GOLDEN_SET  # noqa: E402
+from tests.rag_fixture import build_mock_retriever  # noqa: E402
 
 CANNED_ROWS = [("Cien años de soledad", "2026-09-20"), ("Rayuela", "2026-10-01")]
 CANNED_COLUMNS = ["titulo", "fecha_prestamo"]
@@ -52,26 +55,32 @@ class CaseReport:
     before_tools: bool = False
     run_id: int | None = None          # fila de agent_runs (R-6.2)
     rows: int = 0
-    content_ok: bool | None = None     # check del golden set; solo casos SQL y con --db
+    content_ok: bool | None = None     # check del golden set; solo si las fuentes del caso no son falsas
 
     @property
     def classified_ok(self) -> bool:
         return self.got == self.expected
 
 
-def build_agent(use_db: bool = False) -> LibraryAgent:
+def build_agent(use_db: bool = False, rag_mock: bool = False) -> LibraryAgent:
     """`use_db=True`: ejecuta el SQL contra la base local (rol `agent_ro`) y registra en `agent_runs`.
 
-    La recuperación sigue siendo falsa hasta que existan los PDFs indexados.
+    `rag_mock=True`: la recuperación usa el corpus simulado de `tests/rag_fixture.py` (un `RagRetriever`
+    real con embedder léxico); permite evaluar el contenido de los casos RAG e híbridos sin PDFs. Sin
+    él, la recuperación devuelve siempre el mismo fragmento falso.
     """
     cfg = load_config()
     conn = FakeConn(rows=CANNED_ROWS, columns=CANNED_COLUMNS)
-    retriever = FakeRetriever(RagResult(
-        chunks=[make_chunk("reglamento_biblioteca.pdf", "Art. 12",
-                           "El plazo de devolución es de 15 días corridos. Vencido el plazo corresponde "
-                           "una multa de un día de suspensión por cada día de atraso.", 0.82)],
-        error=None, latency_ms=1,
-    ))
+    if rag_mock:
+        retriever = build_mock_retriever(cfg)
+    else:
+        retriever = FakeRetriever(RagResult(
+            chunks=[make_chunk("reglamento_biblioteca.pdf", "Art. 12",
+                               "El plazo de devolución es de 15 días corridos. Vencido el plazo "
+                               "corresponde una multa de un día de suspensión por cada día de atraso.",
+                               0.82)],
+            error=None, latency_ms=1,
+        ))
     return LibraryAgent(
         classifier=build_classifier(cfg),
         sql_backend=SqlExecutor(cfg) if use_db else SqlExecutor(cfg, conn),
@@ -110,10 +119,23 @@ def run_case(agent: LibraryAgent, case, with_content: bool = False) -> CaseRepor
     report.before_tools = answer.classified_before_tools
     report.run_id = answer.run_id
     report.rows = len(answer.evidence.get("rows", []))
-    if with_content and case.expected_classification == "sql":
-        # Solo los casos SQL: con base real sus filas son reales. RAG e híbridos usan fragmentos falsos.
+    if with_content:
         report.content_ok = bool(case.check(answer.as_outcome()))
     return report
+
+
+def content_evaluable(expected: str, use_db: bool, rag_mock: bool) -> bool:
+    """El `check` de un caso solo significa algo si las fuentes que usa no son falsas.
+
+    SQL necesita la base local; RAG, el corpus simulado; un híbrido, las dos. `none` no depende de
+    ninguna fuente: debe terminar sin filas ni fragmentos.
+    """
+    return {
+        "sql": use_db,
+        "rag": rag_mock,
+        "hybrid": use_db and rag_mock,
+        "none": True,
+    }[expected]
 
 
 def _ratio(values: list[bool]) -> str:
@@ -124,6 +146,7 @@ def summarize(reports: list[CaseReport]) -> dict:
     hybrids = [r for r in reports if r.expected == "hybrid"]
     nones = [r for r in reports if r.expected == "none"]
     sql_cases = [r for r in reports if r.sql_original or r.sql_rejections]
+    sql_by_class = [r for r in reports if r.expected == "sql"]
     return {
         "classification_correct": f"{sum(r.classified_ok for r in reports)}/{len(reports)}",
         "acceptance_min": ACCEPTANCE_MIN,
@@ -132,7 +155,13 @@ def summarize(reports: list[CaseReport]) -> dict:
         "classified_before_tools": f"{sum(r.before_tools for r in reports)}/{len(reports)}",
         "classifier_errors": sum(r.got == "(error)" for r in reports),
         "valid_answers": f"{sum(r.valid for r in reports)}/{len(reports)}",
-        "sql_content_ok": _ratio([r.content_ok for r in reports if r.content_ok is not None]),
+        "sql_content_ok": _ratio([r.content_ok for r in sql_by_class if r.content_ok is not None]),
+        "content_ok": _ratio([r.content_ok for r in reports if r.content_ok is not None]),
+        "content_ok_by_expected": {
+            kind: _ratio([r.content_ok for r in reports
+                          if r.expected == kind and r.content_ok is not None])
+            for kind in ("sql", "rag", "hybrid", "none")
+        },
         "runs_recorded": f"{sum(r.run_id is not None for r in reports)}/{len(reports)}",
         "cases_with_sql_rejected": f"{sum(bool(r.sql_rejections) for r in sql_cases)}/{len(sql_cases)}",
         "seconds_total": round(sum(r.seconds for r in reports), 1),
@@ -146,17 +175,23 @@ def main() -> int:
     parser.add_argument("--db", action="store_true",
                         help="ejecutar el SQL contra la base local y registrar en agent_runs "
                              "(docker compose up -d); evalúa el contenido de los casos SQL")
+    parser.add_argument("--rag-mock", action="store_true",
+                        help="recuperación sobre el corpus simulado de tests/rag_fixture.py (sin PDFs); "
+                             "evalúa el contenido de los casos RAG; no calibra ni mide retrieval real")
     args = parser.parse_args()
 
     selected = {s.strip() for s in args.only.split(",")} if args.only else None
     cases = [c for c in GOLDEN_SET if selected is None or c.id in selected]
 
-    agent = build_agent(use_db=args.db)
+    agent = build_agent(use_db=args.db, rag_mock=args.rag_mock)
     reports: list[CaseReport] = []
     print(f"modelo: {agent.cfg.llm_model} | api_base={agent.cfg.llm_api_base or '-'} | "
           f"max_steps={agent.cfg.max_steps} | temperature={agent.cfg.temperature}\n")
     for case in cases:
-        report = run_case(agent, case, with_content=args.db)
+        report = run_case(
+            agent, case,
+            with_content=content_evaluable(case.expected_classification, args.db, args.rag_mock),
+        )
         reports.append(report)
         mark = "OK " if report.classified_ok else "ERR"
         print(f"[{mark}] {case.id:<4} esperado={report.expected:<6} obtuvo={report.got or '-':<6} "
@@ -179,12 +214,17 @@ def main() -> int:
             "api_base": cfg.llm_api_base or None,
             "config": {"max_steps": cfg.max_steps, "temperature": cfg.temperature,
                        "max_sql_attempts": cfg.max_sql_attempts, "api_max_retries": cfg.api_max_retries},
-            "backends": (
-                "sql=PostgreSQL local (rol agent_ro, dev_seed.sql), rag=FakeRetriever; "
-                "el contenido se evalúa solo en los casos SQL"
-                if args.db else
-                "sql=FakeConn (validador real), rag=FakeRetriever; el contenido no se evalúa"
-            ),
+            "backends": {
+                "sql": ("PostgreSQL local (rol agent_ro, dev_seed.sql)" if args.db
+                        else "FakeConn (validador real)"),
+                "rag": ("corpus simulado tests/rag_fixture.py (RagRetriever real, embedder léxico; no "
+                        "mide retrieval semántico ni calibra el umbral)" if args.rag_mock
+                        else "FakeRetriever (un fragmento fijo)"),
+                "content_evaluated_for": [
+                    kind for kind in ("sql", "rag", "hybrid", "none")
+                    if content_evaluable(kind, args.db, args.rag_mock)
+                ],
+            },
             "summary": summary,
             "cases": [r.__dict__ for r in reports],
         }
