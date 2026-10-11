@@ -182,8 +182,21 @@ def test_overdue_loans_are_computed_by_the_view_not_stored(admin) -> None:
            "JOIN socios s ON s.id = v.socio_id WHERE v.estado_calculado = 'vencido' ORDER BY v.dias_atraso")
     answer = _agent("sql", [("execute_sql", sql)]).answer("¿Qué socios tienen préstamos vencidos?")
 
+    # El esperado sale de la aritmética de fechas sobre la tabla base, no de la vista: el seed usa fechas
+    # relativas a CURRENT_DATE y envejece, así que un valor literal (5, 20) falla al día siguiente.
+    with admin.cursor() as cur:
+        cur.execute("SET TIME ZONE %s", (load_config().timezone,))
+        cur.execute(
+            "SELECT s.apellido, CURRENT_DATE - p.fecha_devolucion_prevista FROM prestamos p "
+            "JOIN socios s ON s.id = p.socio_id "
+            "WHERE p.fecha_devolucion_real IS NULL AND p.fecha_devolucion_prevista < CURRENT_DATE "
+            "ORDER BY 2"
+        )
+        expected = [(apellido, int(days)) for apellido, days in cur.fetchall()]
+
     rows = answer.evidence["rows"]
-    assert [(r["apellido"], r["dias_atraso"]) for r in rows] == [("Pérez", 5), ("Ruiz", 20)]
+    assert expected and [r["apellido"] for r in rows] == ["Pérez", "Ruiz"]
+    assert [(r["apellido"], r["dias_atraso"]) for r in rows] == expected
     assert answer.run_id == 1
 
     (record,) = _admin_rows(admin, "SELECT status, tools, executed_sql, model_id FROM agent_runs")

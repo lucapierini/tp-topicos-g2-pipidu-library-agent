@@ -1,8 +1,10 @@
 -- Datos de DESARROLLO para probar el agente contra una base real (no es el seed entregable, T2.4).
 --
 -- Son pocas filas, deterministas y con fechas relativas a CURRENT_DATE: "vencido", "hace 20 días" y
--- "este cuatrimestre" dan resultados reproducibles sin importar cuándo se levante la base. Contiene
--- las entidades que nombra el golden set (`tests/golden_set.py::SEED_ENTITIES`).
+-- "este cuatrimestre" dan resultados reproducibles sin importar cuándo se levante la base. Las fechas
+-- se fijan al cargar: la base envejece un día por día y los atrasos crecen. Para volver a la foto de
+-- hoy, truncar las tablas del dominio y recargar este archivo (no asertar días de atraso literales).
+-- Contiene las entidades que nombra el golden set (`tests/golden_set.py::SEED_ENTITIES`).
 --
 -- El volumen exigido (>= 15 por tabla, T2.5) y la semilla fija los entrega `db/seed_data.py`: esto
 -- solo existe para poder correr `pytest -m integration` y `scripts/measure_golden.py --db`.
