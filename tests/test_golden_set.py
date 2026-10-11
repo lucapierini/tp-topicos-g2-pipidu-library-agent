@@ -17,7 +17,13 @@ from collections import Counter
 import pytest
 
 from agent.contracts import CLASSIFICATIONS, normalize_classification
-from tests.golden_set import ACCEPTANCE_MIN, GOLDEN_SET, RETRIEVAL_TESTS, SEED_ENTITIES
+from tests.golden_set import (
+    ACCEPTANCE_MIN,
+    BILINGUAL_SET,
+    GOLDEN_SET,
+    RETRIEVAL_TESTS,
+    SEED_ENTITIES,
+)
 
 
 def test_golden_set_shape() -> None:
@@ -88,6 +94,34 @@ def test_hybrid_check_accepts_an_empty_result_from_an_executed_statement() -> No
               "chunks": [{"document": "reglamento_biblioteca.pdf"}]}
     assert g11(answer)
     assert not g11({**answer, "sql": ""})
+
+
+def test_english_cases_are_extra_and_do_not_change_the_acceptance_denominator() -> None:
+    # El enunciado pide castellano o inglés (R-5.1); R-2.1 se mide sobre los 13 casos de siempre.
+    assert len(GOLDEN_SET) == 13
+    assert [c.id for c in BILINGUAL_SET] == ["B1", "B2"]
+    assert not {c.id for c in BILINGUAL_SET} & {c.id for c in GOLDEN_SET}
+    assert all(c.language == "en" for c in BILINGUAL_SET)
+    assert {c.expected_classification for c in BILINGUAL_SET} == {"sql", "rag"}
+
+
+def test_english_sql_case_requires_rows_the_declared_language_and_english_prose() -> None:
+    b1 = next(c for c in BILINGUAL_SET if c.id == "B1").check
+    answered = {"rows": [{"titulo": "Rayuela"}], "language": "en",
+                "answer": "Juan has the following books on loan: Rayuela.\n\nSource: SQL"}
+    assert b1(answered)
+    assert not b1({**answered, "language": "es"}), "el idioma declarado debe ser inglés"
+    assert not b1({**answered, "answer": "Tiene prestados estos libros: Rayuela.\n\nFuente: SQL"})
+    assert not b1({**answered, "rows": []})
+
+
+def test_english_rag_case_requires_the_regulation_and_english_prose() -> None:
+    b2 = next(c for c in BILINGUAL_SET if c.id == "B2").check
+    answered = {"chunks": [{"document": "reglamento_biblioteca.pdf"}], "language": "en",
+                "answer": "You have 15 days to return a book; after that a fine applies.\n\nSource: RAG"}
+    assert b2(answered)
+    assert not b2({**answered, "answer": "Tenés 15 días para devolver el libro.\n\nFuente: RAG"})
+    assert not b2({**answered, "chunks": [{"document": "manual_uso_sistema.pdf"}]})
 
 
 def test_none_check_requires_no_sources_rows_or_chunks() -> None:

@@ -36,6 +36,7 @@ class GoldenCase:
     expected_classification: str
     check: Callable[[dict], bool]
     note: str = ""
+    language: str = "es"  # idioma de la consulta; la respuesta debe salir en el mismo (R-5.1)
 
 
 def _min_rows(n: int) -> Callable[[dict], bool]:
@@ -64,6 +65,39 @@ def _both_sources(out: dict) -> bool:
     vacía. Exigir filas daba por fallida a G11 aun con la respuesta correcta.
     """
     return {"sql", "rag"} <= set(out.get("sources", [])) and bool(out.get("sql")) and bool(out.get("chunks"))
+
+
+_EN_WORDS = frozenset(
+    "the is are of and to has have had you your in on for with a an that this it be was were from "
+    "days day book books loan fine source following after before".split()
+)
+_ES_WORDS = frozenset(
+    "el la los las es son de y que tiene tienen tenés tiene en para con un una del al se por como "
+    "libro libros fuente días día préstamo prestados después antes".split()
+)
+
+
+def _prose_language(text: str) -> str | None:
+    """Idioma dominante de un texto por palabras funcionales; `None` si no se puede afirmar.
+
+    Es una heurística para R-5.1 (la respuesta sale en el idioma de la consulta): no evalúa la calidad
+    de la prosa, que sigue siendo de la rúbrica manual (D16).
+    """
+    words = [w.strip(".,;:!?¿¡()\"'").lower() for w in text.split()]
+    english = sum(w in _EN_WORDS for w in words)
+    spanish = sum(w in _ES_WORDS for w in words)
+    if english == spanish:
+        return None
+    return "en" if english > spanish else "es"
+
+
+def _answers_in(language: str) -> Callable[[dict], bool]:
+    """La respuesta declara el idioma esperado y su texto está en ese idioma."""
+    return lambda out: out.get("language") == language and _prose_language(str(out.get("answer", ""))) == language
+
+
+def _all(*checks: Callable[[dict], bool]) -> Callable[[dict], bool]:
+    return lambda out: all(check(out) for check in checks)
 
 
 GOLDEN_SET: list[GoldenCase] = [
@@ -101,6 +135,16 @@ GOLDEN_SET: list[GoldenCase] = [
     GoldenCase("G13", f'¿Cuál es el precio del libro "{SEED_ENTITIES["libro_sin_precio"]}"?', "none",
                lambda out: not out.get("sources") and not out.get("rows") and not out.get("chunks"),
                "declara ausencia de información (Art. 4)"),
+]
+
+# Casos en inglés (R-5.1, T7.6). El enunciado pide "castellano o inglés" y los 13 casos de arriba están
+# en castellano. Van aparte para no cambiar el denominador del criterio ≥ 11/13 (R-2.1).
+BILINGUAL_SET: list[GoldenCase] = [
+    GoldenCase("B1", f"Which books does {SOCIO} currently have on loan?", "sql",
+               _all(_min_rows(1), _answers_in("en")), "equivalente en inglés de G1", language="en"),
+    GoldenCase("B2", "How many days do I have to return a book before I get fined?", "rag",
+               _all(_document("reglamento_biblioteca"), _answers_in("en")),
+               "equivalente en inglés de G6", language="en"),
 ]
 
 # Pruebas de retrieval (R-4.4, R-4.6)

@@ -9,7 +9,7 @@ import pytest
 
 from agent.config import load_config
 from agent.errors import NO_RELEVANT_RESULTS
-from tests.golden_set import GOLDEN_SET, RETRIEVAL_TESTS
+from tests.golden_set import BILINGUAL_SET, GOLDEN_SET, RETRIEVAL_TESTS
 from tests.rag_fixture import LexicalEmbedder, build_mock_retriever
 
 RAG_CASES = [c for c in GOLDEN_SET if c.expected_classification == "rag"]
@@ -106,3 +106,16 @@ def test_content_is_only_evaluated_where_the_sources_are_not_fake() -> None:
     assert not content_evaluable("hybrid", use_db=True, rag_mock=False)
     assert content_evaluable("hybrid", use_db=True, rag_mock=True)
     assert content_evaluable("none", use_db=False, rag_mock=False)
+
+
+# --- consultas en inglés (R-5.1, T7.6): los embeddings multilingües las resuelven; el mock, con alias ---
+
+
+@pytest.mark.parametrize("case", [c for c in BILINGUAL_SET if c.expected_classification == "rag"],
+                         ids=lambda c: c.id)
+def test_the_english_rag_case_finds_its_document(retriever, case) -> None:
+    result = retriever.retrieve(case.question)
+
+    assert result.error is None
+    assert case.check({"chunks": [{"document": c.document} for c in result.chunks],
+                       "language": "en", "answer": "You have 15 days to return it.\n\nSource: RAG"})

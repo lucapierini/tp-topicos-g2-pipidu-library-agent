@@ -62,6 +62,11 @@ _STEMS: tuple[tuple[str, str], ...] = (
     ("horario", "horario"), ("atencion", "horario"), ("atiende", "horario"),
     ("sinopsis", "sinopsis"), ("resena", "sinopsis"), ("trata", "sinopsis"), ("narra", "sinopsis"),
     ("plazo", "plazo"),
+    # Alias en inglés: un embedding multilingüe (gemini-embedding-001) acerca "return a book" a
+    # "devolver un libro"; el embedder léxico necesita decirlo explícitamente (R-5.1).
+    ("return", "devol"), ("fine", "multa"), ("penalt", "multa"), ("loan", "prest"), ("renew", "renov"),
+    ("deadline", "plazo"), ("schedule", "horario"), ("hour", "horario"), ("synopsis", "sinopsis"),
+    ("day", "dia"), ("librar", "biblioteca"),
 )
 
 

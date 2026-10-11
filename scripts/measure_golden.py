@@ -31,7 +31,7 @@ from agent.contracts import AgentAnswer, RagResult  # noqa: E402
 from agent.runs import InMemoryRunRecorder, PgRunRecorder  # noqa: E402
 from agent.tools.sql_tool import SqlExecutor  # noqa: E402
 from tests.fakes import FakeConn, FakeRetriever, make_chunk  # noqa: E402
-from tests.golden_set import ACCEPTANCE_MIN, GOLDEN_SET  # noqa: E402
+from tests.golden_set import ACCEPTANCE_MIN, BILINGUAL_SET, GOLDEN_SET  # noqa: E402
 from tests.rag_fixture import build_mock_retriever  # noqa: E402
 
 CANNED_ROWS = [("Cien años de soledad", "2026-09-20"), ("Rayuela", "2026-10-01")]
@@ -56,6 +56,7 @@ class CaseReport:
     run_id: int | None = None          # fila de agent_runs (R-6.2)
     rows: int = 0
     content_ok: bool | None = None     # check del golden set; solo si las fuentes del caso no son falsas
+    language: str = ""                 # idioma con el que el agente compuso la respuesta (R-5.1)
 
     @property
     def classified_ok(self) -> bool:
@@ -118,6 +119,7 @@ def run_case(agent: LibraryAgent, case, with_content: bool = False) -> CaseRepor
     ]
     report.before_tools = answer.classified_before_tools
     report.run_id = answer.run_id
+    report.language = answer.evidence.get("language", "")
     report.rows = len(answer.evidence.get("rows", []))
     if with_content:
         report.content_ok = bool(case.check(answer.as_outcome()))
@@ -140,6 +142,16 @@ def content_evaluable(expected: str, use_db: bool, rag_mock: bool) -> bool:
 
 def _ratio(values: list[bool]) -> str:
     return f"{sum(values)}/{len(values)}" if values else "no evaluado"
+
+
+def summarize_english(reports: list[CaseReport]) -> dict:
+    """Casos en inglés (T7.6): fuera del criterio R-2.1, que se mide solo sobre los 13 del golden set."""
+    return {
+        "cases": [r.case_id for r in reports],
+        "classification_correct": f"{sum(r.classified_ok for r in reports)}/{len(reports)}",
+        "declared_language_en": f"{sum(r.language == 'en' for r in reports)}/{len(reports)}",
+        "content_ok": _ratio([r.content_ok for r in reports if r.content_ok is not None]),
+    }
 
 
 def summarize(reports: list[CaseReport]) -> dict:
@@ -178,10 +190,13 @@ def main() -> int:
     parser.add_argument("--rag-mock", action="store_true",
                         help="recuperación sobre el corpus simulado de tests/rag_fixture.py (sin PDFs); "
                              "evalúa el contenido de los casos RAG; no calibra ni mide retrieval real")
+    parser.add_argument("--bilingual", action="store_true",
+                        help="agrega los casos en inglés (B1, B2); no cuentan para el criterio R-2.1")
     args = parser.parse_args()
 
     selected = {s.strip() for s in args.only.split(",")} if args.only else None
-    cases = [c for c in GOLDEN_SET if selected is None or c.id in selected]
+    pool = [*GOLDEN_SET, *(BILINGUAL_SET if args.bilingual else [])]
+    cases = [c for c in pool if selected is None or c.id in selected]
 
     agent = build_agent(use_db=args.db, rag_mock=args.rag_mock)
     reports: list[CaseReport] = []
@@ -204,7 +219,12 @@ def main() -> int:
         if report.violations:
             print(f"        violaciones -> {report.violations}")
 
-    summary = summarize(reports)
+    english_ids = {c.id for c in BILINGUAL_SET}
+    golden_reports = [r for r in reports if r.case_id not in english_ids]
+    english_reports = [r for r in reports if r.case_id in english_ids]
+    summary = summarize(golden_reports)
+    if english_reports:
+        summary["english"] = summarize_english(english_reports)
     print("\n" + json.dumps(summary, ensure_ascii=False, indent=2))
     if args.out:
         cfg = agent.cfg
@@ -233,7 +253,7 @@ def main() -> int:
         out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         print(f"\nevidencia guardada en {args.out}")
 
-    correct = sum(r.classified_ok for r in reports)
+    correct = sum(r.classified_ok for r in golden_reports)
     return 0 if correct >= ACCEPTANCE_MIN or selected else 1
 
 
