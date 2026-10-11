@@ -142,6 +142,14 @@ def test_default_provider_is_gemini_with_the_configured_model() -> None:
     assert cfg.llm_model == f"gemini/{cfg.model}" and cfg.llm_api_base == ""
 
 
+def test_the_definitive_model_is_the_default(monkeypatch) -> None:
+    # D71: `gemini-3-flash-preview` no completa el golden set con la cuota gratuita (20 requests por día).
+    monkeypatch.delenv("GEMINI_MODEL", raising=False)
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    cfg = load_config()
+    assert cfg.model == "gemini-3.1-flash-lite" and cfg.llm_model == "gemini/gemini-3.1-flash-lite"
+
+
 def test_an_empty_llm_model_in_the_env_file_means_the_default(monkeypatch) -> None:
     # `.env.example` trae `LLM_MODEL=` vacío: no debe pisar el default con "".
     monkeypatch.setenv("LLM_MODEL", "")

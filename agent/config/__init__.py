@@ -84,7 +84,7 @@ class Config:
 
 
 def load_config() -> Config:
-    gemini_model = _env("GEMINI_MODEL", "gemini-3-flash-preview")
+    gemini_model = _env("GEMINI_MODEL", "gemini-3.1-flash-lite")
     return Config(
         cuatrimestre_start=_env_date("CUATRIMESTRE_START", "2026-08-01"),
         cuatrimestre_end=_env_date("CUATRIMESTRE_END", "2026-11-30"),

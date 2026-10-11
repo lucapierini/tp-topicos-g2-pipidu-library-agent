@@ -68,7 +68,7 @@ del mismo contenido.
 | D33 | Fallo de ejecución con código `EXECUTION_ERROR` | R-3.16 |
 | D34 | `pytest` excluye por defecto `integration` y `llm` | Art. 6 |
 | D35 | `psycopg2` importado de forma diferida | Art. 6 |
-| D36 | Modelo por defecto `gemini-3-flash-preview` | D15, `pytest -m llm` |
+| D36 | ~~Modelo por defecto `gemini-3-flash-preview`~~ — reemplazado por D71 | D15, `pytest -m llm` |
 | D37 | Cliente de `google-genai` en variable, no encadenado | `tests/test_llm_smoke.py` |
 | D38 | Tablas y columnas resueltas por scope (reemplaza el mapa global de D23) | R-3.4, R-3.14 |
 | D39 | Nodos de escritura rechazados en cualquier posición del árbol | R-3.2 |
@@ -103,6 +103,7 @@ del mismo contenido.
 | D68 | `POSTGRES_HOST=127.0.0.1` por defecto (en Windows `localhost` cuesta ~2 s por conexión) | T1.3 |
 | D69 | Corpus simulado de RAG para medir contenido sin PDFs; no calibra el umbral | R-2.8, D59 |
 | D70 | El clasificador de Gemini conserva el motivo del fallo de la API | R-5.7, D62 |
+| D71 | Modelo definitivo y por defecto: `gemini-3.1-flash-lite` (reemplaza D36) | R-2.1, R-2.8 |
 
 ## Risks / Trade-offs
 
@@ -116,8 +117,9 @@ del mismo contenido.
   columna) pero eso lo frena el validador, no cambia el criterio.
 - **[Cuota gratuita de la API: ~5 req/min y 20 req/día con `gemini-3-flash-preview`]** → mitigación:
   reintento con la espera que informa la API (D57) y medición con un modelo de mayor cuota
-  (`gemini-3.1-flash-lite`). El golden set usa ~50 llamadas: **no entra** en 20 por día, así que con la
-  clave gratuita el modelo por defecto no puede completar la medición de aceptación (D70).
+  (`gemini-3.1-flash-lite`). El golden set usa ~50 llamadas: **no entra** en 20 por día, así que
+  `gemini-3-flash-preview` no puede completar la medición con la clave gratuita; por eso el modelo
+  definitivo es `gemini-3.1-flash-lite` (D70, D71).
 - **[Costo de tokens por el ciclo SDD]** → mitigación: artefactos cortos, constitution de 1 página, tareas sin narrativa.
 
 ## Migration Plan
