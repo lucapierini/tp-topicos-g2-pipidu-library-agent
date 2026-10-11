@@ -72,10 +72,22 @@ def test_document_check_matches_by_prefix() -> None:
 
 def test_hybrid_check_requires_evidence_from_both_sources() -> None:
     g10 = _case("G10").check
-    both = {"sources": ["sql", "rag"], "rows": [{"id": 1}], "chunks": [{"document": "r.pdf"}]}
+    both = {"sources": ["sql", "rag"], "sql": "SELECT 1", "rows": [{"id": 1}],
+            "chunks": [{"document": "r.pdf"}]}
     assert g10(both)
     assert not g10({**both, "chunks": []}), "declarar la fuente sin evidencia no alcanza"
     assert not g10({**both, "sources": ["sql"]})
+    assert not g10({**both, "sql": None}), "declarar SQL sin sentencia ejecutada no alcanza"
+
+
+def test_hybrid_check_accepts_an_empty_result_from_an_executed_statement() -> None:
+    # R-3.8: "sin filas" es una respuesta válida. G11 verifica si el socio top tiene vencidos y la
+    # respuesta correcta es 0 filas; exigir filas la daba por fallida (corrida 2026-10-11).
+    g11 = _case("G11").check
+    answer = {"sources": ["sql", "rag"], "sql": "SELECT 1 WHERE false", "rows": [],
+              "chunks": [{"document": "reglamento_biblioteca.pdf"}]}
+    assert g11(answer)
+    assert not g11({**answer, "sql": ""})
 
 
 def test_none_check_requires_no_sources_rows_or_chunks() -> None:

@@ -57,7 +57,13 @@ def _document(prefix: str) -> Callable[[dict], bool]:
 
 
 def _both_sources(out: dict) -> bool:
-    return {"sql", "rag"} <= set(out.get("sources", [])) and bool(out.get("rows")) and bool(out.get("chunks"))
+    """Las dos fuentes con evidencia: una sentencia ejecutada y al menos un fragmento citado.
+
+    Las filas pueden ser 0: "sin resultados" es una respuesta válida (R-3.8) y, en un híbrido, la
+    última sentencia suele ser una verificación (p. ej. "¿tiene vencidos?") cuya respuesta correcta es
+    vacía. Exigir filas daba por fallida a G11 aun con la respuesta correcta.
+    """
+    return {"sql", "rag"} <= set(out.get("sources", [])) and bool(out.get("sql")) and bool(out.get("chunks"))
 
 
 GOLDEN_SET: list[GoldenCase] = [

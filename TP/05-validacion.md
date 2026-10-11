@@ -205,18 +205,19 @@ Lectura de la corrida del 2026-10-11 (Strata, `--db --rag-mock`):
 Lectura de la corrida del 2026-10-11 con `gemini-3.1-flash-lite` (`--db --rag-mock`):
 
 - **Clasificación 13/13, híbridos 3/3, `none` 1/1, 13/13 antes de tools, 0/8 SQL rechazado, 13/13 en
-  `agent_runs`.** El contenido da 12/13: SQL 5/5, RAG 4/4, `none` 1/1, híbridos 2/3.
-- **G11 falla el `check` de contenido y no es un error del agente.** Resolvió el socio con más
-  préstamos y después consultó si tenía préstamos vencidos (relevante para la norma de renovación); esa
-  segunda consulta dio 0 filas, que es la respuesta correcta. `_both_sources` exige `rows` no vacío y
-  `as_outcome()` toma las filas de la **última** sentencia, así que una verificación que da 0 filas se
-  lee como "sin filas". La falla es del criterio (D16, R-3.8): se reproduce en las dos pasadas y no se
-  modificó el `check` para que pase.
-- **Latencia: 464 s en total, por la cuota de la API, no por el modelo.** Con instrumentación se
-  observaron esperas de 31 s y 34,7 s (nuestro reintento, D57) y de 148 s (el reintento propio de
-  `smolagents`, que no respeta el tope de 60 s de D57). Los casos individuales tardan 3–10 s. Las esperas
-  caen en casos distintos según la corrida, por eso G6 y G11 aparecen como 218 s y 177 s en el JSON
-  guardado.
+  `agent_runs`, contenido 13/13** (SQL 5/5, RAG 4/4, híbridos 3/3, `none` 1/1). El JSON versionado es
+  la corrida regenerada con el criterio vigente.
+- **Cambio de criterio de G11 (D72).** La primera corrida del día dio contenido 12/13 porque
+  `_both_sources` exigía filas no vacías en un híbrido. G11 resolvió el socio con más préstamos y
+  después consultó si tenía vencidos (relevante para la norma de renovación); esa consulta da 0 filas,
+  que es la respuesta correcta (R-3.8), y `as_outcome()` toma las filas de la **última** sentencia. El
+  agente no cambió: se corrigió el criterio, con test, y se regeneró la corrida. El 12/13 original
+  queda en el historial de git (commit `da5283b`).
+- **Latencia: 330 s en total, por la cuota de la API, no por el modelo.** Con instrumentación en una
+  pasada previa se observaron esperas de 31 s y 34,7 s (nuestro reintento, D57) y de 148 s (el
+  reintento propio de `smolagents`, que no respeta el tope de 60 s de D57). Los casos individuales
+  tardan 2–10 s; en la corrida versionada G1 tardó 173 s y G10 67 s, y las esperas caen en casos
+  distintos según la corrida.
 
 Corrida con **base real** (PostgreSQL local con `db/dev_seed.sql`, rol `agent_ro`; recuperación todavía
 falsa), `gemini-3.1-flash-lite`, casos SQL G1–G5, con `scripts/measure_golden.py --db`:

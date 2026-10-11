@@ -104,6 +104,7 @@ del mismo contenido.
 | D69 | Corpus simulado de RAG para medir contenido sin PDFs; no calibra el umbral | R-2.8, D59 |
 | D70 | El clasificador de Gemini conserva el motivo del fallo de la API | R-5.7, D62 |
 | D71 | Modelo definitivo y por defecto: `gemini-3.1-flash-lite` (reemplaza D36) | R-2.1, R-2.8 |
+| D72 | El check de los híbridos exige SQL ejecutado y fragmento citado, no filas no vacías | R-3.8, D16 |
 
 ## Risks / Trade-offs
 
