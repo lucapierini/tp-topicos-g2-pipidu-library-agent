@@ -20,7 +20,7 @@ db/            schema.sql, dev_seed.sql, migrations/, init/, post_restore.sql (+
 rag/           documents/ (PDFs), ingest.py, chunking.py (pendientes)
 agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
-scripts/       measure_golden.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+scripts/       measure_golden.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 ui/            app.py (pendiente)
 tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py, test_agent.py, test_runs.py, ...
 docker/        Dockerfile (pendiente)
@@ -54,6 +54,8 @@ bash scripts/replicate_neon.sh --check   # versión y objetos de Neon; sin --che
 python -m pytest -m integration          # permisos por rol, esquema vs whitelist, flujo con datos reales
 python scripts/measure_golden.py --db    # golden set contra la base local (registra en agent_runs)
 python scripts/measure_golden.py --db --rag-mock   # + recuperación simulada: contenido de los 13 casos, sin PDFs
+python scripts/measure_golden.py --db --rag-mock --bilingual   # + 2 casos en inglés (no cuentan para R-2.1)
+python scripts/export_runs.py --last 15  # agent_runs -> TP/evidencia/ (antes de pytest -m integration, que la trunca)
 python -m pytest -q                      # suite offline: sin base ni credenciales
 python -m ruff check .                   # lint
 # Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3), UI Streamlit (T8.1)

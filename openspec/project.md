@@ -28,7 +28,7 @@ db/            schema.sql, seed_data.py, dump.sql
 rag/           documents/ (PDFs), ingest.py, chunking.py
 agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
-scripts/       measure_golden.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+scripts/       measure_golden.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 ui/            app.py
 tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py
 docker/        Dockerfile

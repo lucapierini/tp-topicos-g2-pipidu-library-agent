@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-11T06:26:27+00:00",
+  "date": "2026-10-11T06:44:06+00:00",
   "model": "gemini/gemini-3.1-flash-lite",
   "api_base": null,
   "config": {
@@ -36,7 +36,16 @@
     },
     "runs_recorded": "13/13",
     "cases_with_sql_rejected": "0/8",
-    "seconds_total": 329.7
+    "seconds_total": 287.7,
+    "english": {
+      "cases": [
+        "B1",
+        "B2"
+      ],
+      "classification_correct": "2/2",
+      "declared_language_en": "2/2",
+      "content_ok": "2/2"
+    }
   },
   "cases": [
     {
@@ -53,13 +62,14 @@
       "kind": "answer",
       "sql_original": "SELECT l.titulo, p.fecha_prestamo, p.fecha_devolucion_prevista FROM prestamos p JOIN socios s ON s.id = p.socio_id JOIN libros l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL",
       "sql_rejections": [],
-      "seconds": 173.0,
+      "seconds": 13.4,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 4,
+      "run_id": 18,
       "rows": 2,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G2",
@@ -73,15 +83,16 @@
       ],
       "valid": true,
       "kind": "answer",
-      "sql_original": "SELECT l.titulo, count(*) AS prestamos FROM prestamos p JOIN libros l ON l.id = p.libro_id WHERE p.fecha_prestamo BETWEEN '2026-08-01' AND '2026-11-30' GROUP BY l.titulo ORDER BY prestamos DESC LIMIT 5",
+      "sql_original": "SELECT l.titulo, count(*) AS total_prestamos FROM prestamos p JOIN libros l ON l.id = p.libro_id WHERE p.fecha_prestamo BETWEEN '2026-08-01' AND '2026-11-30' GROUP BY l.titulo ORDER BY total_prestamos DESC LIMIT 5",
       "sql_rejections": [],
-      "seconds": 8.3,
+      "seconds": 7.8,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 5,
+      "run_id": 19,
       "rows": 5,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G3",
@@ -97,13 +108,14 @@
       "kind": "answer",
       "sql_original": "SELECT DISTINCT s.nombre, s.apellido, v.dias_atraso FROM v_prestamos_estado v JOIN socios s ON s.id = v.socio_id WHERE v.estado_calculado = 'vencido' ORDER BY v.dias_atraso DESC",
       "sql_rejections": [],
-      "seconds": 9.5,
+      "seconds": 6.6,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 6,
+      "run_id": 20,
       "rows": 2,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G4",
@@ -119,13 +131,14 @@
       "kind": "answer",
       "sql_original": "SELECT coalesce(sum(l.ejemplares_disponibles), 0) AS disponibles FROM libros l JOIN categorias c ON c.id = l.categoria_id WHERE c.nombre ILIKE 'Ciencias de la Computación'",
       "sql_rejections": [],
-      "seconds": 8.6,
+      "seconds": 7.6,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 7,
+      "run_id": 21,
       "rows": 1,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G5",
@@ -141,13 +154,14 @@
       "kind": "answer",
       "sql_original": "SELECT a.nombre, a.apellido, count(l.id) AS cantidad_libros FROM autores a JOIN libros_autores la ON a.id = la.autor_id JOIN libros l ON la.libro_id = l.id JOIN editoriales e ON l.editorial_id = e.id WHERE e.nombre ILIKE 'Sudamericana' GROUP BY a.id, a.nombre, a.apellido ORDER BY cantidad_libros DESC LIMIT 1",
       "sql_rejections": [],
-      "seconds": 9.0,
+      "seconds": 7.3,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 8,
+      "run_id": 22,
       "rows": 1,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G6",
@@ -163,13 +177,14 @@
       "kind": "answer",
       "sql_original": null,
       "sql_rejections": [],
-      "seconds": 7.2,
+      "seconds": 23.4,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 9,
+      "run_id": 23,
       "rows": 0,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G7",
@@ -185,13 +200,14 @@
       "kind": "answer",
       "sql_original": null,
       "sql_rejections": [],
-      "seconds": 10.1,
+      "seconds": 8.9,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 10,
+      "run_id": 24,
       "rows": 0,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G8",
@@ -207,13 +223,14 @@
       "kind": "answer",
       "sql_original": null,
       "sql_rejections": [],
-      "seconds": 8.7,
+      "seconds": 9.0,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 11,
+      "run_id": 25,
       "rows": 0,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G9",
@@ -229,13 +246,14 @@
       "kind": "answer",
       "sql_original": null,
       "sql_rejections": [],
-      "seconds": 7.7,
+      "seconds": 8.3,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 12,
+      "run_id": 26,
       "rows": 0,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G10",
@@ -252,15 +270,16 @@
       ],
       "valid": true,
       "kind": "answer",
-      "sql_original": "SELECT s.tipo_socio FROM socios s WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez'",
+      "sql_original": "SELECT tipo_socio FROM socios WHERE nombre ILIKE 'Juan' AND apellido ILIKE 'Pérez'",
       "sql_rejections": [],
-      "seconds": 66.8,
+      "seconds": 169.1,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 13,
+      "run_id": 27,
       "rows": 1,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G11",
@@ -277,15 +296,16 @@
       ],
       "valid": true,
       "kind": "answer",
-      "sql_original": "SELECT p.id, p.libro_id, p.fecha_devolucion_prevista, v.estado_calculado FROM prestamos p LEFT JOIN v_prestamos_estado v ON p.id = v.id WHERE p.socio_id = 4 AND p.estado = 'activo'",
+      "sql_original": "SELECT v.estado_calculado FROM v_prestamos_estado v WHERE v.socio_id = 4 AND v.estado_calculado = 'vencido'",
       "sql_rejections": [],
-      "seconds": 6.6,
+      "seconds": 13.2,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 14,
+      "run_id": 28,
       "rows": 0,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G12",
@@ -301,15 +321,16 @@
       ],
       "valid": true,
       "kind": "answer",
-      "sql_original": "SELECT l.titulo, count(*) AS total_prestamos FROM prestamos p JOIN libros l ON l.id = p.libro_id GROUP BY l.id, l.titulo ORDER BY total_prestamos DESC LIMIT 1",
+      "sql_original": "SELECT l.titulo, count(*) AS total_prestamos FROM prestamos p JOIN libros l ON l.id = p.libro_id GROUP BY l.titulo ORDER BY total_prestamos DESC LIMIT 1",
       "sql_rejections": [],
-      "seconds": 12.6,
+      "seconds": 10.3,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 15,
+      "run_id": 29,
       "rows": 1,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
     },
     {
       "case_id": "G13",
@@ -321,13 +342,60 @@
       "kind": "no_coverage",
       "sql_original": null,
       "sql_rejections": [],
-      "seconds": 1.6,
+      "seconds": 2.8,
       "error": "",
       "violations": [],
       "before_tools": true,
-      "run_id": 16,
+      "run_id": 30,
       "rows": 0,
-      "content_ok": true
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "B1",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT l.titulo FROM prestamos p JOIN socios s ON s.id = p.socio_id JOIN libros l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL",
+      "sql_rejections": [],
+      "seconds": 8.7,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 31,
+      "rows": 2,
+      "content_ok": true,
+      "language": "en"
+    },
+    {
+      "case_id": "B2",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 9.5,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 32,
+      "rows": 0,
+      "content_ok": true,
+      "language": "en"
     }
   ]
 }

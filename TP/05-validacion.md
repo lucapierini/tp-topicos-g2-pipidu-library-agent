@@ -185,7 +185,7 @@ Corridas registradas:
 | 2026-10-10 | `gemini-3.1-flash-lite` | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí (backends falsos: sin evaluar contenido) |
 | 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 12/13 clasificados + 1 error del clasificador (G12) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` |
 | 2026-10-11 | Strata `qwen3.8-flash-next-iq2_xs` (local), base local + RAG simulado (`--db --rag-mock`, D69) | 12/13 clasificados + 1 error del clasificador (G12, timeout) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo y del contenido. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-11_db-mock.json` |
-| 2026-10-11 | `gemini-3.1-flash-lite`, base local + RAG simulado (`--db --rag-mock`, D69) | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí para R-2.1: es el modelo definitivo (D71); el retrieval es simulado. Evidencia: `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json` |
+| 2026-10-11 | `gemini-3.1-flash-lite`, base local + RAG simulado (`--db --rag-mock`, D69) | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí para R-2.1: es el modelo definitivo (D71); el retrieval es simulado. Más 2 casos en inglés (`B1`, `B2`, fuera de los 13): 2/2 con idioma y contenido. Evidencia: `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json` y export de `agent_runs` en `TP/evidencia/agent_runs_2026-10-11.json` |
 | 2026-10-11 | `gemini-3-flash-preview` (default del código), `--db --rag-mock` | **no evaluable**: 3 casos respondidos y 10 errores del clasificador | — | — | — | — | No. Cuota diaria gratuita agotada (HTTP 429, 20 requests por día y por modelo); no hay evidencia de comportamiento del modelo. Sin archivo de evidencia |
 
 Lectura de la corrida del 2026-10-11 (Strata, `--db --rag-mock`):
@@ -213,11 +213,20 @@ Lectura de la corrida del 2026-10-11 con `gemini-3.1-flash-lite` (`--db --rag-mo
   que es la respuesta correcta (R-3.8), y `as_outcome()` toma las filas de la **última** sentencia. El
   agente no cambió: se corrigió el criterio, con test, y se regeneró la corrida. El 12/13 original
   queda en el historial de git (commit `da5283b`).
-- **Latencia: 330 s en total, por la cuota de la API, no por el modelo.** Con instrumentación en una
+- **Latencia: 288 s en total, por la cuota de la API, no por el modelo.** Con instrumentación en una
   pasada previa se observaron esperas de 31 s y 34,7 s (nuestro reintento, D57) y de 148 s (el
   reintento propio de `smolagents`, que no respeta el tope de 60 s de D57). Los casos individuales
-  tardan 2–10 s; en la corrida versionada G1 tardó 173 s y G10 67 s, y las esperas caen en casos
-  distintos según la corrida.
+  tardan 2–25 s; en la corrida versionada G10 tardó 169 s, y las esperas caen en casos distintos según
+  la corrida.
+- **Casos en inglés (T7.6, R-5.1, D73): 2/2** con clasificación, idioma declarado `en`, contenido
+  (filas / documento esperado) y prosa en inglés. La primera corrida dio **0/2 de contenido**: el modelo
+  respondía en **castellano** y solo la línea de fuente salía "Source:". La causa era que el prompt, las
+  herramientas y los documentos están en castellano; se corrigió instruyendo el idioma en el prompt y
+  se repitió la corrida completa. La heurística de idioma mira palabras funcionales y es una excepción
+  acotada a D16; la calidad de la prosa sigue siendo de la rúbrica manual.
+- **Export de `agent_runs` (T7.7):** `TP/evidencia/agent_runs_2026-10-11.json` contiene las 15 consultas
+  de esta corrida (14 `ok`, 1 `no_coverage`), con los campos de R-6.1, el modelo y el endpoint `api`.
+  Se generó con `scripts/export_runs.py` antes de correr la suite de integración, que trunca la tabla.
 
 Corrida con **base real** (PostgreSQL local con `db/dev_seed.sql`, rol `agent_ro`; recuperación todavía
 falsa), `gemini-3.1-flash-lite`, casos SQL G1–G5, con `scripts/measure_golden.py --db`:

@@ -34,7 +34,8 @@ framework agéntico y SDD; se agregaron las tareas 2.9, 7.6, 7.7 y 9.6–9.9 (id
 `agent_runs`, volumen de `documentos`, base en la nube, roles en la base compartida, entregables de datos
 y coloquio) y se corrigió el README, que marcaba como cubiertos la UI y el despliegue. Medición con el
 modelo definitivo (`gemini-3.1-flash-lite`, base local y RAG simulado): 13/13 en clasificación y en
-contenido (D71, D72). `pytest -q` → 376 passed; `pytest -m integration` → 28 passed.
+contenido (D71, D72). `pytest -q` → 393 passed; `pytest -m integration` → 28 passed. Después: casos en inglés con idioma
+instruido en el prompt (7.2, 7.6, D73) y export de `agent_runs` (7.7) hechos; 9.4 queda con las capturas.
 
 ## 1. Setup y entorno
 
@@ -97,12 +98,15 @@ contenido (D71, D72). `pytest -q` → 376 passed; `pytest -m integration` → 28
 
 - [x] 7.1 Implementar el contrato `AgentAnswer` y verificar que toda respuesta del golden set declara fuente (R-5.2)
   _(contrato y reglas en `agent/contracts.py` + `tests/test_contracts.py`; composición en `LibraryAgent._compose`, `agent/agent.py`; la medición con modelos reales, 13/13 con fuente declarada antes de tools, está en `TP/05` §4.1)_
-- [ ] 7.2 Verificar idioma de respuesta con un caso en inglés y uno en castellano (R-5.1)
+- [x] 7.2 Verificar idioma de respuesta con un caso en inglés y uno en castellano (R-5.1)
+  _(B1 y B2 (`tests/golden_set.py::BILINGUAL_SET`) con `gemini-3.1-flash-lite`: 2/2 con idioma declarado `en`, contenido y prosa en inglés; los 13 casos en castellano salen con la plantilla en castellano. Primera corrida 0/2 por respuesta en castellano; corregido en D73. `TP/05` §4.1)_
 - [ ] 7.3 Verificar la evidencia exhibida: SQL muestra la sentencia, RAG muestra el fragmento citado (R-5.3, R-5.4)
 - [x] 7.4 Crear la tabla `agent_runs` y verificar que una consulta exitosa genera una fila con los ocho campos (R-6.1, R-6.2)
 - [x] 7.5 Verificar que una consulta rechazada también genera una fila con el motivo (R-6.3)
-- [ ] 7.6 Agregar al golden set dos casos en **inglés** (uno SQL y uno RAG, ids `B1` y `B2`), **fuera** de los 13 que miden R-2.1 para no cambiar el criterio ≥ 11/13, y verificar con el modelo definitivo que se clasifican bien y la respuesta sale en inglés. El enunciado pide "castellano o inglés" y los 13 casos actuales están en castellano; 7.2 depende de esto (R-5.1)
-- [ ] 7.7 Implementar `scripts/export_runs.py` que vuelque `agent_runs` a un archivo versionado en `TP/evidencia/`, y verificar que contiene las 13 consultas del golden set con sus campos. El fixture de integración hace `TRUNCATE agent_runs` (`tests/test_runs_integration.py`), así que exportar **antes** de correr `pytest -m integration`; la tabla no es una evidencia durable (R-6.1, R-6.2)
+- [x] 7.6 Agregar al golden set dos casos en **inglés** (uno SQL y uno RAG, ids `B1` y `B2`), **fuera** de los 13 que miden R-2.1 para no cambiar el criterio ≥ 11/13, y verificar con el modelo definitivo que se clasifican bien y la respuesta sale en inglés. El enunciado pide "castellano o inglés" y los 13 casos actuales están en castellano; 7.2 depende de esto (R-5.1)
+  _(B1 (SQL) y B2 (RAG), flag `--bilingual` en `measure_golden.py`, fuera del denominador de R-2.1; D73)_
+- [x] 7.7 Implementar `scripts/export_runs.py` que vuelque `agent_runs` a un archivo versionado en `TP/evidencia/`, y verificar que contiene las 13 consultas del golden set con sus campos. El fixture de integración hace `TRUNCATE agent_runs` (`tests/test_runs_integration.py`), así que exportar **antes** de correr `pytest -m integration`; la tabla no es una evidencia durable (R-6.1, R-6.2)
+  _(`scripts/export_runs.py` (`--last N`), 7 tests; exportadas las 15 consultas en `TP/evidencia/agent_runs_2026-10-11.json`)_
 
 ## 8. Interfaz Streamlit
 
