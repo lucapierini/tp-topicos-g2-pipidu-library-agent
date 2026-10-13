@@ -26,7 +26,7 @@ primero contra un **modelo local** (Strata, servidor OpenAI-compatible) y la **a
 Gemini (R-2.8). Medición registrada: `gemini-3.1-flash-lite` → 13/13 clasificaciones, 3/3 híbridos con las
 dos tools, 1/1 `none` sin tools, 0/8 SQL rechazado (`TP/evidencia/`), con backends falsos: el contenido
 no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el modelo definitivo si cambia
-(T6.7), verificar idioma y evidencia con casos reales (7.2, 7.3) y la UI (8.x).
+(T6.7), verificar idioma y evidencia con casos reales (7.2, 7.3) y la interfaz (8.x, descartada por D80).
 
 **Verificación contra el enunciado (2026-10-11):** se cruzaron los criterios de aprobación, promoción y
 entregables de `TP/Enunciado TP - 2026.pdf` con lo implementado. Quedaron cubiertos el agente, el
@@ -46,6 +46,10 @@ de D79, las specs (`consulta-por-api` R-7.0 a R-7.7, R-1.3, R-6.7) y `tests/test
 Abiertas: 9.11 (consultas en serie) y 9.12 (CORS; la autenticación se descarta por D81). Por D81 (decisión
 del equipo, 2026-10-13) el agente no se despliega en la nube: se prepara todo para correr en entorno local,
 9.3 queda sin efecto y el criterio de promoción 1 (nube) deja de estar cubierto.
+
+**Alcance local (2026-10-13):** el sistema corre en entorno local (D81), la interfaz está descartada (D80) y
+el CORS está implementado y verificado (R-7.8, D82). Quedan abiertas 9.1, 9.4, 9.5, 9.7 (opcional), 9.8, 9.9,
+9.11 y 9.12 (la llamada real desde el frontend), más los ítems de los otros integrantes.
 
 ## 1. Setup y entorno
 
@@ -140,17 +144,15 @@ es un cliente externo que consume la API. Se conservan los IDs para no renumerar
   _(esqueleto con los 13 casos y los 4 de retrieval en `tests/golden_set.py`; las afirmaciones están marcadas `llm` y se saltan hasta que exista el agente)_
 - [x] 9.2 Crear `docker/Dockerfile` y verificar que la imagen se construye y corre localmente
   _(`docker/Dockerfile` (etapas `base`, `measure`, `runtime`), `.dockerignore` y `tests/test_dockerfile.py`. Verificado con Docker 2026-10-11: ambas etapas construyen; `runtime` corre como uid 10001 y sin `tests/` ni `.env`; `measure` corrió G1, G6 y G13 dentro del contenedor contra la base del host (`POSTGRES_HOST=host.docker.internal`) y la API de Gemini, con las variables por `--env-file`: 3/3 en clasificación y contenido, 3/3 en `agent_runs`. Actualización (D80): el `CMD` de `runtime` pasó a servir la API con `uvicorn` en `$PORT`, verificado en 9.10)_
-- [ ] 9.3 Desplegar en Cloud Run + Cloud SQL con Secret Manager y verificar que las mismas 13 preguntas responden igual que en local
-  _(descartada por D81: no se despliega en la nube. Lo que queda es verificar las 13 preguntas contra la imagen `runtime` corriendo local con `uvicorn`; la imagen ya se verificó en 9.10 y 9.2)_
-- [ ] 9.4 Exportar `agent_runs` con las 13 consultas (con 7.7) y capturas de funcionamiento como evidencias para el informe. El enunciado pide "capturas, logs": si la UI (8.x) no llega, las capturas son de la terminal con `scripts/measure_golden.py`
+- ~~9.3 Desplegar en Cloud Run + Cloud SQL con Secret Manager y verificar que las mismas 13 preguntas responden igual que en local~~ — descartada (D81). No se despliega en la nube: el sistema corre en entorno local. Las 13 preguntas contra el sistema integrado ya no pertenecen a 9.3, se verifican en 9.1 (la imagen `runtime` se verificó en 9.2 y 9.10)
+- [ ] 9.4 Exportar `agent_runs` con las 13 consultas (con 7.7) y capturas de funcionamiento como evidencias para el informe. El enunciado pide "capturas, logs": las capturas se toman de la terminal o de la API local, con `scripts/measure_golden.py` y `scripts/export_runs.py`
 - [ ] 9.5 Redactar el informe técnico (máx. 10 páginas) con modelo de datos, arquitectura, consultas de ejemplo y evidencias, y verificar que cubre los 4 puntos exigidos por el enunciado
 
-- [ ] 9.6 Decidir dónde vive la base en la nube: la de **Neon** que ya comparte el equipo o **Cloud SQL** (D18). El enunciado exige que el agente y la base estén en un servicio cloud; Neon ya cumple la parte de la base y evita el riesgo de pgvector en Cloud SQL. Verificar que la decisión queda en `TP/CHANGELOG.md` con su motivo y, si cambia D18, que se registra como reemplazo
-  _(reducida por D81: el agente no va a la nube, así que la base de trabajo es la de Docker local. La decisión sobre Neon sigue abierta y es del equipo: afecta a los datos compartidos y al criterio de promoción 1, que ya no está cubierto)_
-- [ ] 9.7 Aplicar en la base compartida los roles `agent_ro` y `agent_logger`, sus permisos y `db/migrations/001_agent_runs.sql` (hoy solo existen en el Docker local), con `PGSSLMODE=require`, y verificar que `pytest -m integration` pasa contra esa base y que `agent_ro` no puede escribir ni leer `agent_runs` (D14, D63). Requiere al dueño de la base
+- ~~9.6 Decidir dónde vive la base en la nube: la de **Neon** que ya comparte el equipo o **Cloud SQL** (D18). El enunciado exige que el agente y la base estén en un servicio cloud; Neon ya cumple la parte de la base y evita el riesgo de pgvector en Cloud SQL. Verificar que la decisión queda en `TP/CHANGELOG.md` con su motivo y, si cambia D18, que se registra como reemplazo~~ — descartada (D81). La base de trabajo es la de Docker local; lo que sigue abierto es el uso de Neon para los datos compartidos del equipo, y se aplica en 9.7
+- [ ] 9.7 (Opcional, decisión del equipo: solo hace falta si el equipo sigue usando Neon como base compartida) Aplicar en esa base los roles `agent_ro` y `agent_logger`, sus permisos y `db/migrations/001_agent_runs.sql` (hoy solo existen en el Docker local), con `PGSSLMODE=require`, y verificar que `pytest -m integration` pasa contra esa base y que `agent_ro` no puede escribir ni leer `agent_runs` (D14, D63). Requiere al dueño de la base
   _(con D81 la verificación sobre la base local de Docker ya está corrida: `pytest -m integration` → 28 passed y `agent_ro` no puede escribir ni leer `agent_runs`. Queda solo aplicarlo en Neon si el equipo decide seguir usando esa base)_
 - [ ] 9.8 Verificar los entregables de datos ("Datos empleados: bases de datos y archivos PDF"): `db/dump.sql` y `rag/documents/*.pdf` están versionados y ninguna regla de `.gitignore` los excluye; desde un clon limpio, `docker compose up -d --wait` y la ingesta reproducen la base (2.8, 3.1)
-- [ ] 9.9 Preparar el coloquio (23 o 30/10/2026, criterio de aprobación): guion de demostración con una consulta SQL, una RAG, una híbrida y una sin cobertura; respuestas preparadas sobre las decisiones técnicas (`TP/CHANGELOG.md`), los límites del sistema (retrieval simulado hasta la ingesta, cuota de la API, modelo local vs definitivo) y qué mide cada evidencia
+- [ ] 9.9 Preparar el coloquio (23 o 30/10/2026, criterio de aprobación): guion de demostración con una consulta SQL, una RAG, una híbrida y una sin cobertura; respuestas preparadas sobre las decisiones técnicas (`TP/CHANGELOG.md`), los límites del sistema (retrieval simulado hasta la ingesta, cuota de la API, modelo local vs definitivo) y qué mide cada evidencia. El guion debe explicar por qué el despliegue es local (D81), qué criterios de promoción quedan cubiertos y el riesgo de esa decisión
 
 - [x] 9.10 Desplegar la API como único servicio: la imagen `runtime` copia `api/`, arranca `uvicorn api.app:app` en `$PORT` y no incluye ninguna UI (D80); verificar con `docker build` y `docker run` que `GET /health` responde
   _(verificado con Docker 2026-10-13: `GET /health` → 200 `{"status":"ok"}`; consulta vacía → 422; `POST /ask` real contra la base del host y la API del modelo → `start`, `classified`, `result` (`no_coverage`, `run_id` registrado); el contenedor corre como uid 10001 y no contiene `ui/`, `tests/`, `.env` ni `streamlit`)_
