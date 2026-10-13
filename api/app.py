@@ -15,6 +15,9 @@ Eventos:
 - `heartbeat`: {"elapsed_s": n} cada `HEARTBEAT_S` mientras el agente trabaja (evita cortes por inactividad).
 - `result`:    el `AgentAnswer` serializado (answer, answer_kind, sources, evidence, run_id, ...).
 - `error`:     {"detail": ...} si el agente lanzó una excepción inesperada.
+
+CORS: los orígenes del frontend se declaran en `API_ALLOWED_ORIGINS` (R-7.8, D82). Sin autenticación:
+el servicio corre en entorno local (D81).
 """
 from __future__ import annotations
 
@@ -22,19 +25,19 @@ import asyncio
 import json
 import threading
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from agent.agent import AnswerCancelled, EmptyQuestionError, answer
+from agent.config import load_config
 
 HEARTBEAT_S = 5
 _DONE = "__done__"  # marcador interno: el agente terminó; nunca sale al cliente
-
-app = FastAPI(title="Agente de biblioteca")
 
 
 class AskRequest(BaseModel):
@@ -87,18 +90,39 @@ async def _stream(question: str) -> AsyncIterator[str]:
     yield sse("result", asdict(result))
 
 
-@app.get("/health")
-def health() -> dict:
-    return {"status": "ok"}
+def create_app(allowed_origins: Sequence[str] = ()) -> FastAPI:
+    """Construye la app con los orígenes del frontend (R-7.8, D82).
+
+    Sin orígenes configurados no se agrega el middleware: la API no declara
+    `Access-Control-Allow-Origin` y un navegador desde otro origen no puede leer la respuesta. No se usa
+    `*` y no hay credenciales (R-7.8): el servicio corre en entorno local (D81).
+    """
+    app = FastAPI(title="Agente de biblioteca")
+    if allowed_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(allowed_origins),
+            allow_methods=["POST", "OPTIONS"],
+            allow_headers=["Content-Type"],
+            allow_credentials=False,
+        )
+
+    @app.get("/health")
+    def health() -> dict:
+        return {"status": "ok"}
+
+    @app.post("/ask")
+    async def ask(body: AskRequest) -> StreamingResponse:
+        if not body.question.strip():
+            # R-1.2: se rechaza antes de abrir el stream y sin invocar al agente.
+            raise HTTPException(status_code=422, detail=str(EmptyQuestionError("La consulta está vacía.")))
+        return StreamingResponse(
+            _stream(body.question),
+            media_type="text/event-stream",
+            headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        )
+
+    return app
 
 
-@app.post("/ask")
-async def ask(body: AskRequest) -> StreamingResponse:
-    if not body.question.strip():
-        # R-1.2: se rechaza antes de abrir el stream y sin invocar al agente.
-        raise HTTPException(status_code=422, detail=str(EmptyQuestionError("La consulta está vacía.")))
-    return StreamingResponse(
-        _stream(body.question),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+app = create_app(load_config().api_allowed_origins)

@@ -99,7 +99,34 @@ detalle y SHALL cerrar el flujo de forma ordenada, sin enviar `result`.
 - **THEN** el flujo contiene `start` y `error`
 - **AND** no contiene `result`
 
-### Requirement: R-7.7 — Estado del servicio
+### Requirement: R-7.8 — Orígenes permitidos (CORS)
+El sistema SHALL aceptar las llamadas del frontend únicamente desde los orígenes declarados en
+`API_ALLOWED_ORIGINS`. Un origen no declarado SHALL NO recibir `Access-Control-Allow-Origin` y su
+preflight SHALL ser rechazado. El sistema SHALL NO usar un wildcard `*`. El acceso no requiere
+autenticación: el servicio corre en entorno local (D81).
+
+#### Scenario: origen permitido
+- **GIVEN** un origen declarado en `API_ALLOWED_ORIGINS`
+- **WHEN** el navegador envía un preflight `OPTIONS` a `POST /ask`
+- **THEN** la respuesta es 200
+- **AND** `Access-Control-Allow-Origin` es ese origen
+
+#### Scenario: origen no declarado
+- **GIVEN** un origen que no está en `API_ALLOWED_ORIGINS`
+- **WHEN** envía un preflight
+- **THEN** es rechazado
+- **AND** la respuesta no incluye `Access-Control-Allow-Origin`
+
+#### Scenario: sin orígenes configurados
+- **GIVEN** `API_ALLOWED_ORIGINS` vacío
+- **WHEN** una llamada llega desde un origen de navegador
+- **THEN** la respuesta no incluye `Access-Control-Allow-Origin`
+
+#### Scenario: sin credenciales
+- **GIVEN** un origen permitido
+- **WHEN** llama a `POST /ask` sin credenciales
+- **THEN** la consulta se procesa
+- **AND** la respuesta no refleja credenciales de la aplicación
 El sistema SHALL exponer `GET /health`, que responde `{"status": "ok"}` sin invocar al agente ni
 a la base.
 

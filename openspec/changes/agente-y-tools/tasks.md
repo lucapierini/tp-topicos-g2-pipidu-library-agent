@@ -43,7 +43,9 @@ API y el frontend es un cliente externo, así que el endpoint se restituyó **si
 `feature/api-endpoint`, con el lock, los eventos de progreso, la cancelación (D75–D77), las correcciones
 de D79, las specs (`consulta-por-api` R-7.0 a R-7.7, R-1.3, R-6.7) y `tests/test_api.py`. Se eliminaron
 `ui/` y la dependencia de Streamlit; la imagen `runtime` sirve `uvicorn`. `pytest -q` → 421 passed.
-Abiertas: 9.11 (consultas en serie) y 9.12 (CORS y acceso a la API).
+Abiertas: 9.11 (consultas en serie) y 9.12 (CORS; la autenticación se descarta por D81). Por D81 (decisión
+del equipo, 2026-10-13) el agente no se despliega en la nube: se prepara todo para correr en entorno local,
+9.3 queda sin efecto y el criterio de promoción 1 (nube) deja de estar cubierto.
 
 ## 1. Setup y entorno
 
@@ -139,17 +141,21 @@ es un cliente externo que consume la API. Se conservan los IDs para no renumerar
 - [x] 9.2 Crear `docker/Dockerfile` y verificar que la imagen se construye y corre localmente
   _(`docker/Dockerfile` (etapas `base`, `measure`, `runtime`), `.dockerignore` y `tests/test_dockerfile.py`. Verificado con Docker 2026-10-11: ambas etapas construyen; `runtime` corre como uid 10001 y sin `tests/` ni `.env`; `measure` corrió G1, G6 y G13 dentro del contenedor contra la base del host (`POSTGRES_HOST=host.docker.internal`) y la API de Gemini, con las variables por `--env-file`: 3/3 en clasificación y contenido, 3/3 en `agent_runs`. Actualización (D80): el `CMD` de `runtime` pasó a servir la API con `uvicorn` en `$PORT`, verificado en 9.10)_
 - [ ] 9.3 Desplegar en Cloud Run + Cloud SQL con Secret Manager y verificar que las mismas 13 preguntas responden igual que en local
+  _(descartada por D81: no se despliega en la nube. Lo que queda es verificar las 13 preguntas contra la imagen `runtime` corriendo local con `uvicorn`; la imagen ya se verificó en 9.10 y 9.2)_
 - [ ] 9.4 Exportar `agent_runs` con las 13 consultas (con 7.7) y capturas de funcionamiento como evidencias para el informe. El enunciado pide "capturas, logs": si la UI (8.x) no llega, las capturas son de la terminal con `scripts/measure_golden.py`
 - [ ] 9.5 Redactar el informe técnico (máx. 10 páginas) con modelo de datos, arquitectura, consultas de ejemplo y evidencias, y verificar que cubre los 4 puntos exigidos por el enunciado
 
 - [ ] 9.6 Decidir dónde vive la base en la nube: la de **Neon** que ya comparte el equipo o **Cloud SQL** (D18). El enunciado exige que el agente y la base estén en un servicio cloud; Neon ya cumple la parte de la base y evita el riesgo de pgvector en Cloud SQL. Verificar que la decisión queda en `TP/CHANGELOG.md` con su motivo y, si cambia D18, que se registra como reemplazo
+  _(reducida por D81: el agente no va a la nube, así que la base de trabajo es la de Docker local. La decisión sobre Neon sigue abierta y es del equipo: afecta a los datos compartidos y al criterio de promoción 1, que ya no está cubierto)_
 - [ ] 9.7 Aplicar en la base compartida los roles `agent_ro` y `agent_logger`, sus permisos y `db/migrations/001_agent_runs.sql` (hoy solo existen en el Docker local), con `PGSSLMODE=require`, y verificar que `pytest -m integration` pasa contra esa base y que `agent_ro` no puede escribir ni leer `agent_runs` (D14, D63). Requiere al dueño de la base
+  _(con D81 la verificación sobre la base local de Docker ya está corrida: `pytest -m integration` → 28 passed y `agent_ro` no puede escribir ni leer `agent_runs`. Queda solo aplicarlo en Neon si el equipo decide seguir usando esa base)_
 - [ ] 9.8 Verificar los entregables de datos ("Datos empleados: bases de datos y archivos PDF"): `db/dump.sql` y `rag/documents/*.pdf` están versionados y ninguna regla de `.gitignore` los excluye; desde un clon limpio, `docker compose up -d --wait` y la ingesta reproducen la base (2.8, 3.1)
 - [ ] 9.9 Preparar el coloquio (23 o 30/10/2026, criterio de aprobación): guion de demostración con una consulta SQL, una RAG, una híbrida y una sin cobertura; respuestas preparadas sobre las decisiones técnicas (`TP/CHANGELOG.md`), los límites del sistema (retrieval simulado hasta la ingesta, cuota de la API, modelo local vs definitivo) y qué mide cada evidencia
 
 - [x] 9.10 Desplegar la API como único servicio: la imagen `runtime` copia `api/`, arranca `uvicorn api.app:app` en `$PORT` y no incluye ninguna UI (D80); verificar con `docker build` y `docker run` que `GET /health` responde
   _(verificado con Docker 2026-10-13: `GET /health` → 200 `{"status":"ok"}`; consulta vacía → 422; `POST /ask` real contra la base del host y la API del modelo → `start`, `classified`, `result` (`no_coverage`, `run_id` registrado); el contenedor corre como uid 10001 y no contiene `ui/`, `tests/`, `.env` ni `streamlit`)_
 - [ ] 9.12 Definir el acceso a la API para un frontend externo: CORS para los orígenes del frontend (un navegador en otro origen no puede llamar a `POST /ask` hoy) y restricción de acceso (sin autenticación, un endpoint público consume la cuota del modelo). Verificar desde el frontend real que la llamada funciona y que un origen no autorizado es rechazado
+  _(implementado y verificado con `tests/test_api_cors.py` — 8 tests, 2026-10-13: preflight 200 con `Access-Control-Allow-Origin` para el origen declarado en `API_ALLOWED_ORIGINS`, 400 sin el header para un origen no declarado, sin wildcard `*` con la lista vacía, el stream SSE conserva el header y no se requieren credenciales. La autenticación se descarta por D81: el servicio corre en entorno local (D82, R-7.8). **Pendiente:** la llamada real desde el frontend, falta el origen que declara el integrante del frontend para cargarlo en `API_ALLOWED_ORIGINS`)_
 - [ ] 9.11 Revisar el costo de atender las consultas en serie (D77) antes de una demostración con varias personas: una consulta puede esperar hasta el tiempo de las anteriores (3–170 s cada una). Opciones: un agente por sesión o un pool de conexiones
 
 ## Workflow follow-up

@@ -9,7 +9,7 @@ vía RAG, decidiendo autónomamente qué fuente consultar en cada caso.
 
 ## Stack
 
-Python 3.11+ · PostgreSQL + pgvector · Gemini · Smolagents · FastAPI · GCP (Cloud Run + Cloud SQL)
+Python 3.11+ · PostgreSQL + pgvector · Gemini · Smolagents · FastAPI · ejecución local (D81)
 
 ## Estructura
 
@@ -58,7 +58,9 @@ python scripts/measure_golden.py --db    # golden set contra la base local (regi
 python scripts/measure_golden.py --db --rag-mock   # + recuperación simulada: contenido de los 13 casos, sin PDFs
 python scripts/measure_golden.py --db --rag-mock --bilingual   # + 2 casos en inglés (no cuentan para R-2.1)
 python scripts/export_runs.py --last 15  # agent_runs -> TP/evidencia/ (antes de pytest -m integration, que la trunca)
-uvicorn api.app:app --port 8000          # API del agente (único acceso); el frontend apunta a http://localhost:8000
+uvicorn api.app:app --port 8000          # API del agente (único acceso); el frontend apunta a http://127.0.0.1:8000
+# El frontend necesita su origen en `API_ALLOWED_ORIGINS` (.env), separado por comas; sin él, el
+# navegador rechaza la respuesta (R-7.8, D82). Sin autenticación: el servicio corre en local (D81).
 # Consulta de prueba (JSON en UTF-8; en Windows conviene un cliente HTTP en vez de curl por el cuoteo):
 #   curl -N -X POST localhost:8000/ask -H "content-type: application/json" -d '{"question":"..."}'
 docker build -f docker/Dockerfile -t pipidu-agent .                    # imagen del agente (etapa runtime)
@@ -75,5 +77,5 @@ El enunciado pide al menos dos de cinco. Estado real:
 - [x] Framework agéntico (Smolagents): implementado
 - [x] SDD (artefactos en `TP/` y `openspec/`): implementados
 - [ ] Interfaz gráfica: la provee un frontend externo que consume la API (D80); no está en este repositorio
-- [ ] Despliegue en la nube (GCP): planificado, pendiente (tareas 9.3, 9.6, 9.7, 9.10)
+- [ ] Despliegue en la nube (GCP): **descartado por D81** (decisión del equipo, 2026-10-13): el sistema se prepara para correr en entorno local. Queda cubierto solo con `framework agéntico` y `SDD`; hay que confirmarlo con el equipo. La imagen `runtime` sigue siendo válida para correr local con `uvicorn`
 - [ ] Observabilidad (LangSmith): excluida explícitamente

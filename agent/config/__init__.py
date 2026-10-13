@@ -39,6 +39,11 @@ def _env_date(name: str, default: str) -> date:
     return date.fromisoformat(os.environ.get(name, default))
 
 
+def _env_list(name: str) -> tuple[str, ...]:
+    """Lista separada por comas. Un vacío significa 'no definido' (R-7.8)."""
+    return tuple(item.strip() for item in os.environ.get(name, "").split(",") if item.strip())
+
+
 @dataclass(frozen=True)
 class Config:
     # Semántica temporal (D6, R-3.11)
@@ -82,6 +87,9 @@ class Config:
     db_host: str
     db_port: int
 
+    # Frontend externo (R-7.8, D82): orígenes permitidos para CORS. Vacío = ninguno.
+    api_allowed_origins: tuple[str, ...]
+
 
 def load_config() -> Config:
     gemini_model = _env("GEMINI_MODEL", "gemini-3.1-flash-lite")
@@ -115,4 +123,5 @@ def load_config() -> Config:
         # ~2 s (medido); Docker publica el puerto solo en IPv4 loopback.
         db_host=_env("POSTGRES_HOST", "127.0.0.1"),
         db_port=_env_int("POSTGRES_PORT", "5432"),
+        api_allowed_origins=_env_list("API_ALLOWED_ORIGINS"),
     )

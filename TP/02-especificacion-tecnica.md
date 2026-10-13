@@ -40,7 +40,7 @@ flowchart TB
 | Framework agéntico | Smolagents |
 | Acceso al agente | API HTTP con FastAPI + uvicorn y respuesta en streaming SSE (D75, D80, `consulta-por-api`). Sin interfaz gráfica propia: el frontend es un cliente externo |
 | Embeddings | Gemini Embeddings API (`text-embedding-004` o equivalente vigente) |
-| Despliegue | GCP (Cloud Run / Compute Engine + Cloud SQL para Postgres) |
+| Despliegue | **Entorno local** (Docker + `uvicorn`), D81. GCP (Cloud Run + Cloud SQL) queda como planificación no ejecutada |
 | Control de versiones | GitHub |
 | ORM / acceso a datos | SQLAlchemy (o psycopg2 directo, a definir en implementación) |
 
@@ -391,6 +391,9 @@ de otra y la segunda espera la latencia completa de la primera.
 
 ## 7. Despliegue en GCP
 
+**Decisión (D81, 2026-10-13): no se despliega en la nube.** El sistema se prepara para correr en entorno
+local. Lo siguiente queda como planificación no ejecutada, no como estado actual.
+
 - **Opción recomendada:** Cloud Run para el servicio (API + agente) + Cloud SQL (PostgreSQL con pgvector) para la base.
 - Variables de entorno gestionadas vía Secret Manager (API key de Gemini, credenciales de BD).
 - Dockerfile multi-etapa (D74, D80): la etapa `runtime` empaqueta la API + agente y arranca `uvicorn api.app:app` en `$PORT` (8080 por defecto); la etapa `measure` agrega los scripts de medición y no se despliega.
@@ -465,7 +468,7 @@ Los cuatro pendientes originales se cerraron en `CHANGELOG.md`:
 - Capa de acceso a datos: **psycopg2 directo** (D9).
 - Estrategia de chunking: **por cláusula, tope 800 tokens / 150 de solapamiento** (D10).
 - Memoria conversacional: **single-turn**, historial solo visual (D17).
-- Despliegue: **Cloud Run + Cloud SQL + Secret Manager** (D18).
+- Despliegue: **entorno local** (Docker + `uvicorn`), D81, que reemplaza D18 para la parte del servicio. La base que comparte el equipo sigue en Neon (9.6 abierta).
 
 Queda un pendiente numérico, no conceptual: el umbral de similitud definitivo (D12), que se cierra con
 la medición de T3.6.

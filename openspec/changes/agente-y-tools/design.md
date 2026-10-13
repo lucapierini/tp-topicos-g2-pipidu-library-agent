@@ -51,7 +51,7 @@ del mismo contenido.
 | D15 | `max_steps = 6`, temperatura 0, timeout de API 30 s | Art. 7, R-6.2 |
 | D16 | Aserción sobre clasificación, SQL y filas; prosa con rúbrica manual | Art. 6, Art. 7 |
 | D17 | El historial no alimenta al agente (lo conserva el frontend; v1 es de un solo turno) | R-7.0 |
-| D18 | Cloud Run + Cloud SQL + Secret Manager | criterio de promoción 1 |
+| D18 | ~~Cloud Run + Cloud SQL + Secret Manager~~ — reemplazado por D81 (entorno local) | criterio de promoción 1 |
 | D19 | PDFs generados por el integrante de RAG y base de datos | G6–G9, R1–R3 |
 | D20 | Un artefacto, un solo lugar | `TP/README.md` |
 | D21 | Whitelist excluye `agent_runs`, `documentos` y `documentos_chunks` | R-3.4 |
@@ -114,6 +114,8 @@ del mismo contenido.
 | D78 | ~~UI Streamlit en proceso; imagen `runtime` arranca Streamlit~~ — reemplazado por D80 | D18 |
 | D79 | Correcciones al streaming: marcador de fin de agente y `duration_s` siempre numérico | R-7.3, R-7.2 |
 | D80 | Sin UI propia: el agente es accesible solo por la API HTTP y el frontend es un cliente externo; la imagen `runtime` sirve la API | R-7.0, D18 |
+| D81 | No se despliega en la nube: el sistema se prepara para correr en entorno local (Docker + `uvicorn`) | D18, criterio de promoción 1 |
+| D82 | CORS con allowlist `API_ALLOWED_ORIGINS`, sin wildcard y sin autenticación | R-7.8, D81 |
 
 ## Risks / Trade-offs
 

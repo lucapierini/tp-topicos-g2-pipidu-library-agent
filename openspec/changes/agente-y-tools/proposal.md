@@ -46,7 +46,9 @@ _(ninguna — es el primer change del proyecto)_
 - Nuevas dependencias: `smolagents[litellm]`, `psycopg2-binary`, `pypdf`, `google-genai`, `sqlglot`,
   `fastapi`, `uvicorn` (la API HTTP, D75) y `pytest`.
 - Contenedor en ejecución: la imagen `runtime` arranca `uvicorn api.app:app` en `PORT` (8080 por defecto, D80).
-- Nuevas variables de entorno: `GEMINI_API_KEY`, credenciales de Cloud SQL y, para cambiar de proveedor sin
+- Nuevas variables de entorno: `GEMINI_API_KEY`, credenciales de BD y, para cambiar de proveedor sin
   tocar código, `LLM_MODEL`, `LLM_API_BASE` y `LLM_API_KEY` (R-2.8). El flujo se valida primero contra un
-  modelo local y la aceptación se mide después con Gemini.
-- Depende de un despliegue en GCP (Cloud Run + Cloud SQL) para el criterio de promoción 1.
+  modelo local y la aceptación se mide después con Gemini. `API_ALLOWED_ORIGINS` agrega la allowlist de
+  CORS del frontend (R-7.8, D82).
+- Despliegue en **entorno local** (D81): el criterio de promoción 1 (nube) deja de estar cubierto. Sin
+  autenticación: el endpoint no queda expuesto a clientes externos (D82).

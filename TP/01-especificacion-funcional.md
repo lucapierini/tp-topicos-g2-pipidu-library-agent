@@ -111,7 +111,7 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 ## 8. Criterios de promoción directa (2+ de 5, elegidos 4)
 
-- [ ] Despliegue en la nube (GCP): planificado, pendiente (tareas 9.3, 9.6, 9.7, 9.10)
+- [ ] Despliegue en la nube (GCP): **descartado por D81** (2026-10-13): el sistema se prepara para correr en entorno local. Quedan cubiertos `framework agéntico` y `SDD`; hay que confirmarlo con el equipo
 - [ ] Interfaz gráfica: la provee un frontend externo que consume la API (D80); **no está en este repositorio**, hay que confirmar con el equipo cómo se entrega y evidencia para este criterio
 - [x] Framework agéntico (Smolagents)
 - [x] SDD (artefactos de esta carpeta `TP/`)
