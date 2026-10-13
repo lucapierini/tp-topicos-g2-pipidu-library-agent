@@ -4,8 +4,9 @@
 
 Proyecto greenfield. No existe código todavía. La motivación está en `proposal.md`. Las
 restricciones que condicionan el diseño son las de `TP/00-constitucion.md` (read-only por diseño,
-proveniencia obligatoria, trazabilidad de ejecución) y los criterios de promoción elegidos:
-despliegue en GCP, interfaz gráfica (un frontend externo que consume la API, D80), framework agéntico y SDD.
+proveniencia obligatoria, trazabilidad de ejecución) y los criterios de promoción elegidos: el de
+despliegue en la nube queda descartado por D81; siguen cubiertos framework agéntico y SDD, y el de interfaz
+gráfica lo provee un frontend externo que consume la API (D80).
 
 Condición de contorno: tres integrantes trabajando en paralelo, lo que exige contratos de interfaz
 definidos antes de implementar, para que las tools se puedan desarrollar y testear de forma aislada.
@@ -122,7 +123,7 @@ del mismo contenido.
 - **[Text-to-SQL poco preciso]** → mitigación: few-shot de 8 ejemplos en el prompt + golden set de 5 casos SQL que se ejecuta en CI local con `pytest`.
 - **[Clasificación de fuente inestable por no determinismo]** → mitigación: temperatura 0, golden set de 13 casos, umbral de aceptación ≥11/13 documentado en `TP/05-validacion.md`.
 - **[Retrieval devuelve fragmentos irrelevantes y el agente alucina]** → mitigación: umbral de similitud mínimo (R-4.6) obliga a declarar "no se encontró información relevante".
-- **[Cloud SQL sin pgvector disponible en la región/cuota]** → mitigación: spike de despliegue en la semana 1, antes de dependencias de mayor tamaño.
+- ~~**[Cloud SQL sin pgvector disponible en la región/cuota]**~~ — descartado por D81 (entorno local).
 - **[Un modelo local valida el flujo pero no es el modelo definitivo]** → mitigación: R-2.8 separa
   "validación del flujo" de "aceptación"; la evidencia consigna el modelo (R-6.5) y el golden set se repite
   con Gemini antes de dar por cumplido R-2.1. Un modelo local más débil genera SQL peor (medido: inventó una
@@ -146,7 +147,8 @@ del mismo contenido.
 6. **Medición de aceptación con Gemini** (`GEMINI_API_KEY`, sin cambios de código): se repite el golden set
    completo y la evidencia se versiona en `TP/evidencia/` con el modelo usado. Los resultados del modelo
    local no cuentan como aceptación (D59).
-7. Despliegue: imagen Docker → Cloud Run; Cloud SQL con pgvector; Secret Manager para `GEMINI_API_KEY`.
+7. Despliegue local (D81): `docker compose` para Postgres + pgvector; imagen `runtime` o
+   `uvicorn api.app:app`; `GEMINI_API_KEY` vía `.env` y `docker run --env-file`.
 8. Rollback: el despliegue no muta datos; basta con redeployear la imagen anterior.
 
 ## Open Questions

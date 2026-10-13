@@ -19,7 +19,7 @@ Entrega: 16/10/2026 23:59 (GMT-03). Coloquio: 23/10 o 30/10/2026.
 | Embeddings | Gemini Embeddings API |
 | Framework agéntico | Smolagents |
 | Acceso al agente | API HTTP con FastAPI + uvicorn (streaming SSE); el frontend es un cliente externo (D80) |
-| Despliegue | GCP (Cloud Run + Cloud SQL + Secret Manager) |
+| Despliegue | Entorno local: Docker (Postgres + pgvector) + `uvicorn api.app:app` (D81) |
 
 ## Estructura del repositorio
 
