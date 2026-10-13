@@ -38,8 +38,8 @@ USER agent
 CMD ["python", "scripts/measure_golden.py", "--help"]
 
 # --- runtime: lo que se despliega (última etapa = destino por defecto) ------------------------------
-# Todavía no hay UI (tarea 8.1): hasta entonces la imagen solo verifica que el agente importa. Cuando
-# exista `ui/app.py`, agregar `COPY ui/ ui/` y reemplazar el CMD por:
-#   CMD ["sh", "-c", "streamlit run ui/app.py --server.port=${PORT:-8080} --server.address=0.0.0.0"]
+# Un solo servicio con UI y agente (D18): Streamlit importa `agent` y lo llama como función.
 FROM base AS runtime
-CMD ["python", "-c", "import agent.agent; print('agent importable')"]
+COPY ui/ ui/
+ENV PORT=8080
+CMD ["sh", "-c", "streamlit run ui/app.py --server.port=${PORT} --server.address=0.0.0.0"]
