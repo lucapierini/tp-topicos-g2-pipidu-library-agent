@@ -6,7 +6,11 @@ venv/
 
 # Secretos (Art. 9 de TP/00-constitucion.md)
 .env
+.env.local
 !.env.example
+
+# Enlace local a Neon (neon link): estado de cada integrante
+.neon/
 
 # Evidencias locales
 *.log

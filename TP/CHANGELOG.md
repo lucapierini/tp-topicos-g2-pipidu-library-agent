@@ -148,6 +148,37 @@ ediciones divergentes. Se eliminaron `03-especificaciones-por-capacidad.md` y `0
 
 ---
 
+## 2026-10-13 — Base de datos en Neon y documentos del RAG (change `base-de-datos-neon`)
+
+**Decisión:** traer a este repositorio la justificación del esquema, el seed y los documentos fuente
+del RAG, que se habían diseñado en `UCSE-2026-TAIA` (features 01 y 02). Se tramitan como un change
+propio, `openspec/changes/base-de-datos-neon/`, con capacidades `esquema-de-base-de-datos` (R-7.x),
+`datos-de-prueba` (R-8.x) y `documentos-fuente-rag` (R-9.x). **Motivo:** D64 adoptó el esquema compartido
+sin dejar escrito por qué tiene esa forma; el informe necesita sustentar el modelo de datos.
+
+**Corrección:** la nota de origen decía "8 tablas" en `production`; el DDL declara 9 (7 de dominio y 2
+documentales). Se consigna 9.
+
+Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D74`:
+
+| ID | Decisión | Alternativa descartada y motivo |
+|---|---|---|
+| D-DB1 | Neon (PostgreSQL + pgvector + bucket privado) es la base compartida; GCP aloja solo agente + UI. Respalda 9.6 y matiza D18 | Cloud SQL: más costo y fricción con pgvector; Neon ya ofrece ramas y almacenamiento de objetos |
+| D-DB2 | `GENERATED ALWAYS AS IDENTITY` | `SERIAL`: no estándar, permite ids manuales |
+| D-DB3 | Libros y autores por tabla puente `libros_autores` (origen de D64) | `libros.autor_id`: no representa varios autores |
+| D-DB4 | `prestamos.estado` solo `activo`/`devuelto`, con CHECK contra `fecha_devolucion_real` | Guardar `vencido`: se desactualiza |
+| D-DB5 | Vista `v_prestamos_estado` con `estado_calculado` y `dias_atraso` (refuerza D7) | Que el agente calcule fechas en el SQL |
+| D-DB6 | `ejemplares_disponibles` como columna con CHECK `0..totales` | Derivarla de préstamos: complica el text-to-SQL |
+| D-DB7 | `ON DELETE RESTRICT` en dominio, `CASCADE` en puente y chunks | `CASCADE` general: borraría historial |
+| D-DB8 | `vector(768)` + HNSW coseno (D5, D13) | Más dimensiones: más almacenamiento sin ganancia con ~22 chunks |
+| D-DB9 | El rol del SQL tool no ve `documentos*` | Acceso total: no lo necesita |
+| D-DB10 | Plazos, límites y multas viven en el reglamento (RAG), no en tablas | Tabla de políticas: la consulta mixta no ejercitaría el RAG |
+
+**Orden seguido:** DDL aprobado antes de crear tablas → validado en rama de Neon (`test-ddl`) → aplicado
+a `production` → seed validado en `test-seed` → aplicado → PDFs generados y subidos al bucket `rag`.
+
+---
+
 ## Decisiones de base (sin cambio)
 
 | # | Decisión | Estado |

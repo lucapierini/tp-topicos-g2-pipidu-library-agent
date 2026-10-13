@@ -1,0 +1,3 @@
+schema: spec-driven
+created: 2026-10-13
+goal: Justificar y versionar la base de datos en Neon (DDL, seed) y los documentos fuente del RAG

@@ -16,8 +16,9 @@ Python 3.11+ · PostgreSQL + pgvector · Gemini · Smolagents · Streamlit · GC
 ```
 TP/            artefactos SDD (constitución, specs, validación, changelog, enunciado)
 openspec/      raíz operativa de SDD (project.md, config.yaml, changes/)
-db/            schema.sql, dev_seed.sql, migrations/, init/, post_restore.sql (+ seed_data.py, dump.sql: pendientes)
-rag/           documents/ (PDFs), ingest.py, chunking.py (pendientes)
+db/            schema.sql, seed.sql (catálogo real en Neon), dev_seed.sql, migrations/, init/, post_restore.sql
+               (+ seed_data.py, dump.sql: pendientes)
+rag/           documents/ (.md fuente + pdf/), build_pdfs.py, upload_to_bucket.py; ingest.py, chunking.py (pendientes)
 agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
 scripts/       measure_golden.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
@@ -35,7 +36,8 @@ Pendiente: la medición de aceptación con el modelo definitivo (T6.7), la inges
 entregable, la UI y el despliegue. El detalle está en
 [`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
 El change activo es [`agente-y-tools`](openspec/changes/agente-y-tools/), validado con
-`openspec validate --strict`.
+`openspec validate --strict`. El change [`base-de-datos-neon`](openspec/changes/base-de-datos-neon/)
+justifica el esquema, el seed y los documentos fuente del RAG (rama `feature/database`).
 
 ## Instalación y ejecución
 
