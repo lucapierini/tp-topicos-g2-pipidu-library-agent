@@ -198,6 +198,8 @@ def test_rag_answer_cites_document_and_location() -> None:
     assert answer.sources == ["rag"]
     assert answer.evidence["chunks"][0]["document"] == "reglamento_biblioteca.pdf"
     assert answer.evidence["chunks"][0]["location"] == "Art. 12"
+    # R-5.4: el fragmento citado viaja con su texto para que el cliente lo exhiba.
+    assert answer.evidence["chunks"][0]["text"]
     assert json.loads(runner.observations[0])["chunks"][0]["location"] == "Art. 12"
     assert answer.answer.endswith("Fuente: RAG")
     assert answer.is_valid(), answer.violations()
@@ -364,3 +366,80 @@ def test_importing_the_orchestrator_does_not_load_smolagents_or_google() -> None
 
 def test_make_chunk_helper_builds_a_valid_chunk() -> None:
     assert make_chunk(similarity=0.5).similarity == 0.5
+
+
+def test_concurrent_answers_are_serialized() -> None:
+    """Dos sesiones simultáneas no pueden usar a la vez las conexiones compartidas del agente."""
+    import threading
+    import time
+
+    from agent.agent import LibraryAgent
+
+    agent = LibraryAgent.__new__(LibraryAgent)
+    agent._lock = threading.Lock()
+    active, peak = 0, 0
+
+    def fake_resolve(text, *_):
+        nonlocal active, peak
+        active += 1
+        peak = max(peak, active)
+        time.sleep(0.05)
+        active -= 1
+        return None
+
+    agent._resolve = fake_resolve
+    agent._persist = lambda result, latency: result
+    threads = [threading.Thread(target=agent.answer, args=("hola",)) for _ in range(4)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert peak == 1
+
+
+def test_progress_events_follow_the_flow_in_order() -> None:
+    agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)])
+    events: list[tuple[str, dict]] = []
+    agent.answer("¿Qué libros tiene Ana?", on_event=lambda name, data: events.append((name, data)))
+
+    assert [name for name, _ in events] == ["classified", "tool_call", "tool_result", "composing"]
+    assert events[0][1]["classification"] == "sql"
+    assert events[1][1] == {"tool": "execute_sql", "sql": GOOD_SQL}
+    assert events[2][1]["ok"] is True and events[2][1]["rows"] == 2
+
+
+def test_a_rejected_statement_is_reported_as_a_failed_tool_result() -> None:
+    agent, _, _ = build("sql", steps=[("execute_sql", BAD_SQL)])
+    events: list[tuple[str, dict]] = []
+    agent.answer("borrá todo", on_event=lambda name, data: events.append((name, data)))
+
+    result = next(data for name, data in events if name == "tool_result")
+    assert result["ok"] is False and result["error"]
+
+
+def test_a_cancelled_question_raises_and_records_nothing() -> None:
+    import threading
+
+    from agent.agent import AnswerCancelled
+    from agent.runs import InMemoryRunRecorder
+
+    recorder = InMemoryRunRecorder()
+    agent, runner, _ = build("sql", steps=[("execute_sql", GOOD_SQL)])
+    agent._recorder, agent._recorder_resolved = recorder, True
+    cancel = threading.Event()
+    cancel.set()
+    with pytest.raises(AnswerCancelled):
+        agent.answer("¿Qué libros tiene Ana?", cancel=cancel)
+    assert runner.calls == 0
+    assert not recorder.records
+
+
+def test_cancelling_during_the_run_discards_the_answer() -> None:
+    import threading
+
+    from agent.agent import AnswerCancelled
+
+    agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)])
+    cancel = threading.Event()
+    with pytest.raises(AnswerCancelled):
+        agent.answer("q", on_event=lambda n, d: cancel.set() if n == "tool_result" else None, cancel=cancel)
