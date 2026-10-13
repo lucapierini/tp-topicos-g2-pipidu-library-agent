@@ -65,7 +65,11 @@ uvicorn api.app:app --port 8000          # API del agente (único acceso); el fr
 #   curl -N -X POST localhost:8000/ask -H "content-type: application/json" -d '{"question":"..."}'
 docker build -f docker/Dockerfile -t pipidu-agent .                    # imagen del agente (etapa runtime)
 docker build -f docker/Dockerfile --target measure -t pipidu-measure . # + scripts de medición (sin secretos)
-docker run --env-file .env -p 8080:8080 pipidu-agent          # corrida local (D81): solo se expone el puerto de la API
+# Corrida local (D81): solo se expone el puerto de la API ($PORT, 8080 por defecto).
+# Dentro del contenedor, POSTGRES_HOST=127.0.0.1 de `.env` apunta al propio contenedor: hay que
+# overridearlo con host.docker.internal para llegar a la base del host, si no la conexión se rechaza.
+# API_ALLOWED_ORIGINS es un ejemplo: poner el origen real del frontend externo (R-7.8, D82).
+docker run --env-file .env -e POSTGRES_HOST=host.docker.internal -e API_ALLOWED_ORIGINS=http://localhost:5173 -p 8080:8080 pipidu-agent
 python -m pytest -q                      # suite offline: sin base ni credenciales
 python -m ruff check .                   # lint
 # Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3)

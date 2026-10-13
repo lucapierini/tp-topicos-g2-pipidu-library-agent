@@ -54,7 +54,7 @@ del equipo, 2026-10-13) el agente no se despliega en la nube: se prepara todo pa
 - [x] 1.3 Crear `docker-compose.yml` con Postgres + pgvector y verificar que `docker compose up -d` levanta la base y que `CREATE EXTENSION vector` funciona
 - [x] 1.4 Crear `.env.example` y `.gitignore` y verificar que `grep -rE "GEMINI_API_KEY\s*=\s*[\"']" --include="*.py"` no encuentra claves hardcodeadas (leer el nombre de la variable de `os.environ` no cuenta como hardcodeo)
 - [ ] 1.5 Documentar el flujo de arranque en `README.md` y verificar que los comandos del README se ejecutan tal como están escritos
-  _(parcial: el README solo lista comandos que existen; `pytest` y `ruff` verificados. Abierta porque faltan `seed` e `ingest` (T2.4, T3.3) y los comandos de `docker compose` no se reejecutaron tal como están escritos)_
+  _(parcial. Reejecutado 2026-10-13 con Docker 29.6.1, en el orden del README: `docker compose up -d --wait` (`pipidu-db` healthy); `docker build -f docker/Dockerfile -t pipidu-agent .` (etapa `runtime`); `docker run --env-file .env -e POSTGRES_HOST=host.docker.internal -p 8080:8080 pipidu-agent` -> `GET /health` 200 `{"status":"ok"}` y `POST /ask` con consulta vacía 422. Sin el override la conexión a la base falla: `POSTGRES_HOST=127.0.0.1` dentro del contenedor apunta al propio contenedor (Connection refused), por eso el README lo consigna. `pytest` y `ruff` verificados. Abierta porque faltan `seed` e `ingest` (T2.4, T3.3) y porque `POST /ask` con una consulta real no se ejecutó: `.env` no apunta a un modelo local accesible y no se invocó la API paga de Gemini. Nota de entorno: si otro proceso del host ya ocupa 127.0.0.1:8080, el tráfico local va a ese proceso y no al contenedor)_
 
 ## 2. Modelo de datos y datos sintéticos
 
