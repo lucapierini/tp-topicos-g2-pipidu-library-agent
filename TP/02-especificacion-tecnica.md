@@ -21,7 +21,7 @@ flowchart TB
     AGENT --> LLM
     AGENT -->|Respuesta + fuente| API
 
-    subgraph GCP[Despliegue en GCP]
+    subgraph LOCAL[Despliegue local]
         DB
         VSTORE
         AGENT
@@ -40,7 +40,7 @@ flowchart TB
 | Framework agéntico | Smolagents |
 | Acceso al agente | API HTTP con FastAPI + uvicorn y respuesta en streaming SSE (D75, D80, `consulta-por-api`). Sin interfaz gráfica propia: el frontend es un cliente externo |
 | Embeddings | Gemini Embeddings API (`text-embedding-004` o equivalente vigente) |
-| Despliegue | **Entorno local** (Docker + `uvicorn`), D81. GCP (Cloud Run + Cloud SQL) queda como planificación no ejecutada |
+| Despliegue | **Entorno local** (Docker + `uvicorn`), D81. La alternativa de nube queda registrada en §7 |
 | Control de versiones | GitHub |
 | ORM / acceso a datos | SQLAlchemy (o psycopg2 directo, a definir en implementación) |
 
@@ -389,15 +389,20 @@ de otra y la segunda espera la latencia completa de la primera.
 
 **Despliegue:** la imagen `runtime` sirve la API con `uvicorn` en `$PORT` (8080 por defecto, D80); no hay otro proceso en la imagen.
 
-## 7. Despliegue en GCP
+## 7. Despliegue
 
 **Decisión (D81, 2026-10-13): no se despliega en la nube.** El sistema se prepara para correr en entorno
-local. Lo siguiente queda como planificación no ejecutada, no como estado actual.
+local.
 
-- **Opción recomendada:** Cloud Run para el servicio (API + agente) + Cloud SQL (PostgreSQL con pgvector) para la base.
-- Variables de entorno gestionadas vía Secret Manager (API key de Gemini, credenciales de BD).
-- Dockerfile multi-etapa (D74, D80): la etapa `runtime` empaqueta la API + agente y arranca `uvicorn api.app:app` en `$PORT` (8080 por defecto); la etapa `measure` agrega los scripts de medición y no se despliega.
-- Cloud Run expone un único puerto por servicio: ese puerto es el de la API. No hay interfaz gráfica en la imagen.
+- Base de datos: `docker compose` con Postgres + pgvector (`docker-compose.yml`).
+- Servicio: la imagen `runtime` del Dockerfile multi-etapa (D74, D80), o `uvicorn api.app:app` directo, en
+  `$PORT` (8080 por defecto).
+- Variables de entorno: se inyectan con `docker run --env-file .env` (Art. 9); no hay gestor de secretos.
+- Solo se expone el puerto de la API; la imagen no incluye interfaz gráfica (D80). La etapa `measure` agrega
+  los scripts de medición y no forma parte del servicio.
+
+**Alternativa no ejecutada (D81):** Cloud Run para el servicio y Cloud SQL (PostgreSQL con pgvector) para la
+base.
 
 ## 8. Estructura de repositorio propuesta
 

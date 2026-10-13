@@ -63,7 +63,7 @@ criterio de aprobación está en riesgo.
 
 ## Art. 9 — Sin secretos en el repositorio
 
-API keys y credenciales vía variables de entorno (`.env` en `.gitignore`) o GCP Secret Manager.
+Las API keys y las credenciales se pasan por variables de entorno (`.env` en `.gitignore`) y se inyectan con `docker run --env-file`; no hay gestor de secretos en la nube (D81).
 `.env.example` sin valores reales.
 
 ## Art. 10 — Disciplina de alcance

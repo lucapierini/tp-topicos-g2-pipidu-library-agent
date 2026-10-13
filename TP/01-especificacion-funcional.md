@@ -97,7 +97,10 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 - **Reproducibilidad:** cualquier evaluador debe poder clonar el repo, seguir el README y levantar el sistema completo (BD + agente + API); el frontend se levanta aparte y apunta a la API.
 - **Documentación:** código comentado donde sea necesario, README claro con instrucciones de instalación y ejecución.
-- **Despliegue en la nube:** el agente y la base de datos deben poder ejecutarse en GCP.
+- **Despliegue en entorno local:** el sistema se prepara para ejecutarse en entorno local (Docker con
+  Postgres + pgvector, `uvicorn api.app:app`), sin ningún servicio de nube (D81, que reemplaza a D18).
+  El enunciado del curso pedía despliegue en la nube (GCP): el informe debe justificar la desviación y que
+  el criterio de promoción 1 deja de estar cubierto.
 - **Trazabilidad SDD:** se documentará el proceso de desarrollo siguiendo Spec Driven Development (specs funcionales y técnicas, versionadas, previas a la implementación).
 
 ## 7. Criterios de aceptación (según enunciado)
