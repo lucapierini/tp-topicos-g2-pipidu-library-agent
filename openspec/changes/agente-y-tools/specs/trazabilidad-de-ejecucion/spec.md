@@ -80,3 +80,19 @@ la consulta, porque la validez de una medición depende del modelo que la produj
 - **WHEN** se consulta el registro
 - **THEN** figura el identificador del modelo de Gemini
 - **AND** la clave de API no aparece en el registro
+
+### Requirement: R-6.7 — Una consulta cancelada no se registra
+El sistema SHALL NO registrar en `agent_runs` una consulta que el cliente abandonó antes de recibir
+la respuesta, porque no hubo una respuesta entregada que trazar.
+
+#### Scenario: el cliente corta la conexión
+- **GIVEN** una consulta en curso
+- **WHEN** el cliente la cancela antes del resultado
+- **THEN** el agente se detiene antes del siguiente paso
+- **AND** no se inserta ninguna fila en `agent_runs`
+
+#### Scenario: la cancelación llega durante la ejecución
+- **GIVEN** una consulta que ya invocó al modelo
+- **WHEN** se cancela mientras corre
+- **THEN** la respuesta se descarta
+- **AND** no se inserta ninguna fila en `agent_runs`

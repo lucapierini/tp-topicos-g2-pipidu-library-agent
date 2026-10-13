@@ -206,13 +206,13 @@ La herramienta SHALL reportar "sin resultados" cuando la sentencia no devuelve f
 - **AND** la respuesta final no afirma hechos no presentes en el resultado
 
 ### Requirement: R-3.9 — Exposición de la sentencia ejecutada
-La herramienta SHALL devolver la sentencia efectivamente ejecutada para exhibirla en la interfaz. Cuando
+La herramienta SHALL devolver la sentencia efectivamente ejecutada para que el cliente la exhiba. Cuando
 la validación normaliza la sentencia (expansión de `*`), la sentencia exhibida es la normalizada, no la
 original del modelo.
 
 #### Scenario: sentencia visible
 - **WHEN** una consulta se resuelve vía SQL
-- **THEN** la interfaz muestra la sentencia ejecutada
+- **THEN** la respuesta incluye la sentencia ejecutada para que el cliente la muestre
 - **AND** los valores citados en la respuesta coinciden con las filas devueltas
 
 #### Scenario: sentencia normalizada
