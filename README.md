@@ -23,7 +23,7 @@ agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.
 scripts/       measure_golden.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
 tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py, test_agent.py, test_runs.py, ...
-docker/        Dockerfile (pendiente)
+docker/        Dockerfile (etapas runtime y measure, verificado en T9.2 y T9.10)
 docker-compose.yml   Postgres + pgvector local
 ```
 
@@ -34,8 +34,8 @@ implementados (validador y executor de SQL, tool de RAG, clasificador, orquestad
 con la API HTTP con streaming de progreso y cancelación, que es el **único acceso** al agente: no hay
 interfaz gráfica en este repositorio, el frontend es un cliente externo que la consume (D80). La
 aceptación con el modelo definitivo está medida (T6.7, `gemini-3.1-flash-lite`, 13/13).
-Pendiente: la ingesta de PDFs y el seed entregable, el despliegue en la nube y el informe. El detalle
-está en [`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
+Pendiente: la ingesta de PDFs, el seed entregable y el informe. El sistema se ejecuta en entorno local
+(D81). El detalle está en [`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
 El change activo es [`agente-y-tools`](openspec/changes/agente-y-tools/), validado con
 `openspec validate --strict`.
 
@@ -65,6 +65,7 @@ uvicorn api.app:app --port 8000          # API del agente (único acceso); el fr
 #   curl -N -X POST localhost:8000/ask -H "content-type: application/json" -d '{"question":"..."}'
 docker build -f docker/Dockerfile -t pipidu-agent .                    # imagen del agente (etapa runtime)
 docker build -f docker/Dockerfile --target measure -t pipidu-measure . # + scripts de medición (sin secretos)
+docker run --env-file .env -p 8080:8080 pipidu-agent          # corrida local (D81): solo se expone el puerto de la API
 python -m pytest -q                      # suite offline: sin base ni credenciales
 python -m ruff check .                   # lint
 # Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3)

@@ -3,8 +3,8 @@
 #   docker build -f docker/Dockerfile -t pipidu-agent .                   # runtime (por defecto)
 #   docker build -f docker/Dockerfile --target measure -t pipidu-measure . # + scripts de medición
 #
-# No lleva secretos: GEMINI_API_KEY y POSTGRES_* se inyectan en tiempo de ejecución (Art. 9; en
-# Cloud Run, desde Secret Manager). El `.env` queda fuera del contexto (`.dockerignore`).
+# No lleva secretos: GEMINI_API_KEY y POSTGRES_* se inyectan en tiempo de ejecución con variables de
+# entorno o `docker run --env-file .env` (Art. 9). El `.env` queda fuera del contexto (`.dockerignore`).
 
 # --- base: Python 3.12 (el código usa sintaxis de 3.12) + dependencias de ejecución -----------------
 FROM python:3.12-slim AS base
