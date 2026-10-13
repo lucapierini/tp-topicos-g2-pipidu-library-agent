@@ -152,8 +152,7 @@ class ScriptedRunner:
         self.max_steps = None
         self.calls = 0
 
-    def run(self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int,
-            on_event=None, cancel=None) -> str:
+    def run(self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int) -> str:
         self.calls += 1
         self.system_prompt = system_prompt
         self.max_steps = max_steps

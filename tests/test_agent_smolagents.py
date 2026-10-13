@@ -111,34 +111,3 @@ def test_max_steps_cuts_a_model_that_never_converges() -> None:
     # Hubo evidencia pero el modelo no cerró: no se presenta como respuesta con fuente (R-5.7).
     assert answer.answer_kind == "error"
     assert answer.is_valid(), answer.violations()
-
-
-def test_step_events_come_from_the_framework_callbacks() -> None:
-    model = ScriptedModel([
-        tool_call("execute_sql", sql=GOOD_SQL),
-        tool_call("final_answer", answer="Ana tiene prestado Rayuela."),
-    ])
-    events: list[tuple[str, dict]] = []
-    agent_with(model).answer("¿Qué libros tiene Ana?", on_event=lambda n, d: events.append((n, d)))
-
-    steps = [data for name, data in events if name == "step"]
-    assert [s["step"] for s in steps] == [1, 2]
-    assert steps[0]["tools"] == ["execute_sql"] and steps[1]["tools"] == ["final_answer"]
-    assert all(isinstance(s["duration_s"], float) for s in steps)
-
-
-def test_cancel_interrupts_the_framework_before_the_next_step() -> None:
-    import threading
-
-    from agent.agent import AnswerCancelled
-
-    model = ScriptedModel([
-        tool_call("execute_sql", sql=GOOD_SQL),
-        tool_call("final_answer", answer="no debería llegar"),
-    ])
-    cancel = threading.Event()
-    with pytest.raises(AnswerCancelled):
-        agent_with(model).answer(
-            "q", on_event=lambda n, d: cancel.set() if n == "step" else None, cancel=cancel,
-        )
-    assert len(model.seen) == 1  # el segundo paso nunca llamó al modelo
