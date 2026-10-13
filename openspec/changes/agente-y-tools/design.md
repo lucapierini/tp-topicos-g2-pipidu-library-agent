@@ -5,7 +5,7 @@
 Proyecto greenfield. No existe código todavía. La motivación está en `proposal.md`. Las
 restricciones que condicionan el diseño son las de `TP/00-constitucion.md` (read-only por diseño,
 proveniencia obligatoria, trazabilidad de ejecución) y los criterios de promoción elegidos:
-despliegue en GCP, UI Streamlit, framework agéntico y SDD.
+despliegue en GCP, interfaz gráfica (un frontend externo que consume la API, D80), framework agéntico y SDD.
 
 Condición de contorno: tres integrantes trabajando en paralelo, lo que exige contratos de interfaz
 definidos antes de implementar, para que las tools se puedan desarrollar y testear de forma aislada.
@@ -23,7 +23,8 @@ definidos antes de implementar, para que las tools se puedan desarrollar y teste
 - Observabilidad con LangSmith ni evaluación automática de calidad de respuestas.
 - Fine-tuning.
 - Escritura sobre la base de datos.
-- Autenticación de usuarios, streaming de respuestas y reintentos ante fallo de API.
+- Autenticación de usuarios y streaming de **tokens** del modelo. Sí hay streaming de **progreso** de la
+  consulta (D75) y reintentos ante límite de cuota (D57).
 
 ## Decisions
 
@@ -49,7 +50,7 @@ del mismo contenido.
 | D14 | Usuario dedicado `agent_ro` + timeout + `search_path` | R-3.5 |
 | D15 | `max_steps = 6`, temperatura 0, timeout de API 30 s | Art. 7, R-6.2 |
 | D16 | Aserción sobre clasificación, SQL y filas; prosa con rúbrica manual | Art. 6, Art. 7 |
-| D17 | Historial de UI solo visual | T8.3 |
+| D17 | El historial no alimenta al agente (lo conserva el frontend; v1 es de un solo turno) | R-7.0 |
 | D18 | Cloud Run + Cloud SQL + Secret Manager | criterio de promoción 1 |
 | D19 | PDFs generados por el integrante de RAG y base de datos | G6–G9, R1–R3 |
 | D20 | Un artefacto, un solo lugar | `TP/README.md` |
@@ -107,6 +108,12 @@ del mismo contenido.
 | D72 | El check de los híbridos exige SQL ejecutado y fragmento citado, no filas no vacías | R-3.8, D16 |
 | D73 | Idioma de la respuesta instruido en el prompt, declarado en la evidencia y verificado con casos en inglés aparte | R-5.1, D16 |
 | D74 | Dockerfile multi-etapa (`base`, `measure`, `runtime`), sin secretos y sin tests en la imagen desplegada | D18, Art. 8, Art. 9 |
+| D75 | `POST /ask` con streaming de progreso real y el `AgentAnswer` completo al final; sin tokens | R-7.1, R-7.2, D58 |
+| D76 | Cancelación cooperativa por desconexión del cliente; la consulta cancelada no se registra | R-7.5, R-6.7 |
+| D77 | `LibraryAgent.answer()` serializa las consultas con un lock | R-1.3 |
+| D78 | ~~UI Streamlit en proceso; imagen `runtime` arranca Streamlit~~ — reemplazado por D80 | D18 |
+| D79 | Correcciones al streaming: marcador de fin de agente y `duration_s` siempre numérico | R-7.3, R-7.2 |
+| D80 | Sin UI propia: el agente es accesible solo por la API HTTP y el frontend es un cliente externo; la imagen `runtime` sirve la API | R-7.0, D18 |
 
 ## Risks / Trade-offs
 

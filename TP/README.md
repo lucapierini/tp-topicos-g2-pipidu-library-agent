@@ -33,6 +33,7 @@ edita una copia en paralelo.
 4. `rag-retrieval-tool`
 5. `composicion-de-respuesta`
 6. `trazabilidad-de-ejecucion`
+7. `consulta-por-api`
 
 Los PDFs documentales los genera el integrante responsable de RAG y base de datos, y deben cubrir el
 contenido que sostienen los casos G6–G9 y R1–R3 del golden set.

@@ -10,8 +10,8 @@
 
 ```mermaid
 flowchart TB
-    U[Usuario] -->|Pregunta en lenguaje natural| UI[Streamlit UI]
-    UI --> AGENT[Agente Smolagents]
+    FE[Frontend externo] -->|POST /ask, respuesta en streaming SSE| API[API HTTP FastAPI]
+    API -->|answer con on_event y cancel| AGENT[Agente Smolagents]
     AGENT -->|Tool: text-to-SQL| SQLTOOL[SQL Tool]
     AGENT -->|Tool: RAG retrieval| RAGTOOL[RAG Tool]
     SQLTOOL --> DB[(PostgreSQL)]
@@ -19,13 +19,13 @@ flowchart TB
     RAGTOOL --> LLM[Gemini]
     SQLTOOL --> LLM
     AGENT --> LLM
-    AGENT -->|Respuesta + fuente| UI
+    AGENT -->|Respuesta + fuente| API
 
     subgraph GCP[Despliegue en GCP]
         DB
         VSTORE
         AGENT
-        UI
+        API
     end
 ```
 
@@ -38,7 +38,7 @@ flowchart TB
 | Vector store | pgvector (extensión sobre el mismo PostgreSQL) |
 | LLM | Google Gemini (API) para aceptación y despliegue; en desarrollo, un servidor local OpenAI-compatible vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`) para validar el flujo sin consumir cuota (R-2.8) |
 | Framework agéntico | Smolagents |
-| UI | Streamlit |
+| Acceso al agente | API HTTP con FastAPI + uvicorn y respuesta en streaming SSE (D75, D80, `consulta-por-api`). Sin interfaz gráfica propia: el frontend es un cliente externo |
 | Embeddings | Gemini Embeddings API (`text-embedding-004` o equivalente vigente) |
 | Despliegue | GCP (Cloud Run / Compute Engine + Cloud SQL para Postgres) |
 | Control de versiones | GitHub |
@@ -274,11 +274,13 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
 class SqlResult:
     sql: str | None          # sentencia efectivamente ejecutada (normalizada, R-3.9)
     rows: list[dict]         # filas devueltas (<= 50)
-    error: str | None        # SQL_NOT_READONLY | TABLE_NOT_ALLOWED | COLUMN_NOT_ALLOWED | FUNCTION_NOT_ALLOWED | TIMEOUT | EXECUTION_ERROR | None
+    error: str | None        # SQL_NOT_READONLY | TABLE_NOT_ALLOWED | COLUMN_NOT_ALLOWED | FUNCTION_NOT_ALLOWED | QUERY_TOO_COMPLEX | TIMEOUT | EXECUTION_ERROR | None
     executed: bool           # False si la validación estática rechazó la sentencia
     attempts: int            # intentos de generación hasta llegar a esta sentencia (D8)
     latency_ms: int
     sql_original: str | None  # como la produjo el modelo; puede diferir de `sql` (R-6.4)
+    detail: str | None        # motivo del rechazo, reportable al usuario (R-5.7)
+    truncated: bool           # había más filas que el límite de 50 (R-3.6)
 ```
 
 **`rag_search_tool(question: str) -> RagResult`**
@@ -287,7 +289,7 @@ class SqlResult:
 @dataclass
 class RagResult:
     chunks: list[Chunk]      # top-k por similitud de coseno
-    error: str | None        # NO_RELEVANT_RESULTS | None
+    error: str | None        # NO_RELEVANT_RESULTS | RETRIEVAL_ERROR | None
     latency_ms: int
 
 @dataclass
@@ -308,25 +310,91 @@ class AgentAnswer:
     question: str
     classification: str      # sql | rag | hybrid | none
     sources: list[str]       # fuentes efectivamente usadas
-    answer: str
-    evidence: dict           # sql ejecutado y/o chunks citados
-    run_id: int              # fila correspondiente en agent_runs
+    answer: str              # termina con "Fuente: …" / "Source: …" (R-5.2)
+    evidence: dict           # sql, rows, truncated, chunks, language, model, sql_attempts, sql_errors, error
+    run_id: int | None       # fila en agent_runs; None si el registro falló o está desactivado (R-6.6)
+    answer_kind: str         # answer | no_coverage | error
+    trace: list[str]         # eventos en orden: "classification" primero (D3)
+
+# Punto de entrada. `on_event(nombre, datos)` recibe el progreso a medida que ocurre y `cancel`
+# (threading.Event) corta la consulta antes del siguiente paso; si se cancela lanza AnswerCancelled y
+# no registra nada (R-6.7). Las consultas simultáneas se atienden en serie (R-1.3, D77).
+def answer(question: str, on_event: Callable[[str, dict], None] | None = None,
+           cancel: threading.Event | None = None) -> AgentAnswer: ...
 ```
 
 Regla derivada del Art. 4 de la constitución: `sources` nunca puede estar vacío sin que `answer`
 declare explícitamente la ausencia de información.
 
-## 6. Interfaz de usuario (Streamlit)
+## 6. API HTTP: el único acceso al agente
 
-- Campo de texto para la consulta en lenguaje natural.
-- Historial de conversación (opcional, usando `st.session_state`).
-- Panel que muestra qué fuente(s) usó el agente (SQL / RAG) y, opcionalmente, el SQL generado o los fragmentos de PDF recuperados (transparencia/explicabilidad).
+El agente se consulta **solo** por HTTP (D80, capacidad `consulta-por-api`). Este repositorio no incluye
+interfaz gráfica: el frontend es un cliente externo que consume la API y se ocupa de presentar la
+respuesta, la evidencia y el historial. Un frontend en otro origen debe poder llamarla (tarea 9.12).
+
+### 6.1 Contrato HTTP
+
+`uvicorn api.app:app --port 8000`. `POST /ask` con `{"question": "..."}` responde `text/event-stream`;
+`GET /health` responde `{"status":"ok"}`. Una consulta vacía devuelve 422 sin abrir el stream (R-1.2,
+R-7.4).
+
+`answer()` es bloqueante y no emite tokens: lo que se transmite es el progreso real del agente.
+
+| Evento | Datos |
+| --- | --- |
+| `start` | `question` |
+| `classified` | `classification`, `language` |
+| `tool_call` | `tool`, `sql` o `query` |
+| `tool_result` | `tool`, `ok`, `rows` o `chunks`, `error` |
+| `step` | `step`, `duration_s`, `input_tokens`, `output_tokens`, `tools` (callbacks de smolagents) |
+| `composing` | — |
+| `heartbeat` | `elapsed_s`, cada 5 s sin eventos |
+| `result` | el `AgentAnswer` completo |
+| `error` | `detail` |
+
+**Cancelación (R-7.5, R-6.7, D76):** si el cliente cierra la conexión, se activa un `threading.Event` y el agente se detiene antes del siguiente paso (`interrupt()` de smolagents). Una llamada al modelo en vuelo termina. La consulta cancelada no se registra en `agent_runs` y no emite `result`.
+
+**Cómo debe consumirlo el frontend** (a partir del evento `result`, que es un `AgentAnswer`):
+
+- `answer`: texto final; ya termina con la fuente (`Fuente: …` o `Source: …`).
+- `answer_kind`: `answer`, `no_coverage` o `error`; conviene mostrarlos distinto.
+- `sources`: `sql`, `rag` o ambas; vacío cuando se declara ausencia de información o un error.
+- `evidence`: `sql` (sentencia ejecutada), `rows`, `truncated`, `chunks` (cada uno con `document`,
+  `location`, `text`, `similarity`), `language`, `model`, `sql_attempts`, `sql_errors`, `error` y, si
+  falló el registro, `run_recording_error`.
+- `run_id`: puede ser `null` (registro desactivado o fallido, R-6.6).
+- El historial lo conserva el frontend; el agente es de un solo turno y recibe solo la consulta actual
+  (R-7.0, D17).
+- Una consulta tarda de 3 a 170 s según la cuota: el frontend necesita un indicador de espera y tolerar
+  los eventos `heartbeat`.
+
+**Llamada directa (uso interno):** `from agent.agent import answer, EmptyQuestionError`. La usan el golden
+set (`scripts/measure_golden.py`) y los tests; no es un punto de acceso para clientes. Una consulta vacía
+lanza `EmptyQuestionError`.
+
+**Concurrencia (R-1.3, D77):** el agente guarda una sola conexión por backend; `LibraryAgent.answer()`
+serializa las consultas con un `threading.Lock`, por lo que dos sesiones simultáneas se atienden una detrás
+de otra y la segunda espera la latencia completa de la primera.
+
+**Requisitos y decisiones:** el contrato HTTP está en la capacidad `consulta-por-api` (R-7.0 a R-7.7); las decisiones, en D75 a D80. Las pruebas están en `tests/test_api.py` y se listan en `TP/05` §7.
+
+**Garantías del flujo:**
+
+- Solo `result` declara fuentes; lo anterior es progreso, no una respuesta con proveniencia (R-7.2, Art. 4).
+- `result` sale apenas termina el agente, sin esperar al siguiente latido (R-7.3, D79).
+- Una excepción inesperada produce `error` y cierra el flujo sin `result` (R-7.6).
+- Fechas y valores decimales de las filas se serializan como texto.
+
+**Qué no hay:** streaming de tokens del modelo (D75), autenticación (Non-Goal) ni CORS configurado. Un endpoint público consume la cuota de la API del modelo: hace falta restringir el acceso antes de exponerlo, y un frontend que corra en un navegador desde otro origen necesita CORS (tarea 9.12).
+
+**Despliegue:** la imagen `runtime` sirve la API con `uvicorn` en `$PORT` (8080 por defecto, D80); no hay otro proceso en la imagen.
 
 ## 7. Despliegue en GCP
 
-- **Opción recomendada:** Cloud Run para el servicio (UI + agente) + Cloud SQL (PostgreSQL con pgvector) para la base.
+- **Opción recomendada:** Cloud Run para el servicio (API + agente) + Cloud SQL (PostgreSQL con pgvector) para la base.
 - Variables de entorno gestionadas vía Secret Manager (API key de Gemini, credenciales de BD).
-- Dockerfile para empaquetar la app Streamlit + agente.
+- Dockerfile multi-etapa (D74, D80): la etapa `runtime` empaqueta la API + agente y arranca `uvicorn api.app:app` en `$PORT` (8080 por defecto); la etapa `measure` agrega los scripts de medición y no se despliega.
+- Cloud Run expone un único puerto por servicio: ese puerto es el de la API. No hay interfaz gráfica en la imagen.
 
 ## 8. Estructura de repositorio propuesta
 
@@ -362,9 +430,10 @@ pipidu-library-agent/
 │   ├── tools/
 │   │   ├── sql_tool.py     # execute_sql: valida y ejecuta, no genera SQL (D1)
 │   │   └── rag_tool.py
-│   └── agent.py            # ToolCallingAgent (D2)
-├── ui/
-│   └── app.py              # Streamlit
+│   └── agent.py            # orquestador: ToolCallingAgent (D2), eventos de progreso y cancelación (D75, D76), lock (D77)
+├── api/
+│   ├── __init__.py
+│   └── app.py              # FastAPI: POST /ask (SSE), GET /health; único acceso al agente (D75, D80)
 ├── TP/                     # artefactos SDD legibles para la entrega
 ├── informe/
 │   └── informe_tecnico.pdf
@@ -381,6 +450,7 @@ pipidu-library-agent/
 - Unit tests sobre `sql_tool` (validación de sanitización, ejecución correcta de queries conocidas).
 - Unit tests sobre `rag_tool` (retrieval devuelve chunks esperados para preguntas de prueba).
 - Casos de prueba end-to-end: set de preguntas de ejemplo (SQL puras, RAG puras, mixtas) con respuesta esperada, documentadas en el informe técnico como evidencia.
+- Tests de la API (`tests/test_api.py`) sin modelo ni base: un doble de `answer()` sobre `TestClient`. El mapeo requisito → test está en `TP/05` §7.
 
 ## 10. Metodología SDD (artefactos a entregar)
 

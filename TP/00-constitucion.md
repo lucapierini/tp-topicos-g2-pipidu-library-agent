@@ -58,7 +58,7 @@ parámetro de configuración debe revalidarse contra el golden set.
 ## Art. 8 — Reproducibilidad
 
 Cualquier evaluador debe poder: `git clone` → `docker compose up` → `python -m rag.ingest` →
-`streamlit run ui/app.py`. Si algo requiere una acción manual no documentada en el README, el
+`uvicorn api.app:app` (la API del agente; el frontend se levanta aparte). Si algo requiere una acción manual no documentada en el README, el
 criterio de aprobación está en riesgo.
 
 ## Art. 9 — Sin secretos en el repositorio

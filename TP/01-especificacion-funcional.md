@@ -32,7 +32,7 @@ Desarrollar un **SQL AI Agent** capaz de:
 
 | Actor | Descripción |
 |---|---|
-| Usuario final | Persona que interactúa con el agente vía interfaz web (Streamlit) haciendo preguntas en lenguaje natural |
+| Usuario final | Persona que interactúa con el agente a través de un frontend web externo, que lo consulta por la API HTTP (D80) haciendo preguntas en lenguaje natural |
 | Agente IA | Componente que interpreta la consulta, decide la estrategia (SQL / RAG / mixta) y genera la respuesta |
 | Administrador/Desarrollador | Responsable de poblar la base, cargar los PDFs e indexar embeddings |
 
@@ -75,23 +75,27 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 ### 5.5 Exclusiones de alcance (no implementar sin cambiar esta spec)
 
-- Memoria conversacional multi-turno (v1 es single-turn); el historial de la UI es solo visual (D17).
+- Memoria conversacional multi-turno (v1 es single-turn); el historial lo conserva el frontend y no alimenta al agente (D17, R-7.0).
 - Observabilidad con LangSmith o evaluación automática de respuestas.
 - Fine-tuning del modelo.
 - Escritura sobre la base de datos.
 - Autenticación, usuarios y roles de aplicación.
 - Política de privacidad o restricción de columnas por PII: todos los usuarios acceden a toda la
   información del dominio (Art. 11). La whitelist es control de alcance y de inyección.
-- Streaming de respuestas parciales y reintentos ante fallo de API. La **regeneración de SQL** sí está
-  permitida, limitada a 2 intentos (D8); al segundo rechazo se reporta el error al usuario.
+- Streaming de **tokens** del modelo y respuestas parciales: la respuesta se compone al final con las
+  fuentes efectivamente invocadas (D58, D75). Sí está permitido el streaming de **progreso** de la consulta
+  por la API HTTP (D75) y el reintento ante límite de cuota (D57).
+- La **regeneración de SQL** sí está permitida, limitada a 2 intentos (D8); al segundo rechazo se reporta
+  el error al usuario.
 - Formatos documentales distintos de PDF.
 
-### 5.6 Interfaz de usuario
-- Interfaz gráfica desarrollada en **Streamlit**, donde el usuario escribe su consulta en un campo de texto y recibe la respuesta del agente, con indicación de la(s) fuente(s) utilizada(s) (SQL / RAG / ambas).
+### 5.6 Acceso al agente e interfaz de usuario
+- El agente se consulta **únicamente por la API HTTP** (`POST /ask`, respuesta en streaming de progreso; capacidad `consulta-por-api`, D75, D80). Este sistema no incluye interfaz gráfica propia.
+- La interfaz gráfica es un **frontend externo** que consume la API: el usuario escribe su consulta en un campo de texto y el frontend muestra la respuesta del agente con indicación de la(s) fuente(s) utilizada(s) (SQL / RAG / ambas) y la evidencia que entrega el evento `result`.
 
 ## 6. Requisitos no funcionales
 
-- **Reproducibilidad:** cualquier evaluador debe poder clonar el repo, seguir el README y levantar el sistema completo (BD + agente + UI).
+- **Reproducibilidad:** cualquier evaluador debe poder clonar el repo, seguir el README y levantar el sistema completo (BD + agente + API); el frontend se levanta aparte y apunta a la API.
 - **Documentación:** código comentado donde sea necesario, README claro con instrucciones de instalación y ejecución.
 - **Despliegue en la nube:** el agente y la base de datos deben poder ejecutarse en GCP.
 - **Trazabilidad SDD:** se documentará el proceso de desarrollo siguiendo Spec Driven Development (specs funcionales y técnicas, versionadas, previas a la implementación).
@@ -107,8 +111,8 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 ## 8. Criterios de promoción directa (2+ de 5, elegidos 4)
 
-- [x] Despliegue en la nube (GCP)
-- [x] Interfaz gráfica (Streamlit)
+- [ ] Despliegue en la nube (GCP): planificado, pendiente (tareas 9.3, 9.6, 9.7, 9.10)
+- [ ] Interfaz gráfica: la provee un frontend externo que consume la API (D80); **no está en este repositorio**, hay que confirmar con el equipo cómo se entrega y evidencia para este criterio
 - [x] Framework agéntico (Smolagents)
 - [x] SDD (artefactos de esta carpeta `TP/`)
 - [ ] Observabilidad (LangSmith) — no incluido

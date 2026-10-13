@@ -9,7 +9,7 @@ vía RAG, decidiendo autónomamente qué fuente consultar en cada caso.
 
 ## Stack
 
-Python 3.11+ · PostgreSQL + pgvector · Gemini · Smolagents · Streamlit · GCP (Cloud Run + Cloud SQL)
+Python 3.11+ · PostgreSQL + pgvector · Gemini · Smolagents · FastAPI · GCP (Cloud Run + Cloud SQL)
 
 ## Estructura
 
@@ -21,7 +21,7 @@ rag/           documents/ (PDFs), ingest.py, chunking.py (pendientes)
 agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
 scripts/       measure_golden.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
-ui/            app.py (pendiente)
+api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
 tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py, test_agent.py, test_runs.py, ...
 docker/        Dockerfile (pendiente)
 docker-compose.yml   Postgres + pgvector local
@@ -30,17 +30,19 @@ docker-compose.yml   Postgres + pgvector local
 ## Estado
 
 Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`). El agente y sus tools están
-implementados (validador y executor de SQL, tool de RAG, clasificador, orquestador, `agent_runs`).
-Pendiente: la medición de aceptación con el modelo definitivo (T6.7), la ingesta de PDFs y el seed
-entregable, la UI y el despliegue. El detalle está en
-[`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
+implementados (validador y executor de SQL, tool de RAG, clasificador, orquestador, `agent_runs`), junto
+con la API HTTP con streaming de progreso y cancelación, que es el **único acceso** al agente: no hay
+interfaz gráfica en este repositorio, el frontend es un cliente externo que la consume (D80). La
+aceptación con el modelo definitivo está medida (T6.7, `gemini-3.1-flash-lite`, 13/13).
+Pendiente: la ingesta de PDFs y el seed entregable, el despliegue en la nube y el informe. El detalle
+está en [`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
 El change activo es [`agente-y-tools`](openspec/changes/agente-y-tools/), validado con
 `openspec validate --strict`.
 
 ## Instalación y ejecución
 
-El flujo de arranque cubre hasta lo implementado. `seed`, `ingest` y la UI se agregan cuando existan
-(T2.4, T3.3, T8.1); la tarea 1.5 de `openspec/changes/agente-y-tools/tasks.md` sigue abierta por eso.
+El flujo de arranque cubre hasta lo implementado. `seed` e `ingest` se agregan cuando existan
+(T2.4, T3.3); la tarea 1.5 de `openspec/changes/agente-y-tools/tasks.md` sigue abierta por eso.
 
 ```bash
 cp .env.example .env          # GEMINI_API_KEY y credenciales de BD
@@ -56,11 +58,14 @@ python scripts/measure_golden.py --db    # golden set contra la base local (regi
 python scripts/measure_golden.py --db --rag-mock   # + recuperación simulada: contenido de los 13 casos, sin PDFs
 python scripts/measure_golden.py --db --rag-mock --bilingual   # + 2 casos en inglés (no cuentan para R-2.1)
 python scripts/export_runs.py --last 15  # agent_runs -> TP/evidencia/ (antes de pytest -m integration, que la trunca)
+uvicorn api.app:app --port 8000          # API del agente (único acceso); el frontend apunta a http://localhost:8000
+# Consulta de prueba (JSON en UTF-8; en Windows conviene un cliente HTTP en vez de curl por el cuoteo):
+#   curl -N -X POST localhost:8000/ask -H "content-type: application/json" -d '{"question":"..."}'
 docker build -f docker/Dockerfile -t pipidu-agent .                    # imagen del agente (etapa runtime)
 docker build -f docker/Dockerfile --target measure -t pipidu-measure . # + scripts de medición (sin secretos)
 python -m pytest -q                      # suite offline: sin base ni credenciales
 python -m ruff check .                   # lint
-# Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3), UI Streamlit (T8.1)
+# Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3)
 ```
 
 ## Criterios de promoción
@@ -69,6 +74,6 @@ El enunciado pide al menos dos de cinco. Estado real:
 
 - [x] Framework agéntico (Smolagents): implementado
 - [x] SDD (artefactos en `TP/` y `openspec/`): implementados
-- [ ] Interfaz gráfica (Streamlit): planificada, pendiente (tareas 8.x)
-- [ ] Despliegue en la nube (GCP): planificado, pendiente (tareas 9.2, 9.3, 9.6, 9.7)
+- [ ] Interfaz gráfica: la provee un frontend externo que consume la API (D80); no está en este repositorio
+- [ ] Despliegue en la nube (GCP): planificado, pendiente (tareas 9.3, 9.6, 9.7, 9.10)
 - [ ] Observabilidad (LangSmith): excluida explícitamente

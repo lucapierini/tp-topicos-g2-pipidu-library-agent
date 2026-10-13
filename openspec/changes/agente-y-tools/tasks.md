@@ -37,14 +37,22 @@ modelo definitivo (`gemini-3.1-flash-lite`, base local y RAG simulado): 13/13 en
 contenido (D71, D72). `pytest -q` → 393 passed; `pytest -m integration` → 28 passed. Después: casos en inglés con idioma
 instruido en el prompt (7.2, 7.6, D73) y export de `agent_runs` (7.7) hechos; 9.4 queda con las capturas.
 
+**API como único acceso (2026-10-13):** el PR #2 trajo la API HTTP con streaming y la UI Streamlit; el
+PR #3 lo **revirtió completo** (API y UI). Por decisión del equipo (D80) el agente se accede solo por la
+API y el frontend es un cliente externo, así que el endpoint se restituyó **sin la UI** en la rama
+`feature/api-endpoint`, con el lock, los eventos de progreso, la cancelación (D75–D77), las correcciones
+de D79, las specs (`consulta-por-api` R-7.0 a R-7.7, R-1.3, R-6.7) y `tests/test_api.py`. Se eliminaron
+`ui/` y la dependencia de Streamlit; la imagen `runtime` sirve `uvicorn`. `pytest -q` → 421 passed.
+Abiertas: 9.11 (consultas en serie) y 9.12 (CORS y acceso a la API).
+
 ## 1. Setup y entorno
 
-- [x] 1.1 Crear la estructura de carpetas (`db/`, `rag/`, `agent/`, `ui/`, `tests/`, `docker/`) y verificar que `tree` muestra la estructura de `openspec/project.md`
-- [x] 1.2 Definir dependencias y verificar que `pip install -r requirements.txt` instala `smolagents`, `psycopg2-binary`, `pypdf`, `google-genai`, `streamlit`, `pytest`, `faker`, `sqlglot`
+- [x] 1.1 Crear la estructura de carpetas (`db/`, `rag/`, `agent/`, `api/`, `tests/`, `docker/`; la `ui/` original se retiró por D80) y verificar que `tree` muestra la estructura de `openspec/project.md`
+- [x] 1.2 Definir dependencias y verificar que `pip install -r requirements.txt` instala `smolagents`, `psycopg2-binary`, `pypdf`, `google-genai`, `fastapi`, `uvicorn`, `pytest`, `faker`, `sqlglot` (`streamlit` se retiró por D80)
 - [x] 1.3 Crear `docker-compose.yml` con Postgres + pgvector y verificar que `docker compose up -d` levanta la base y que `CREATE EXTENSION vector` funciona
 - [x] 1.4 Crear `.env.example` y `.gitignore` y verificar que `grep -rE "GEMINI_API_KEY\s*=\s*[\"']" --include="*.py"` no encuentra claves hardcodeadas (leer el nombre de la variable de `os.environ` no cuenta como hardcodeo)
 - [ ] 1.5 Documentar el flujo de arranque en `README.md` y verificar que los comandos del README se ejecutan tal como están escritos
-  _(parcial: el README solo lista comandos que existen; `pytest` y `ruff` verificados. Abierta porque faltan `seed`, `ingest` y la UI (T2.4, T3.3, T8.1) y los comandos de `docker compose` no se reejecutaron tal como están escritos)_
+  _(parcial: el README solo lista comandos que existen; `pytest` y `ruff` verificados. Abierta porque faltan `seed` e `ingest` (T2.4, T3.3) y los comandos de `docker compose` no se reejecutaron tal como están escritos)_
 
 ## 2. Modelo de datos y datos sintéticos
 
@@ -100,7 +108,8 @@ instruido en el prompt (7.2, 7.6, D73) y export de `agent_runs` (7.7) hechos; 9.
   _(contrato y reglas en `agent/contracts.py` + `tests/test_contracts.py`; composición en `LibraryAgent._compose`, `agent/agent.py`; la medición con modelos reales, 13/13 con fuente declarada antes de tools, está en `TP/05` §4.1)_
 - [x] 7.2 Verificar idioma de respuesta con un caso en inglés y uno en castellano (R-5.1)
   _(B1 y B2 (`tests/golden_set.py::BILINGUAL_SET`) con `gemini-3.1-flash-lite`: 2/2 con idioma declarado `en`, contenido y prosa en inglés; los 13 casos en castellano salen con la plantilla en castellano. Primera corrida 0/2 por respuesta en castellano; corregido en D73. `TP/05` §4.1)_
-- [ ] 7.3 Verificar la evidencia exhibida: SQL muestra la sentencia, RAG muestra el fragmento citado (R-5.3, R-5.4)
+- [x] 7.3 Verificar la evidencia exhibida: SQL muestra la sentencia, RAG muestra el fragmento citado (R-5.3, R-5.4)
+  _(sin UI propia (D80), el agente entrega la evidencia y el frontend la exhibe: `evidence.sql` con la sentencia ejecutada y `evidence.chunks` con documento, ubicación y texto de cada fragmento, verificado en `tests/test_agent.py` (`test_sql_answer_declares_source_and_shows_the_executed_statement`, `test_rag_answer_cites_document_and_location`). Que el frontend lo muestre queda fuera de este repositorio)_
 - [x] 7.4 Crear la tabla `agent_runs` y verificar que una consulta exitosa genera una fila con los ocho campos (R-6.1, R-6.2)
 - [x] 7.5 Verificar que una consulta rechazada también genera una fila con el motivo (R-6.3)
 - [x] 7.6 Agregar al golden set dos casos en **inglés** (uno SQL y uno RAG, ids `B1` y `B2`), **fuera** de los 13 que miden R-2.1 para no cambiar el criterio ≥ 11/13, y verificar con el modelo definitivo que se clasifican bien y la respuesta sale en inglés. El enunciado pide "castellano o inglés" y los 13 casos actuales están en castellano; 7.2 depende de esto (R-5.1)
@@ -108,18 +117,27 @@ instruido en el prompt (7.2, 7.6, D73) y export de `agent_runs` (7.7) hechos; 9.
 - [x] 7.7 Implementar `scripts/export_runs.py` que vuelque `agent_runs` a un archivo versionado en `TP/evidencia/`, y verificar que contiene las 13 consultas del golden set con sus campos. El fixture de integración hace `TRUNCATE agent_runs` (`tests/test_runs_integration.py`), así que exportar **antes** de correr `pytest -m integration`; la tabla no es una evidencia durable (R-6.1, R-6.2)
   _(`scripts/export_runs.py` (`--last N`), 7 tests; exportadas las 15 consultas en `TP/evidencia/agent_runs_2026-10-11.json`)_
 
-## 8. Interfaz Streamlit
+## 8. API HTTP (único acceso al agente, sin interfaz gráfica propia)
 
-- [ ] 8.1 Implementar `ui/app.py` con campo de texto, respuesta, fuente y evidencia, y verificar que una consulta de prueba muestra las tres secciones (R-5.3, R-5.4)
-- [ ] 8.2 Verificar el rechazo de consulta vacía: no se invoca el agente (R-1.2)
-- [ ] 8.3 Verificar que el historial en `st.session_state` es solo visual y no alimenta al agente, en una sesión de 3 consultas (D17)
+Las tareas 8.1 a 8.3 correspondían a la interfaz Streamlit y quedan **descartadas por D80**: el frontend
+es un cliente externo que consume la API. Se conservan los IDs para no renumerar.
+
+- ~~8.1 Implementar `ui/app.py` con campo de texto, respuesta, fuente y evidencia~~ — descartada (D80). Lo que exhibe el frontend se apoya en `result.evidence` (7.3)
+- ~~8.2 Verificar el rechazo de consulta vacía en la UI~~ — descartada (D80). El rechazo vive en la API: 422 sin invocar al agente (R-7.4, `tests/test_api.py`)
+- ~~8.3 Verificar que el historial de la UI es solo visual~~ — descartada (D80). El agente es de un solo turno y recibe solo la consulta actual (R-7.0, D17)
+- [x] 8.4 Exponer el agente por HTTP con streaming de progreso (`api/app.py`, `POST /ask`, `GET /health`) y verificar los eventos, el latido, el rechazo de la consulta vacía y el error inesperado (R-7.1 a R-7.4, R-7.6, R-7.7, D75)
+  _(`tests/test_api.py`, 13 tests. Al verificarlo se encontró y corrigió un retraso de hasta `HEARTBEAT_S` en cada `result`, D79)_
+- [x] 8.5 Implementar la cancelación cooperativa y la atención en serie, y verificar que una consulta cancelada no se registra y que dos simultáneas no se pisan (R-7.5, R-6.7, R-1.3, D76, D77)
+  _(`tests/test_agent.py`, `tests/test_agent_smolagents.py` y `tests/test_api.py::test_closing_the_stream_cancels_the_agent`)_
+- [x] 8.6 Retirar la interfaz Streamlit: eliminar `ui/`, la dependencia `streamlit` y el `CMD` de la imagen, y verificar que no queda ninguna referencia en el código ni en la imagen (R-7.0, D80)
+  _(`tests/test_dockerfile.py::test_the_runtime_stage_serves_the_http_api_and_no_ui` y `::test_the_runtime_dependencies_do_not_include_a_ui_framework`; en la imagen construida: sin `ui/` y `pip list` sin `streamlit`)_
 
 ## 9. Integración y despliegue
 
 - [ ] 9.1 Ejecutar el golden set completo contra el sistema integrado y verificar que `tests/test_golden_set.py` pasa sin regresiones, con aserción sobre clasificación, SQL y filas (no sobre la prosa) y rúbrica manual de 3 criterios para el texto (D16)
   _(esqueleto con los 13 casos y los 4 de retrieval en `tests/golden_set.py`; las afirmaciones están marcadas `llm` y se saltan hasta que exista el agente)_
 - [x] 9.2 Crear `docker/Dockerfile` y verificar que la imagen se construye y corre localmente
-  _(`docker/Dockerfile` (etapas `base`, `measure`, `runtime`), `.dockerignore` y `tests/test_dockerfile.py`. Verificado con Docker 2026-10-11: ambas etapas construyen; `runtime` corre como uid 10001 y sin `tests/` ni `.env`; `measure` corrió G1, G6 y G13 dentro del contenedor contra la base del host (`POSTGRES_HOST=host.docker.internal`) y la API de Gemini, con las variables por `--env-file`: 3/3 en clasificación y contenido, 3/3 en `agent_runs`. Pendiente fuera de 9.2: el `CMD` de `runtime` es provisorio hasta que exista `ui/app.py` (8.1) y la imagen no es desplegable en Cloud Run hasta entonces)_
+  _(`docker/Dockerfile` (etapas `base`, `measure`, `runtime`), `.dockerignore` y `tests/test_dockerfile.py`. Verificado con Docker 2026-10-11: ambas etapas construyen; `runtime` corre como uid 10001 y sin `tests/` ni `.env`; `measure` corrió G1, G6 y G13 dentro del contenedor contra la base del host (`POSTGRES_HOST=host.docker.internal`) y la API de Gemini, con las variables por `--env-file`: 3/3 en clasificación y contenido, 3/3 en `agent_runs`. Actualización (D80): el `CMD` de `runtime` pasó a servir la API con `uvicorn` en `$PORT`, verificado en 9.10)_
 - [ ] 9.3 Desplegar en Cloud Run + Cloud SQL con Secret Manager y verificar que las mismas 13 preguntas responden igual que en local
 - [ ] 9.4 Exportar `agent_runs` con las 13 consultas (con 7.7) y capturas de funcionamiento como evidencias para el informe. El enunciado pide "capturas, logs": si la UI (8.x) no llega, las capturas son de la terminal con `scripts/measure_golden.py`
 - [ ] 9.5 Redactar el informe técnico (máx. 10 páginas) con modelo de datos, arquitectura, consultas de ejemplo y evidencias, y verificar que cubre los 4 puntos exigidos por el enunciado
@@ -128,6 +146,11 @@ instruido en el prompt (7.2, 7.6, D73) y export de `agent_runs` (7.7) hechos; 9.
 - [ ] 9.7 Aplicar en la base compartida los roles `agent_ro` y `agent_logger`, sus permisos y `db/migrations/001_agent_runs.sql` (hoy solo existen en el Docker local), con `PGSSLMODE=require`, y verificar que `pytest -m integration` pasa contra esa base y que `agent_ro` no puede escribir ni leer `agent_runs` (D14, D63). Requiere al dueño de la base
 - [ ] 9.8 Verificar los entregables de datos ("Datos empleados: bases de datos y archivos PDF"): `db/dump.sql` y `rag/documents/*.pdf` están versionados y ninguna regla de `.gitignore` los excluye; desde un clon limpio, `docker compose up -d --wait` y la ingesta reproducen la base (2.8, 3.1)
 - [ ] 9.9 Preparar el coloquio (23 o 30/10/2026, criterio de aprobación): guion de demostración con una consulta SQL, una RAG, una híbrida y una sin cobertura; respuestas preparadas sobre las decisiones técnicas (`TP/CHANGELOG.md`), los límites del sistema (retrieval simulado hasta la ingesta, cuota de la API, modelo local vs definitivo) y qué mide cada evidencia
+
+- [x] 9.10 Desplegar la API como único servicio: la imagen `runtime` copia `api/`, arranca `uvicorn api.app:app` en `$PORT` y no incluye ninguna UI (D80); verificar con `docker build` y `docker run` que `GET /health` responde
+  _(verificado con Docker 2026-10-13: `GET /health` → 200 `{"status":"ok"}`; consulta vacía → 422; `POST /ask` real contra la base del host y la API del modelo → `start`, `classified`, `result` (`no_coverage`, `run_id` registrado); el contenedor corre como uid 10001 y no contiene `ui/`, `tests/`, `.env` ni `streamlit`)_
+- [ ] 9.12 Definir el acceso a la API para un frontend externo: CORS para los orígenes del frontend (un navegador en otro origen no puede llamar a `POST /ask` hoy) y restricción de acceso (sin autenticación, un endpoint público consume la cuota del modelo). Verificar desde el frontend real que la llamada funciona y que un origen no autorizado es rechazado
+- [ ] 9.11 Revisar el costo de atender las consultas en serie (D77) antes de una demostración con varias personas: una consulta puede esperar hasta el tiempo de las anteriores (3–170 s cada una). Opciones: un agente por sesión o un pool de conexiones
 
 ## Workflow follow-up
 

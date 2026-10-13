@@ -276,7 +276,43 @@ Una tarea de `04-tareas.md` está terminada solo si:
 
 ## 6. Evidencias para el informe
 
-- Captura de la UI por cada tipo de consulta (SQL, RAG, híbrida, no-cobertura).
+- Salida de la API (`curl -N` sobre `POST /ask`) por cada tipo de consulta (SQL, RAG, híbrida, no-cobertura), o capturas del frontend que la consume.
 - Export de `agent_runs` con las 13 consultas del golden set.
 - Output de `pytest` con los 10 casos de sanitización.
 - Conteo por tabla (`SELECT count(*)`) mostrando ≥15 registros.
+
+## 7. Pruebas de la API (R-1.3, R-6.7, R-7.0 a R-7.7)
+
+Corren sin modelo ni base (`pytest -q`): la API contra un doble de `answer()`. Verifican el **contrato**
+(qué eventos salen, en qué orden, qué se rechaza), no la calidad de las respuestas, que se mide con el
+golden set (§1 y §4). La API es el único acceso al agente (R-7.0, D80): la presentación de la respuesta
+y la evidencia (R-5.3, R-5.4) corresponden al frontend, que consume el evento `result`.
+
+| ID | Requisito | Caso | Test |
+|---|---|---|---|
+| A1 | R-7.7 | `GET /health` responde `ok` sin invocar al agente | `test_api.py::test_health_answers_without_invoking_the_agent` |
+| A2 | R-7.4, R-1.2 | Consulta vacía o de espacios: 422 y el agente no se invoca | `test_api.py::test_an_empty_question_is_rejected_before_opening_the_stream` |
+| A3 | R-7.1, R-7.2 | Orden `start, classified, tool_call, tool_result, composing, result` | `test_api.py::test_the_stream_reports_progress_in_order_and_ends_with_the_full_answer` |
+| A4 | R-7.1 | `result` trae `answer`, `answer_kind`, `sources`, `evidence`, `run_id` | `test_api.py::test_the_result_event_carries_the_complete_agent_answer` |
+| A5 | R-7.2, Art. 4 | Solo `result` declara `sources` | `test_api.py::test_only_the_result_event_declares_sources` |
+| A6 | R-7.1 | Fechas y decimales de las filas se serializan | `test_api.py::test_dates_and_decimals_in_the_rows_are_serialized` |
+| A7 | R-7.6 | Excepción inesperada: `start` y `error`, sin `result` | `test_api.py::test_an_unexpected_exception_is_reported_as_an_error_event` |
+| A8 | R-7.3 | Latidos mientras el agente está en silencio | `test_api.py::test_heartbeats_are_sent_while_the_agent_is_silent` |
+| A9 | R-7.3 | `result` no espera al intervalo de latido (regresión, D79: 5,01 s medidos) | `test_api.py::test_the_result_is_not_delayed_by_the_heartbeat_interval` |
+| A10 | R-7.5 | Al cerrar el flujo, el agente recibe la señal de cancelación | `test_api.py::test_closing_the_stream_cancels_the_agent` |
+| A11 | R-7.5 | Una consulta cancelada no emite `result` ni `error` | `test_api.py::test_a_cancelled_answer_does_not_emit_a_result` |
+| C1 | R-1.3 | Dos consultas simultáneas se serializan | `test_agent.py::test_concurrent_answers_are_serialized` |
+| C2 | R-6.7 | Consulta cancelada: lanza `AnswerCancelled` y no registra | `test_agent.py::test_a_cancelled_question_raises_and_records_nothing` |
+| C3 | R-6.7 | Cancelada durante la ejecución: se descarta la respuesta | `test_agent.py::test_cancelling_during_the_run_discards_the_answer` |
+| C4 | R-7.2 | Los eventos de progreso siguen el flujo y reportan una sentencia rechazada | `test_agent.py::test_progress_events_follow_the_flow_in_order`, `::test_a_rejected_statement_is_reported_as_a_failed_tool_result` |
+| C5 | R-7.2 | Los eventos `step` salen de los callbacks del framework; `cancel` interrumpe antes del siguiente paso | `test_agent_smolagents.py::test_step_events_come_from_the_framework_callbacks`, `::test_cancel_interrupts_the_framework_before_the_next_step` |
+| E1 | R-5.3, R-5.4 | La evidencia trae la sentencia y cada fragmento con documento, ubicación y texto | `test_agent.py::test_rag_answer_cites_document_and_location`, `test_agent.py::test_sql_answer_declares_source_and_shows_the_executed_statement` |
+| I1 | R-7.0 | La imagen `runtime` sirve la API y no una interfaz; no hay Streamlit en las dependencias | `test_dockerfile.py::test_the_runtime_stage_serves_the_http_api_and_no_ui`, `::test_the_runtime_dependencies_do_not_include_a_ui_framework` |
+
+**Qué no cubren:** el streaming real sobre `uvicorn` y un proxy (los tests usan `TestClient`), el acceso
+desde un navegador en otro origen (CORS: tarea 9.12) y la presentación, que es del frontend.
+
+**Hallazgos al escribirlas (2026-10-13):** (1) A9 falló con 5,01 s: el `result` se retrasaba hasta el
+intervalo de latido en cada consulta; (2) `test_step_events_come_from_the_framework_callbacks` fallaba en
+Windows porque un paso rápido da `duration_s == 0.0` y `0.0 or 0` devolvía un entero. Ambos se
+corrigieron (D79).
