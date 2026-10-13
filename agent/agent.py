@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -95,6 +96,10 @@ class EmptyQuestionError(ValueError):
     """R-1.2: una consulta vacía se rechaza sin invocar al agente."""
 
 
+class AnswerCancelled(Exception):
+    """El cliente abandonó la consulta: se corta en el siguiente punto seguro y no se registra."""
+
+
 class SqlBackend(Protocol):
     def execute_sql(
         self, sql: str, *, attempts: int = 1, sql_original: str | None = None
@@ -106,7 +111,10 @@ class Retriever(Protocol):
 
 
 class AgentRunner(Protocol):
-    def run(self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int) -> str: ...
+    def run(
+        self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int,
+        on_event: EventSink | None = None, cancel: threading.Event | None = None,
+    ) -> str: ...
 
 
 # --------------------------------------------------------------------------- runner real
@@ -147,11 +155,29 @@ class SmolagentsRunner:
             )
         return self._model
 
-    def run(self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int) -> str:
-        from smolagents import ToolCallingAgent
+    def run(
+        self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int,
+        on_event: EventSink | None = None, cancel: threading.Event | None = None,
+    ) -> str:
+        from smolagents import ActionStep, ToolCallingAgent
         from smolagents.monitoring import LogLevel
 
         from agent.tools.smol_tools import to_smolagents_tools
+
+        def after_step(step: ActionStep, agent: ToolCallingAgent) -> None:
+            # `step_callbacks` corre al terminar cada paso del agente (smolagents).
+            if on_event is not None:
+                usage = step.token_usage
+                on_event("step", {
+                    "step": step.step_number,
+                    "duration_s": round(step.timing.duration or 0, 2),
+                    "input_tokens": usage.input_tokens if usage else None,
+                    "output_tokens": usage.output_tokens if usage else None,
+                    "tools": [call.name for call in step.tool_calls or []],
+                })
+            # `interrupt()` hace que el bucle se detenga antes del paso siguiente.
+            if cancel is not None and cancel.is_set():
+                agent.interrupt()
 
         agent = ToolCallingAgent(
             tools=to_smolagents_tools(tools),
@@ -159,11 +185,24 @@ class SmolagentsRunner:
             instructions=system_prompt,
             max_steps=max_steps,
             verbosity_level=LogLevel.OFF,
+            step_callbacks=[after_step],
         )
         return str(agent.run(question))
 
 
 # --------------------------------------------------------------------------- sesión de tools
+
+
+EventSink = Callable[[str, dict], None]
+
+
+def _check_cancelled(cancel: threading.Event | None) -> None:
+    if cancel is not None and cancel.is_set():
+        raise AnswerCancelled()
+
+
+def _no_event(event: str, data: dict) -> None:
+    return None
 
 
 @dataclass
@@ -173,6 +212,8 @@ class ToolSession:
     sql_results: list[SqlResult] = field(default_factory=list)
     rag_results: list[RagResult] = field(default_factory=list)
     trace: list[str] = field(default_factory=list)
+    # Progreso hacia afuera (stream de la API). No afecta a la respuesta ni a la evidencia.
+    emit: EventSink = _no_event
 
     @property
     def sql_failures(self) -> int:
@@ -217,6 +258,9 @@ class LibraryAgent:
         self._recorder = recorder
         # `recorder=None` explícito no significa "sin registro": significa "el de la configuración".
         self._recorder_resolved = recorder is not None
+        # Los backends guardan una sola conexión a la base: Streamlit atiende cada sesión en su
+        # propio hilo y dos consultas simultáneas se pisarían (`rollback`, `SET LOCAL`). Se serializan.
+        self._lock = threading.Lock()
 
     # Los backends reales se crean al primer uso: construir el agente no abre conexiones.
     @property
@@ -261,6 +305,7 @@ class LibraryAgent:
 
         def execute(sql: str) -> str:
             session.trace.append(TOOL_EXECUTE_SQL)
+            session.emit("tool_call", {"tool": TOOL_EXECUTE_SQL, "sql": sql})
             if session.sql_failures >= max_attempts:
                 # D8: el límite lo aplica la herramienta, no el prompt.
                 return _json({
@@ -272,6 +317,10 @@ class LibraryAgent:
                 sql, attempts=session.sql_failures + 1, sql_original=sql
             )
             session.sql_results.append(result)
+            session.emit("tool_result", {
+                "tool": TOOL_EXECUTE_SQL, "ok": result.executed, "rows": len(result.rows),
+                "error": result.error, "detail": result.detail,
+            })
             if not result.executed:
                 return _json({"ok": False, "error": result.error, "detail": result.detail})
             payload: dict[str, Any] = {
@@ -300,8 +349,13 @@ class LibraryAgent:
     def _retrieve_tool(self, session: ToolSession) -> ToolSpec:
         def retrieve(query: str) -> str:
             session.trace.append(TOOL_RETRIEVE)
+            session.emit("tool_call", {"tool": TOOL_RETRIEVE, "query": query})
             result = self.retriever.retrieve(query)
             session.rag_results.append(result)
+            session.emit("tool_result", {
+                "tool": TOOL_RETRIEVE, "ok": not result.error, "chunks": len(result.chunks),
+                "error": result.error,
+            })
             if result.error:
                 return _json({
                     "ok": False,
@@ -342,15 +396,23 @@ class LibraryAgent:
 
     # ------------------------------------------------------------------ consulta
 
-    def answer(self, question: str) -> AgentAnswer:
+    def answer(
+        self, question: str, on_event: EventSink | None = None, cancel: threading.Event | None = None,
+    ) -> AgentAnswer:
+        """`on_event(nombre, datos)` recibe el progreso (clasificación, herramientas) a medida que ocurre.
+
+        Si `cancel` se activa, la consulta se corta antes del siguiente paso (no a mitad de una
+        llamada al modelo) y lanza `AnswerCancelled` sin registrar nada.
+        """
         text = (question or "").strip()
         if not text:
             # R-1.2: no se invoca nada ni se registra: no hay consulta que trazar.
             raise EmptyQuestionError("La consulta está vacía.")
 
-        started = time.perf_counter()
-        result = self._resolve(text)
-        return self._persist(result, int((time.perf_counter() - started) * 1000))
+        with self._lock:
+            started = time.perf_counter()
+            result = self._resolve(text, on_event or _no_event, cancel)
+            return self._persist(result, int((time.perf_counter() - started) * 1000))
 
     def _persist(self, answer: AgentAnswer, latency_ms: int) -> AgentAnswer:
         """Registra la consulta en `agent_runs` (R-6.2, R-6.3).
@@ -369,7 +431,10 @@ class LibraryAgent:
             return replace(answer, evidence=evidence)
         return replace(answer, run_id=run_id)
 
-    def _resolve(self, text: str) -> AgentAnswer:
+    def _resolve(
+        self, text: str, emit: EventSink = _no_event, cancel: threading.Event | None = None,
+    ) -> AgentAnswer:
+        _check_cancelled(cancel)
         try:
             classification = self.classifier.classify(text)
         except Exception as exc:  # noqa: BLE001 - R-5.7: el fallo se reporta, no se adivina
@@ -380,6 +445,8 @@ class LibraryAgent:
                 error=("CLASSIFICATION_ERROR", detail),
             )
 
+        _check_cancelled(cancel)
+        emit("classified", {"classification": classification.label, "language": classification.language})
         trace = [TRACE_CLASSIFICATION]
         if classification.label == "none":
             return self._gap_answer(
@@ -387,7 +454,7 @@ class LibraryAgent:
                 MESSAGES[classification.language]["no_coverage"],
             )
 
-        session = ToolSession()
+        session = ToolSession(emit=emit)
         tools = self._tools_for(classification.label, session)
         system_prompt = render_system_prompt(
             self.cfg, classification=classification.label, tools=[t.name for t in tools],
@@ -397,11 +464,14 @@ class LibraryAgent:
         model_text = ""
         try:
             model_text = self.runner.run(
-                question=text, system_prompt=system_prompt, tools=tools, max_steps=self.cfg.max_steps
+                question=text, system_prompt=system_prompt, tools=tools, max_steps=self.cfg.max_steps,
+                on_event=emit, cancel=cancel,
             )
         except Exception as exc:  # noqa: BLE001
             run_error = f"{type(exc).__name__}"
+        _check_cancelled(cancel)
 
+        emit("composing", {})
         return self._compose(text, classification, session, model_text, run_error, trace)
 
     # ------------------------------------------------------------------ composición
@@ -569,15 +639,19 @@ class LibraryAgent:
 # --------------------------------------------------------------------------- atajo de módulo
 
 _default: LibraryAgent | None = None
+_default_lock = threading.Lock()
 
 
 def get_agent() -> LibraryAgent:
     global _default
-    if _default is None:
-        _default = LibraryAgent()
-    return _default
+    with _default_lock:
+        if _default is None:
+            _default = LibraryAgent()
+        return _default
 
 
-def answer(question: str) -> AgentAnswer:
+def answer(
+    question: str, on_event: EventSink | None = None, cancel: threading.Event | None = None,
+) -> AgentAnswer:
     """Punto de entrada de la UI y del golden set: `answer(question) -> AgentAnswer`."""
-    return get_agent().answer(question)
+    return get_agent().answer(question, on_event, cancel)
