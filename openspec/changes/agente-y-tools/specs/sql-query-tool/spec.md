@@ -2,8 +2,8 @@
 
 ## Purpose
 
-Define el comportamiento de la herramienta que traduce una consulta en lenguaje natural a una
-sentencia SQL, la valida antes de ejecutarla y devuelve el resultado con la sentencia ejecutada.
+Define el comportamiento de la herramienta que recibe la sentencia SQL ya formada por el agente, la
+valida antes de ejecutarla y devuelve el resultado con la sentencia ejecutada (R-3.1, D1).
 
 ## ADDED Requirements
 

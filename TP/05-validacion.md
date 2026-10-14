@@ -141,9 +141,10 @@ poblaciones:
 de embeddings. Se registra en `CHANGELOG.md` y se ajusta antes de fijar el número.
 5. Reejecutar R1–R4 con el umbral elegido y dejar la tabla de similitudes como evidencia del informe.
 
-Con `gemini-embedding-001` las similitudes relevantes suelen ubicarse entre 0.55 y 0.70 y las
-irrelevantes entre 0.25 y 0.40, por lo que 0.35 puede resultar demasiado permisivo: queda sujeto a la
-medición, no a la discusión.
+Con `gemini-embedding-001` se espera que las similitudes relevantes queden entre 0.55 y 0.70 y las
+irrelevantes entre 0.25 y 0.40, por lo que 0.35 puede resultar demasiado permisivo. Esos rangos son una
+expectativa, no un resultado medido: se confirman con la calibración T3.6 sobre los PDFs reales. 0.35 es
+el punto de partida, sujeto a esa medición.
 
 ---
 
@@ -163,7 +164,7 @@ La misma prueba se corre en dos entornos con **propósitos distintos**:
 | Entorno | Modelo | Qué valida | ¿Cuenta como aceptación? |
 |---|---|---|---|
 | Local | Servidor OpenAI-compatible en `127.0.0.1` (`LLM_MODEL=openai/<id>`, `LLM_API_BASE`) | El flujo: clasificación previa a las tools, tools por fuente, límites de intentos y pasos, composición, SQL aceptado por el validador. Sin cuota ni costo | **No** |
-| Definitivo | Gemini con `GEMINI_API_KEY` (`LLM_MODEL=gemini/<modelo>`) | Los criterios de §4 con el modelo que se despliega | **Sí** |
+| Definitivo | Gemini con `GEMINI_API_KEY` (`LLM_MODEL=gemini/<modelo>`) | Los criterios de §4 con el modelo definitivo | **Sí** |
 
 Reglas:
 

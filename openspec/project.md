@@ -15,7 +15,7 @@ Entrega: 16/10/2026 23:59 (GMT-03). Coloquio: 23/10 o 30/10/2026.
 |---|---|
 | Lenguaje | Python 3.12+ (el código usa sintaxis de 3.12) |
 | Base de datos | PostgreSQL + pgvector |
-| LLM | Google Gemini (aceptación y despliegue). En desarrollo puede apuntarse a un servidor local compatible con la API de OpenAI vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`): valida el flujo, no reemplaza la medición de aceptación (R-2.8) |
+| LLM | Google Gemini (aceptación y ejecución del sistema, D81). En desarrollo puede apuntarse a un servidor local compatible con la API de OpenAI vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`): valida el flujo, no reemplaza la medición de aceptación (R-2.8) |
 | Embeddings | Gemini Embeddings API |
 | Framework agéntico | Smolagents |
 | Acceso al agente | API HTTP con FastAPI + uvicorn (streaming SSE); el frontend es un cliente externo (D80) |
@@ -30,7 +30,7 @@ agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
 scripts/       measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
-tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py
+tests/         ver el detalle en `TP/02` §8
 docker/        Dockerfile
 TP/            artefactos SDD adjuntables al informe
 openspec/      raíz operativa de SDD (esta carpeta)

@@ -81,8 +81,8 @@ cualquier herramienta.
 ### Requirement: R-2.8 — Proveedor del modelo configurable
 El sistema SHALL permitir cambiar el proveedor del modelo (clasificación y loop de herramientas) por
 configuración, sin cambios de código: un servidor local compatible con la API de OpenAI durante el
-desarrollo y Gemini mediante API key para la aceptación y el despliegue. El flujo (clasificación previa,
-herramientas expuestas por fuente, límites de intentos y pasos, composición de la respuesta) SHALL ser el
+desarrollo y Gemini mediante API key para la aceptación y para ejecutar el sistema (D81). El flujo
+(clasificación previa, herramientas expuestas por fuente, límites de intentos y pasos, composición de la respuesta) SHALL ser el
 mismo con cualquier proveedor.
 
 #### Scenario: validación del flujo contra un modelo local

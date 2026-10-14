@@ -36,7 +36,7 @@ flowchart TB
 | Lenguaje | Python 3.12+ (el código usa sintaxis de 3.12; `target-version = "py312"` en `pyproject.toml`) |
 | Base de datos | PostgreSQL |
 | Vector store | pgvector (extensión sobre el mismo PostgreSQL) |
-| LLM | Google Gemini (API) para aceptación y despliegue; en desarrollo, un servidor local OpenAI-compatible vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`) para validar el flujo sin consumir cuota (R-2.8) |
+| LLM | Google Gemini (API) para aceptación y ejecución del sistema (D81); en desarrollo, un servidor local OpenAI-compatible vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`) para validar el flujo sin consumir cuota (R-2.8) |
 | Framework agéntico | Smolagents |
 | Acceso al agente | API HTTP con FastAPI + uvicorn y respuesta en streaming SSE (D75, D80, `consulta-por-api`). Sin interfaz gráfica propia: el frontend es un cliente externo |
 | Embeddings | Gemini Embeddings API, `gemini-embedding-001` con `output_dimensionality = 768` (D5) |
@@ -286,6 +286,11 @@ El agente se implementa como un **`ToolCallingAgent`** de Smolagents (D2) con la
 |---|---|
 | `execute_sql` | Recibe la sentencia **ya formada por el agente**, la valida estáticamente con `sqlglot`, la ejecuta con el usuario `agent_ro` y devuelve el resultado tabular |
 | `rag_search_tool` | Recibe una pregunta en NL, busca los chunks más relevantes en pgvector y los devuelve como contexto |
+
+Nomenclatura: `rag_search_tool` es el nombre lógico que usan los artefactos SDD (specs, `tasks.md`); al
+modelo la herramienta se le expone como `retrieve_documents` (`agent/agent.py`, `TOOL_RETRIEVE`). En el
+código la implementación es `RagRetriever` (`agent/tools/rag_tool.py`) y el adaptador de Smolagents es
+`QueryTool` (`agent/tools/smol_tools.py`).
 
 No existe `hybrid_tool`: la combinación de fuentes es una decisión del orquestador, no una tool. El
 agente invoca una o ambas según la clasificación (R-2.4).

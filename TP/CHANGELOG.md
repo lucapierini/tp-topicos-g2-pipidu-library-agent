@@ -128,6 +128,8 @@ Se muestra pero no alimenta al agente.
 **Traza:** `01 §5.5`, T8.3.
 
 ### D18 — Despliegue: Cloud Run + Cloud SQL + Secret Manager
+*(Reemplazada por D81 para el servicio: el sistema corre en entorno local. El motivo original se
+conserva como historia.)*
 **Descartado:** Compute Engine y GKE.
 **Motivo:** Streamlit como contenedor en Cloud Run es lo mínimo que satisface el criterio de promoción;
 GKE es desproporcionado para 3 personas.
@@ -157,7 +159,7 @@ ediciones divergentes. Se eliminaron `03-especificaciones-por-capacidad.md` y `0
 | B2 | LLM y embeddings: API de Gemini | Confirmada |
 | B3 | Framework agéntico: Smolagents | Confirmada |
 | B4 | UI: Streamlit | **Reemplazada por D80**: sin interfaz propia; frontend externo sobre la API |
-| B5 | Criterios de promoción elegidos: nube, UI, framework agéntico, SDD (4 de 5) | Confirmada |
+| B5 | Criterios de promoción elegidos: nube, UI, framework agéntico, SDD (4 de 5) | Modificada por D81 y D83 (nube descartada; la UI la aporta un frontend externo) |
 | B6 | LangSmith / observabilidad: **no incluido** | Confirmada (exclusión explícita) |
 | B7 | Persistencia de trazabilidad en `agent_runs` | Confirmada (Art. 5) |
 
@@ -170,7 +172,7 @@ ediciones divergentes. Se eliminaron `03-especificaciones-por-capacidad.md` y `0
 | Umbral de similitud definitivo | 0.35 | T3.6, con la curva de similitud sobre los PDFs reales |
 | Cantidad real de chunks por documento | — | T3.2, con el chunking ejecutado |
 | Fuente de los PDFs | generados por el integrante de RAG/BD | **Cerrada (D19)**; queda pendiente el contenido concreto |
-| Mecanismo exacto de despliegue en Cloud Run | — | T10, primera prueba de `docker run` local |
+| Mecanismo exacto de despliegue en Cloud Run | — | Descartado por D81 (ejecución local); la imagen `runtime` se verifica con `docker run` |
 
 ---
 
@@ -178,7 +180,7 @@ ediciones divergentes. Se eliminaron `03-especificaciones-por-capacidad.md` y `0
 
 | ID | Fecha | Tarea | Decisión | Motivo |
 |---|---|---|---|---|
-| D21 | 2026-10-10 | T4.1 | La whitelist excluye explícitamente `agent_runs` y `documentos_embeddings` | La herramienta SQL lee el dominio, no la trazabilidad ni el repositorio documental. Si el agente pudiera leer `agent_runs`, un usuario podría reconstruir la historia completa de consultas |
+| D21 | 2026-10-10 | T4.1 | La whitelist excluye explícitamente `agent_runs` y `documentos_embeddings` | La herramienta SQL lee el dominio, no la trazabilidad ni el repositorio documental. Si el agente pudiera leer `agent_runs`, un usuario podría reconstruir la historia completa de consultas (las tablas documentales son `documentos` y `documentos_chunks` desde D64/D66) |
 | D22 | 2026-10-10 | T4.1 | *(La vista se llama `v_prestamos_estado`: D64.)* `prestamos_estado` entra en la whitelist como vista | Es la única forma de que el agente consulte el vencimiento sin un valor almacenado (D7, R-3.12) |
 | D23 | 2026-10-10 | T4.2 | *(Reemplazada por D38.)* Los alias de CTE y de tabla se resuelven con un mapa alias→tabla antes de aplicar la whitelist; una columna proyectada por una CTE no se valida contra el esquema físico | `sqlglot` trata `FROM top` (una CTE) como tabla física: sin el mapa, `WITH top AS (...) SELECT * FROM top` se rechaza falsamente. Lo mismo con `socios s` |
 | D24 | 2026-10-10 | T4.2 | El límite de 50 filas lo aplica la ejecución, no la validación estática | S10 es un `SELECT` válido; confundir los dos niveles haría que el test de sanitización afirme algo que la herramienta no hace |

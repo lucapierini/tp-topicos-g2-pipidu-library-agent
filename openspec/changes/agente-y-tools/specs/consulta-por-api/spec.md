@@ -13,8 +13,8 @@ El sistema SHALL ofrecer el acceso al agente exclusivamente por la API HTTP. El 
 incluir una interfaz gráfica propia: la presentación de la respuesta, la evidencia y el historial
 corresponden al frontend que consume la API.
 
-#### Scenario: imagen desplegada
-- **GIVEN** la imagen que se despliega
+#### Scenario: imagen que se ejecuta
+- **GIVEN** la imagen `runtime` que se ejecuta en entorno local (D81)
 - **WHEN** arranca
 - **THEN** sirve la API HTTP
 - **AND** no sirve ninguna interfaz gráfica
