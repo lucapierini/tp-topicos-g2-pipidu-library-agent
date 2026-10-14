@@ -32,8 +32,8 @@ El detalle de cada archivo está en `TP/02` §8 (D20): acá solo van los directo
 
 Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`). El agente y sus tools están
 implementados (validador y executor de SQL, tool de RAG, clasificador, orquestador, `agent_runs`), junto
-con la API HTTP con streaming de progreso y cancelación, que es el **único acceso** al agente: no hay
-interfaz gráfica en este repositorio, el frontend es un cliente externo que la consume (D80). La
+con la API HTTP con streaming de progreso y cancelación, que es el **único acceso** al agente (D80). La
+interfaz gráfica (`web/`, Vite + shadcn/ui) es un cliente de esa API y se levanta junto con ella (D84). La
 aceptación con el modelo definitivo está medida (T6.7, `gemini-3.1-flash-lite`, 13/13).
 Pendiente: la ingesta de PDFs, el seed entregable y el informe. El sistema se ejecuta en entorno local
 (D81). El detalle está en [`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
@@ -80,6 +80,6 @@ El enunciado pide al menos dos de cinco. Estado real:
 
 - [x] Framework agéntico (Smolagents): implementado
 - [x] SDD (artefactos en `TP/` y `openspec/`): implementados
-- [ ] Interfaz gráfica: la provee un frontend externo que consume la API (D80); no está en este repositorio
+- [ ] Interfaz gráfica: SPA en `web/` (Vite + shadcn/ui) que consume la API (D80, D84); en curso (change `frontend-web-vite`)
 - [ ] Despliegue en la nube (GCP): **descartado por D81** (decisión del equipo, 2026-10-13): el sistema se prepara para correr en entorno local. Queda cubierto solo con `framework agéntico` y `SDD`; hay que confirmarlo con la cátedra (T9.13, riesgo D83). La imagen `runtime` sigue siendo válida para correr local con `uvicorn`
 - [ ] Observabilidad (LangSmith): excluida explícitamente

@@ -10,7 +10,7 @@
 
 ```mermaid
 flowchart TB
-    FE[Frontend externo] -->|POST /ask, respuesta en streaming SSE| API[API HTTP FastAPI]
+    FE[Interfaz web `web/` vía nginx] -->|POST /ask, respuesta en streaming SSE| API[API HTTP FastAPI]
     API -->|answer con on_event y cancel| AGENT[Agente Smolagents]
     AGENT -->|Tool: text-to-SQL| SQLTOOL[SQL Tool]
     AGENT -->|Tool: RAG retrieval| RAGTOOL[RAG Tool]
@@ -38,7 +38,7 @@ flowchart TB
 | Vector store | pgvector (extensión sobre el mismo PostgreSQL) |
 | LLM | Google Gemini (API) para aceptación y ejecución del sistema (D81); en desarrollo, un servidor local OpenAI-compatible vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`) para validar el flujo sin consumir cuota (R-2.8) |
 | Framework agéntico | Smolagents |
-| Acceso al agente | API HTTP con FastAPI + uvicorn y respuesta en streaming SSE (D75, D80, `consulta-por-api`). Sin interfaz gráfica propia: el frontend es un cliente externo |
+| Acceso al agente | API HTTP con FastAPI + uvicorn y respuesta en streaming SSE (D75, D80, `consulta-por-api`). El servidor del agente no sirve interfaz: la SPA de `web/` (D84) es un cliente de la API |
 | Embeddings | Gemini Embeddings API, `gemini-embedding-001` con `output_dimensionality = 768` (D5) |
 | Despliegue | **Entorno local** (Docker + `uvicorn`), D81. La alternativa de nube queda registrada en §7 |
 | Control de versiones | GitHub |
@@ -409,9 +409,10 @@ declare explícitamente la ausencia de información.
 
 ## 6. API HTTP: el único acceso al agente
 
-El agente se consulta **solo** por HTTP (D80, capacidad `consulta-por-api`). Este repositorio no incluye
-interfaz gráfica: el frontend es un cliente externo que consume la API y se ocupa de presentar la
-respuesta, la evidencia y el historial. Un frontend en otro origen debe poder llamarla (tarea 9.12).
+El agente se consulta **solo** por HTTP (D80, capacidad `consulta-por-api`). La interfaz gráfica
+(`web/`, D84) es un cliente de esta API en su propio servicio: se ocupa de presentar la respuesta, la
+evidencia y el historial. En Docker llega por un proxy del mismo origen; un frontend en otro origen (por
+ejemplo `npm run dev`) necesita `API_ALLOWED_ORIGINS` (tarea 9.12).
 
 ### 6.1 Contrato HTTP
 
@@ -528,7 +529,7 @@ local.
 - Servicio: la imagen `runtime` del Dockerfile multi-etapa (D74, D80), o `uvicorn api.app:app` directo, en
   `$PORT` (8080 por defecto).
 - Variables de entorno: se inyectan con `docker run --env-file .env` (Art. 9); no hay gestor de secretos.
-- Solo se expone el puerto de la API; la imagen no incluye interfaz gráfica (D80). La etapa `measure` agrega
+- La imagen `runtime` no incluye interfaz gráfica (D80); la SPA corre en el servicio `web` (D84). La etapa `measure` agrega
   los scripts de medición y no forma parte del servicio.
 
 **Alternativa no ejecutada (D81):** Cloud Run para el servicio y Cloud SQL (PostgreSQL con pgvector) para la
@@ -574,6 +575,7 @@ pipidu-library-agent/
 ├── api/
 │   ├── __init__.py
 │   └── app.py                    # FastAPI: POST /ask (SSE), GET /health; único acceso al agente (D75, D80)
+├── web/                          # SPA Vite + shadcn/ui: cliente de la API (D84)
 ├── scripts/                      # measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 ├── TP/                           # artefactos SDD legibles para la entrega
 ├── informe/                      # pendiente (T9.5)

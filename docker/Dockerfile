@@ -38,8 +38,8 @@ USER agent
 CMD ["python", "scripts/measure_golden.py", "--help"]
 
 # --- runtime: lo que se ejecuta (última etapa = destino por defecto) ------------------------------
-# Un solo servicio: la API HTTP del agente (D80). El frontend es un cliente externo que la consume;
-# esta imagen no sirve ninguna interfaz gráfica.
+# Un solo servicio: la API HTTP del agente (D80). El frontend (`web/`, D84) es un cliente de la API con
+# su propia imagen (`docker/Dockerfile.web`); esta imagen no sirve ninguna interfaz gráfica.
 FROM base AS runtime
 COPY api/ api/
 ENV PORT=8080

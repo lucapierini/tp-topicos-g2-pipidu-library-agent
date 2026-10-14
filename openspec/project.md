@@ -18,8 +18,8 @@ Entrega: 16/10/2026 23:59 (GMT-03). Coloquio: 23/10 o 30/10/2026.
 | LLM | Google Gemini (aceptación y ejecución del sistema, D81). En desarrollo puede apuntarse a un servidor local compatible con la API de OpenAI vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`): valida el flujo, no reemplaza la medición de aceptación (R-2.8) |
 | Embeddings | Gemini Embeddings API |
 | Framework agéntico | Smolagents |
-| Acceso al agente | API HTTP con FastAPI + uvicorn (streaming SSE); el frontend es un cliente externo (D80) |
-| Despliegue | Entorno local: Docker (Postgres + pgvector) + `uvicorn api.app:app` (D81) |
+| Acceso al agente | API HTTP con FastAPI + uvicorn (streaming SSE); el frontend (`web/`, Vite + shadcn/ui) es un cliente de la API (D80, D84) |
+| Despliegue | Entorno local: Docker Compose (Postgres + pgvector, API, web) (D81, D84); la API también corre con `uvicorn api.app:app` |
 
 ## Estructura del repositorio
 
@@ -30,6 +30,7 @@ agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
 scripts/       measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
+web/           SPA Vite + React + shadcn/ui: cliente de la API (D84)
 tests/         ver el detalle en `TP/02` §8
 docker/        Dockerfile
 TP/            artefactos SDD adjuntables al informe
