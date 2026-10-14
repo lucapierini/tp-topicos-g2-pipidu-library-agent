@@ -82,5 +82,5 @@ El enunciado pide al menos dos de cinco. Estado real:
 - [x] Framework agéntico (Smolagents): implementado
 - [x] SDD (artefactos en `TP/` y `openspec/`): implementados
 - [ ] Interfaz gráfica: la provee un frontend externo que consume la API (D80); no está en este repositorio
-- [ ] Despliegue en la nube (GCP): **descartado por D81** (decisión del equipo, 2026-10-13): el sistema se prepara para correr en entorno local. Queda cubierto solo con `framework agéntico` y `SDD`; hay que confirmarlo con el equipo. La imagen `runtime` sigue siendo válida para correr local con `uvicorn`
+- [ ] Despliegue en la nube (GCP): **descartado por D81** (decisión del equipo, 2026-10-13): el sistema se prepara para correr en entorno local. Queda cubierto solo con `framework agéntico` y `SDD`; hay que confirmarlo con el equipo (riesgo D83). La imagen `runtime` sigue siendo válida para correr local con `uvicorn`
 - [ ] Observabilidad (LangSmith): excluida explícitamente

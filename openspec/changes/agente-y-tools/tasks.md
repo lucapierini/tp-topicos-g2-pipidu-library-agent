@@ -159,6 +159,7 @@ es un cliente externo que consume la API. Se conservan los IDs para no renumerar
 - [ ] 9.12 Definir el acceso a la API para un frontend externo: CORS para los orígenes del frontend (un navegador en otro origen no puede llamar a `POST /ask` hoy) y restricción de acceso (sin autenticación, un endpoint público consume la cuota del modelo). Verificar desde el frontend real que la llamada funciona y que un origen no autorizado es rechazado
   _(implementado y verificado con `tests/test_api_cors.py` — 8 tests, 2026-10-13: preflight 200 con `Access-Control-Allow-Origin` para el origen declarado en `API_ALLOWED_ORIGINS`, 400 sin el header para un origen no declarado, sin wildcard `*` con la lista vacía, el stream SSE conserva el header y no se requieren credenciales. La autenticación se descarta por D81: el servicio corre en entorno local (D82, R-7.8). **Pendiente:** la llamada real desde el frontend, falta el origen que declara el integrante del frontend para cargarlo en `API_ALLOWED_ORIGINS`)_
 - [ ] 9.11 Revisar el costo de atender las consultas en serie (D77) antes de una demostración con varias personas: una consulta puede esperar hasta el tiempo de las anteriores (3–170 s cada una). Opciones: un agente por sesión o un pool de conexiones
+- [ ] 9.13 Confirmar con la cátedra que la ejecución local es aceptable para el criterio de despliegue y que el criterio de interfaz gráfica puede evidenciarse con un frontend externo; registrar la respuesta en `TP/CHANGELOG.md` (riesgo D83)
 
 ## Workflow follow-up
 
