@@ -5,7 +5,6 @@ import { AskForm } from "@/components/ask/ask-form"
 import { FailureAlert } from "@/components/ask/failure-alert"
 import { ProgressPanel } from "@/components/ask/progress-panel"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Message, MessageContent } from "@/components/ui/message"
 import {
@@ -55,49 +54,53 @@ export function App() {
   const turns: TurnState[] = state.status === "idle" ? history : [...history, state]
 
   return (
-    <main className="mx-auto flex h-svh w-full max-w-3xl flex-col p-4">
-      <Card className="min-h-0 flex-1">
-        <CardHeader>
-          <CardTitle>Agente de biblioteca</CardTitle>
-          <CardDescription>Consultá en castellano o inglés; el agente indica de dónde sale cada respuesta.</CardDescription>
-        </CardHeader>
-        <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
-          {turns.length === 0 ? (
-            <Empty>
-              <EmptyHeader>
-                <EmptyMedia variant="icon">
-                  <HugeiconsIcon icon={BookOpen01Icon} />
-                </EmptyMedia>
-                <EmptyTitle>Hacé una consulta</EmptyTitle>
-                <EmptyDescription>
-                  Por ejemplo: «¿Qué préstamos vencen esta semana?» o «¿Cuántos días dura un préstamo?»
-                </EmptyDescription>
-              </EmptyHeader>
-            </Empty>
-          ) : (
-            <MessageScrollerProvider>
-              <MessageScroller>
-                <MessageScrollerViewport>
-                  <MessageScrollerContent className="p-(--card-spacing)">
-                    {turns.map((turn, index) => (
-                      <Turn
-                        key={index}
-                        turn={turn}
-                        latest={index === turns.length - 1}
-                        onRetry={(question) => void ask(question, { retry: true })}
-                      />
-                    ))}
-                  </MessageScrollerContent>
-                </MessageScrollerViewport>
-                <MessageScrollerButton />
-              </MessageScroller>
-            </MessageScrollerProvider>
-          )}
-        </CardContent>
-        <CardFooter>
+    <main className="flex h-svh w-full flex-col">
+      <header className="shrink-0 border-b">
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-0.5 px-4 py-3">
+          <h1 className="text-base font-medium">Agente de biblioteca</h1>
+          <p className="text-sm text-muted-foreground">
+            Consultá en castellano o inglés; el agente indica de dónde sale cada respuesta.
+          </p>
+        </div>
+      </header>
+      <div className="min-h-0 flex-1">
+        {turns.length === 0 ? (
+          <Empty>
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <HugeiconsIcon icon={BookOpen01Icon} />
+              </EmptyMedia>
+              <EmptyTitle>Hacé una consulta</EmptyTitle>
+              <EmptyDescription>
+                Por ejemplo: «¿Qué préstamos vencen esta semana?» o «¿Cuántos días dura un préstamo?»
+              </EmptyDescription>
+            </EmptyHeader>
+          </Empty>
+        ) : (
+          <MessageScrollerProvider>
+            <MessageScroller>
+              <MessageScrollerViewport>
+                <MessageScrollerContent className="mx-auto w-full max-w-3xl p-4">
+                  {turns.map((turn, index) => (
+                    <Turn
+                      key={index}
+                      turn={turn}
+                      latest={index === turns.length - 1}
+                      onRetry={(question) => void ask(question, { retry: true })}
+                    />
+                  ))}
+                </MessageScrollerContent>
+              </MessageScrollerViewport>
+              <MessageScrollerButton />
+            </MessageScroller>
+          </MessageScrollerProvider>
+        )}
+      </div>
+      <footer className="shrink-0">
+        <div className="mx-auto w-full max-w-3xl px-4 pt-2 pb-4">
           <AskForm running={running} onSubmit={(question) => void ask(question)} onCancel={cancel} />
-        </CardFooter>
-      </Card>
+        </div>
+      </footer>
     </main>
   )
 }
