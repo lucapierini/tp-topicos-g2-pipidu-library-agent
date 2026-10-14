@@ -38,6 +38,10 @@ ninguna fuente como respuesta antes del evento `result` (R-7.2, Art. 4).
 - **THEN** la interfaz muestra la clasificación y la herramienta invocada
 - **AND** no muestra todavía ninguna fuente como declarada
 
+#### Scenario: indicador de espera
+- **WHEN** la consulta está en curso
+- **THEN** la interfaz muestra un texto de estado con efecto shimmer, sin spinner
+
 #### Scenario: espera larga
 - **GIVEN** una consulta que tarda más de 5 segundos sin eventos de progreso
 - **WHEN** llega un `heartbeat`
@@ -146,6 +150,28 @@ antes de que sus dependencias estén sanas.
 - **GIVEN** el sistema levantado con Docker
 - **WHEN** la interfaz envía una consulta
 - **THEN** la API la recibe sin error de CORS ni de red
+
+### Requirement: R-8.10 — Historial de la sesión
+La interfaz SHALL conservar en pantalla las consultas y respuestas anteriores de la sesión al enviar una
+nueva, y SHALL NO enviarlas al agente: cada consulta viaja sola (R-7.0, D17). El historial vive en el
+navegador y se pierde al recargar. Cancelar una consulta en curso SHALL NO borrar las anteriores.
+
+#### Scenario: consulta nueva
+- **GIVEN** una consulta ya respondida en pantalla
+- **WHEN** la persona envía otra
+- **THEN** la consulta y la respuesta anteriores siguen visibles
+- **AND** la API recibe únicamente la consulta nueva
+
+#### Scenario: cancelar con historial
+- **GIVEN** una consulta respondida y una segunda en curso
+- **WHEN** la persona cancela la segunda
+- **THEN** la primera sigue visible
+- **AND** la segunda no deja respuesta ni fuentes
+
+#### Scenario: reintentar una consulta fallida
+- **GIVEN** una consulta que falló
+- **WHEN** la persona la reintenta
+- **THEN** el nuevo intento reemplaza al fallido, sin duplicarlo
 
 ### Requirement: R-8.9 — Sin secretos en la interfaz
 La interfaz y su imagen SHALL NO contener `GEMINI_API_KEY`, credenciales de la base ni el `.env`. Solo la

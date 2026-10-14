@@ -18,8 +18,10 @@ describe("AskForm", () => {
     render(<AskForm running={false} onSubmit={onSubmit} onCancel={() => {}} />)
     await userEvent.type(screen.getByLabelText("Consulta"), " hola {Enter}")
     expect(onSubmit).toHaveBeenCalledWith("hola")
+    expect(screen.getByLabelText("Consulta")).toHaveValue("") // se limpia al enviar
+    await userEvent.type(screen.getByLabelText("Consulta"), "chau")
     await userEvent.click(screen.getByRole("button", { name: "Enviar" }))
-    expect(onSubmit).toHaveBeenCalledTimes(2)
+    expect(onSubmit).toHaveBeenLastCalledWith("chau")
   })
 
   it("mientras corre no permite enviar y ofrece cancelar (R-8.1, R-8.5)", async () => {

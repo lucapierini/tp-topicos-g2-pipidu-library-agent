@@ -16,12 +16,43 @@ import {
   MessageScrollerProvider,
   MessageScrollerViewport,
 } from "@/components/ui/message-scroller"
-import { useAsk } from "@/hooks/use-ask"
+import { useAsk, type AskState } from "@/hooks/use-ask"
+
+type TurnState = Exclude<AskState, { status: "idle" }>
+
+function Turn({ turn, latest, onRetry }: { turn: TurnState; latest: boolean; onRetry: (question: string) => void }) {
+  return (
+    <>
+      <MessageScrollerItem scrollAnchor={latest}>
+        <Message align="end">
+          <MessageContent>
+            <Bubble>
+              <BubbleContent className="whitespace-pre-wrap">{turn.question}</BubbleContent>
+            </Bubble>
+          </MessageContent>
+        </Message>
+      </MessageScrollerItem>
+      <MessageScrollerItem>
+        <Message>
+          <MessageContent>
+            {turn.status === "running" ? (
+              <ProgressPanel progress={turn.progress} elapsed={turn.elapsed} />
+            ) : turn.status === "done" ? (
+              <AnswerView result={turn.result} />
+            ) : (
+              <FailureAlert kind={turn.kind} message={turn.message} onRetry={() => onRetry(turn.question)} />
+            )}
+          </MessageContent>
+        </Message>
+      </MessageScrollerItem>
+    </>
+  )
+}
 
 export function App() {
-  const { state, ask, cancel, reset } = useAsk()
+  const { state, history, ask, cancel } = useAsk()
   const running = state.status === "running"
-  const lastQuestion = state.status === "idle" ? "" : state.question
+  const turns: TurnState[] = state.status === "idle" ? history : [...history, state]
 
   return (
     <main className="mx-auto flex h-svh w-full max-w-3xl flex-col p-4">
@@ -31,7 +62,7 @@ export function App() {
           <CardDescription>Consultá en castellano o inglés; el agente indica de dónde sale cada respuesta.</CardDescription>
         </CardHeader>
         <CardContent className="min-h-0 flex-1 overflow-hidden p-0">
-          {state.status === "idle" ? (
+          {turns.length === 0 ? (
             <Empty>
               <EmptyHeader>
                 <EmptyMedia variant="icon">
@@ -48,32 +79,14 @@ export function App() {
               <MessageScroller>
                 <MessageScrollerViewport>
                   <MessageScrollerContent className="p-(--card-spacing)">
-                    <MessageScrollerItem scrollAnchor>
-                      <Message align="end">
-                        <MessageContent>
-                          <Bubble>
-                            <BubbleContent className="whitespace-pre-wrap">{state.question}</BubbleContent>
-                          </Bubble>
-                        </MessageContent>
-                      </Message>
-                    </MessageScrollerItem>
-                    <MessageScrollerItem>
-                      <Message>
-                        <MessageContent>
-                          {state.status === "running" ? (
-                            <ProgressPanel progress={state.progress} elapsed={state.elapsed} />
-                          ) : state.status === "done" ? (
-                            <AnswerView result={state.result} />
-                          ) : (
-                            <FailureAlert
-                              kind={state.kind}
-                              message={state.message}
-                              onRetry={() => void ask(state.question)}
-                            />
-                          )}
-                        </MessageContent>
-                      </Message>
-                    </MessageScrollerItem>
+                    {turns.map((turn, index) => (
+                      <Turn
+                        key={index}
+                        turn={turn}
+                        latest={index === turns.length - 1}
+                        onRetry={(question) => void ask(question, { retry: true })}
+                      />
+                    ))}
                   </MessageScrollerContent>
                 </MessageScrollerViewport>
                 <MessageScrollerButton />
@@ -82,16 +95,7 @@ export function App() {
           )}
         </CardContent>
         <CardFooter>
-          <AskForm
-            key={state.status === "idle" ? "idle" : lastQuestion}
-            running={running}
-            initialValue=""
-            onSubmit={(question) => {
-              if (state.status !== "idle") reset()
-              void ask(question)
-            }}
-            onCancel={cancel}
-          />
+          <AskForm running={running} onSubmit={(question) => void ask(question)} onCancel={cancel} />
         </CardFooter>
       </Card>
     </main>

@@ -21,4 +21,10 @@ describe("ProgressPanel", () => {
     render(<ProgressPanel progress={[]} elapsed={15} />)
     expect(screen.getByText("Trabajando… 15 s")).toBeInTheDocument()
   })
+
+  it("indica la espera con shimmer y sin spinner", () => {
+    render(<ProgressPanel progress={[]} elapsed={0} />)
+    expect(screen.getByText("Trabajando…")).toHaveClass("shimmer")
+    expect(document.querySelector('[data-slot="spinner"]')).toBeNull()
+  })
 })

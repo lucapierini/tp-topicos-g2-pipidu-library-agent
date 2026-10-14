@@ -22,6 +22,7 @@
 - [x] 3.5 Vista de evidencia: SQL y filas en `Table`, fragmentos con `document` y `location`, sin sección si no hay evidencia; verificar con tests de componente de cada caso (R-8.4)
 - [x] 3.6 Botón cancelar y manejo de errores con `Alert` y reintento; verificar con test de componente que cancelar no deja respuesta parcial (R-8.5, R-8.6)
 - [x] 3.7 Confirmar que consultas en castellano e inglés se envían y muestran sin modificarse; verificar con un test del cliente (R-8.7)
+- [x] 3.8 Indicar la espera con `shimmer` en lugar de spinner y conservar el historial de la sesión al enviar una consulta nueva; verificar con tests del reducer, del panel de progreso y de `App` (R-8.2, R-8.10)
 
 ## 4. Docker
 

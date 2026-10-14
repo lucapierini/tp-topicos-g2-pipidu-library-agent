@@ -22,6 +22,7 @@ export function AskForm({
     event?.preventDefault()
     if (running || empty) return
     onSubmit(text.trim())
+    setText("")
   }
 
   function onKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {

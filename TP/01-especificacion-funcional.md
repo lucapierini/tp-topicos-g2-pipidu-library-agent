@@ -79,7 +79,7 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 ### 5.5 Exclusiones de alcance (no implementar sin cambiar esta spec)
 
-- Memoria conversacional multi-turno (v1 es single-turn); el historial lo conserva el frontend (en v1 la interfaz muestra solo la consulta actual) y no alimenta al agente (D17, R-7.0).
+- Memoria conversacional multi-turno (v1 es single-turn); el historial lo conserva el frontend (la interfaz acumula las consultas de la sesión en pantalla, R-8.10) y no alimenta al agente (D17, R-7.0).
 - Observabilidad con LangSmith o evaluación automática de respuestas.
 - Fine-tuning del modelo.
 - Escritura sobre la base de datos.

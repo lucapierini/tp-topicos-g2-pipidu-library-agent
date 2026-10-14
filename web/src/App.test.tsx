@@ -89,4 +89,48 @@ describe("App", () => {
     await userEvent.type(screen.getByLabelText("Consulta"), "hola{Enter}")
     expect(await screen.findByText("La consulta no se completó")).toBeInTheDocument()
   })
+
+  it("conserva las consultas y respuestas anteriores al enviar una nueva (R-8.10)", async () => {
+    let n = 0
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        n += 1
+        return new Response(enc.encode(sse("result", { ...RESULT, answer: `Respuesta ${n}` })))
+      })
+    )
+    render(<App />)
+    await userEvent.type(screen.getByLabelText("Consulta"), "primera{Enter}")
+    expect(await screen.findByText("Respuesta 1")).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText("Consulta"), "segunda{Enter}")
+    expect(await screen.findByText("Respuesta 2")).toBeInTheDocument()
+    expect(screen.getByText("primera")).toBeInTheDocument()
+    expect(screen.getByText("Respuesta 1")).toBeInTheDocument()
+    expect(screen.getByText("segunda")).toBeInTheDocument()
+    // el agente recibe solo la consulta actual (R-7.0, D17)
+    const calls = (fetch as ReturnType<typeof vi.fn>).mock.calls as unknown as [string, RequestInit][]
+    expect(JSON.parse(calls[1][1].body as string)).toEqual({ question: "segunda" })
+  })
+
+  it("cancelar la segunda consulta no borra la primera (R-8.5, R-8.10)", async () => {
+    let n = 0
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init: RequestInit) => {
+        n += 1
+        if (n === 1) return Promise.resolve(new Response(enc.encode(sse("result", RESULT))))
+        return new Promise<Response>((_res, rej) =>
+          init.signal?.addEventListener("abort", () => rej(new DOMException("aborted", "AbortError")))
+        )
+      })
+    )
+    render(<App />)
+    await userEvent.type(screen.getByLabelText("Consulta"), "primera{Enter}")
+    await screen.findByText("A loan lasts 14 days.")
+    await userEvent.type(screen.getByLabelText("Consulta"), "segunda{Enter}")
+    await userEvent.click(await screen.findByRole("button", { name: "Cancelar" }))
+    await waitFor(() => expect(screen.getByRole("button", { name: "Enviar" })).toBeInTheDocument())
+    expect(screen.getByText("A loan lasts 14 days.")).toBeInTheDocument()
+    expect(screen.queryByText("segunda")).not.toBeInTheDocument()
+  })
 })
