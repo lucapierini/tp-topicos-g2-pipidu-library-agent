@@ -231,3 +231,32 @@ def test_a_cancelled_answer_after_the_client_left_leaves_no_unretrieved_exceptio
 
     assert reported == []
 
+
+
+def test_the_loop_exception_handler_reports_without_going_through_logging(capsys) -> None:
+    # El registro por `logging` rompía dentro del filtro de litellm y ocultaba el error real.
+    loop = asyncio.new_event_loop()
+    try:
+        api_app._report_loop_exception(loop, {"message": "Task exception was never retrieved", "exception": ValueError("boom")})
+    finally:
+        loop.close()
+
+    err = capsys.readouterr().err
+    assert "Task exception was never retrieved" in err and "ValueError: boom" in err
+
+
+def test_the_app_installs_the_loop_exception_handler_on_startup() -> None:
+    with TestClient(api_app.app) as started:
+        started.get("/health")
+    # TestClient ejecuta el lifespan: si el handler no se pudiera instalar, el arranque fallaría.
+
+
+def test_litellm_is_loaded_before_the_first_request() -> None:
+    # La primera consulta importaba litellm en el hilo del agente mientras el hilo del servidor registraba el
+    # acceso: el filtro de logging de litellm fallaba con `KeyError: 'litellm'` y la respuesta no llegaba.
+    pytest.importorskip("litellm")
+    import sys
+
+    sys.modules.pop("litellm", None)
+    with TestClient(api_app.app):
+        assert "litellm" in sys.modules

@@ -22,10 +22,14 @@ el servicio corre en entorno local (D81).
 from __future__ import annotations
 
 import asyncio
+import importlib
 import json
+import sys
 import threading
 import time
+import traceback
 from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
 from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException
@@ -38,6 +42,38 @@ from agent.config import load_config
 
 HEARTBEAT_S = 5
 _DONE = "__done__"  # marcador interno: el agente terminó; nunca sale al cliente
+
+
+def _report_loop_exception(_loop: asyncio.AbstractEventLoop, context: dict) -> None:
+    """Handler del bucle de eventos que no pasa por `logging`.
+
+    El handler por defecto escribe con `logging` y el filtro de litellm (instalado en los handlers) falla con
+    `KeyError: 'litellm'` al registrar: el error real quedaba oculto y se repetía hasta dejar la API sin responder.
+    """
+    exc = context.get("exception")
+    detail = "".join(traceback.format_exception(exc)) if exc else ""
+    print(f"asyncio: {context.get('message')}\n{detail}", file=sys.stderr, flush=True)
+
+
+def _preload_model_libraries() -> None:
+    """Carga `litellm` antes de atender la primera consulta.
+
+    smolagents lo importa perezosamente dentro del hilo del agente. Mientras tanto el hilo del servidor
+    registra el acceso de `POST /ask` y el filtro de logging de litellm intenta importar `litellm.rust_bridge`
+    con el paquete a medio cargar: `KeyError: 'litellm'`, la respuesta se corta antes del primer evento y el
+    cliente queda en «Trabajando…». Con el módulo ya cargado no hay carrera.
+    """
+    try:
+        importlib.import_module("litellm")
+    except ImportError:  # sin la dependencia opcional no hay nada que precargar
+        pass
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    asyncio.get_running_loop().set_exception_handler(_report_loop_exception)
+    await asyncio.to_thread(_preload_model_libraries)
+    yield
 
 
 class AskRequest(BaseModel):
@@ -101,7 +137,7 @@ def create_app(allowed_origins: Sequence[str] = ()) -> FastAPI:
     `Access-Control-Allow-Origin` y un navegador desde otro origen no puede leer la respuesta. No se usa
     `*` y no hay credenciales (R-7.8): el servicio corre en entorno local (D81).
     """
-    app = FastAPI(title="Agente de biblioteca")
+    app = FastAPI(title="Agente de biblioteca", lifespan=_lifespan)
     if allowed_origins:
         app.add_middleware(
             CORSMiddleware,
