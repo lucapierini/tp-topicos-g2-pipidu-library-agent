@@ -16,16 +16,17 @@ Python 3.12+ · PostgreSQL + pgvector · Gemini · Smolagents · FastAPI · ejec
 ```
 TP/            artefactos SDD (constitución, specs, validación, changelog, enunciado)
 openspec/      raíz operativa de SDD (project.md, config.yaml, changes/)
-db/            schema.sql, dev_seed.sql, migrations/, init/, post_restore.sql (+ seed_data.py, dump.sql: pendientes)
-rag/           documents/ (PDFs), ingest.py, chunking.py (pendientes)
-agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
-               config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
-scripts/       measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+db/            esquema, init y datos de desarrollo (seed_data.py y dump.sql: pendientes)
+rag/           documentos fuente y recuperación (ingest.py y chunking.py: pendientes)
+agent/         orquestador, clasificador, validador de SQL, configuración, prompts y tools
+scripts/       scripts de medición y de exportación de evidencia
 api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
-tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py, test_agent.py, test_runs.py, ...
-docker/        Dockerfile (etapas runtime y measure, verificado en T9.2 y T9.10)
+tests/         suite offline, golden set y casos de integración
+docker/        Dockerfile (etapas base, measure y runtime, D74; verificado en T9.2 y T9.10)
 docker-compose.yml   Postgres + pgvector local
 ```
+
+El detalle de cada archivo está en `TP/02` §8 (D20): acá solo van los directorios de primer nivel.
 
 ## Estado
 

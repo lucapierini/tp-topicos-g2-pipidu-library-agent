@@ -115,43 +115,6 @@ documentado (las funciones se rigen por R-3.13). La whitelist cubre el modelo co
 - **WHEN** la herramienta evalúa la sentencia
 - **THEN** rechaza la ejecución con `FUNCTION_NOT_ALLOWED`
 
-### Requirement: R-3.14 — Expansión de `SELECT *`
-La herramienta SHALL expandir `SELECT *` a las columnas de la whitelist antes de ejecutar, de modo que
-una columna física del esquema fuera de la whitelist sea inalcanzable.
-
-#### Scenario: `SELECT *` no evade la whitelist de columnas
-- **GIVEN** la sentencia `SELECT * FROM socios` y una columna física del esquema fuera de la whitelist
-- **WHEN** la herramienta evalúa la sentencia
-- **THEN** la sentencia ejecutada es la expandida a las columnas de la whitelist
-- **AND** la columna no documentada no aparece en el resultado
-
-#### Scenario: `*` sobre una CTE o una subquery
-- **GIVEN** la sentencia `WITH top AS (SELECT libro_id, count(*) AS c FROM prestamos GROUP BY libro_id) SELECT * FROM top`
-- **WHEN** la herramienta evalúa la sentencia
-- **THEN** expande `*` a las columnas que proyecta la CTE (`libro_id`, `c`) y no a las de las tablas internas
-- **AND** `t.*` sobre una subquery se acepta sin error
-
-#### Scenario: columnas repetidas tras un JOIN
-- **GIVEN** la sentencia `SELECT * FROM libros l JOIN editoriales e ON e.id = l.editorial_id`
-- **WHEN** la herramienta expande `*`
-- **THEN** las columnas repetidas se nombran `<tabla>_<columna>` (`l_id`, `e_id`)
-- **AND** ninguna fila devuelta pierde un valor por colisión de nombres (Art. 4)
-
-### Requirement: R-3.15 — Normalización de identificadores
-La herramienta SHALL normalizar los identificadores a minúsculas antes de aplicar la whitelist y SHALL
-preservar los literales de texto sin modificación.
-
-#### Scenario: identificador entre comillas
-- **GIVEN** la sentencia `SELECT id FROM "Libros"`
-- **WHEN** la herramienta evalúa la sentencia
-- **THEN** normaliza el identificador a minúsculas y lo acepta
-
-#### Scenario: literal preservado
-- **GIVEN** la sentencia `SELECT titulo FROM libros WHERE titulo = 'Cien años de soledad'`
-- **WHEN** se genera la sentencia normalizada
-- **THEN** el literal permanece idéntico
-- **AND** los valores citados en la respuesta coinciden con los valores devueltos (Art. 4)
-
 #### Scenario: tabla inexistente
 - **GIVEN** una sentencia que referencia una tabla no incluida en la whitelist
 - **WHEN** la herramienta evalúa la sentencia
@@ -243,39 +206,6 @@ estática la rechaza. Si el segundo intento también es rechazado, el sistema SH
 - **THEN** recibe el código de error y el motivo del intento anterior
 - **AND** el resultado final conserva el motivo y la sentencia original del último intento
 
-### Requirement: R-3.13 — Whitelist de funciones
-La herramienta SHALL ejecutar únicamente funciones incluidas en una allowlist documentada (agregación,
-escalares y temporales). Las funciones de efecto SHALL rechazarse antes de ejecutar, porque el timeout
-limita el tiempo pero no los efectos.
-
-#### Scenario: función de efecto
-- **GIVEN** la sentencia `SELECT id, pg_sleep(10) FROM libros`
-- **WHEN** la herramienta evalúa la sentencia
-- **THEN** rechaza la ejecución
-- **AND** devuelve el error `FUNCTION_NOT_ALLOWED`
-
-#### Scenario: función permitida
-- **GIVEN** la sentencia `SELECT count(*) AS c FROM prestamos`
-- **WHEN** la herramienta evalúa la sentencia
-- **THEN** la acepta
-
-#### Scenario: construcciones de control y operadores
-- **GIVEN** una sentencia con `CASE`, `EXISTS`, `AND` u `OR`
-- **WHEN** la herramienta evalúa la sentencia
-- **THEN** no las trata como funciones y las acepta
-- **AND** `string_agg`, `bool_and`, `to_char`, `to_date`, `position`, `concat` e `initcap` se aceptan
-
-#### Scenario: nombre de función entre comillas o niladico
-- **GIVEN** la sentencia `SELECT "pg_sleep"(1) FROM libros` o `SELECT current_user FROM libros`
-- **WHEN** la herramienta evalúa la sentencia
-- **THEN** rechaza la ejecución con `FUNCTION_NOT_ALLOWED`
-
-#### Scenario: la allowlist solo contiene nombres de PostgreSQL
-- **GIVEN** cada función de la allowlist
-- **WHEN** se evalúa una sentencia que la usa
-- **THEN** la herramienta la acepta
-- **AND** la allowlist no contiene nombres de otros dialectos
-
 ### Requirement: R-3.11 — Semántica temporal definida por configuración
 El sistema SHALL resolver las expresiones temporales de las consultas usando los rangos definidos en
 configuración, no una interpretación libre del modelo.
@@ -328,6 +258,76 @@ un valor almacenado manualmente.
 - **WHEN** la herramienta evalúa la sentencia
 - **THEN** rechaza la ejecución con `TABLE_NOT_ALLOWED`
 - **AND** el contenido documental solo se obtiene con la herramienta de recuperación
+
+### Requirement: R-3.13 — Whitelist de funciones
+La herramienta SHALL ejecutar únicamente funciones incluidas en una allowlist documentada (agregación,
+escalares y temporales). Las funciones de efecto SHALL rechazarse antes de ejecutar, porque el timeout
+limita el tiempo pero no los efectos.
+
+#### Scenario: función de efecto
+- **GIVEN** la sentencia `SELECT id, pg_sleep(10) FROM libros`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución
+- **AND** devuelve el error `FUNCTION_NOT_ALLOWED`
+
+#### Scenario: función permitida
+- **GIVEN** la sentencia `SELECT count(*) AS c FROM prestamos`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** la acepta
+
+#### Scenario: construcciones de control y operadores
+- **GIVEN** una sentencia con `CASE`, `EXISTS`, `AND` u `OR`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** no las trata como funciones y las acepta
+- **AND** `string_agg`, `bool_and`, `to_char`, `to_date`, `position`, `concat` e `initcap` se aceptan
+
+#### Scenario: nombre de función entre comillas o niladico
+- **GIVEN** la sentencia `SELECT "pg_sleep"(1) FROM libros` o `SELECT current_user FROM libros`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** rechaza la ejecución con `FUNCTION_NOT_ALLOWED`
+
+#### Scenario: la allowlist solo contiene nombres de PostgreSQL
+- **GIVEN** cada función de la allowlist
+- **WHEN** se evalúa una sentencia que la usa
+- **THEN** la herramienta la acepta
+- **AND** la allowlist no contiene nombres de otros dialectos
+
+### Requirement: R-3.14 — Expansión de `SELECT *`
+La herramienta SHALL expandir `SELECT *` a las columnas de la whitelist antes de ejecutar, de modo que
+una columna física del esquema fuera de la whitelist sea inalcanzable.
+
+#### Scenario: `SELECT *` no evade la whitelist de columnas
+- **GIVEN** la sentencia `SELECT * FROM socios` y una columna física del esquema fuera de la whitelist
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** la sentencia ejecutada es la expandida a las columnas de la whitelist
+- **AND** la columna no documentada no aparece en el resultado
+
+#### Scenario: `*` sobre una CTE o una subquery
+- **GIVEN** la sentencia `WITH top AS (SELECT libro_id, count(*) AS c FROM prestamos GROUP BY libro_id) SELECT * FROM top`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** expande `*` a las columnas que proyecta la CTE (`libro_id`, `c`) y no a las de las tablas internas
+- **AND** `t.*` sobre una subquery se acepta sin error
+
+#### Scenario: columnas repetidas tras un JOIN
+- **GIVEN** la sentencia `SELECT * FROM libros l JOIN editoriales e ON e.id = l.editorial_id`
+- **WHEN** la herramienta expande `*`
+- **THEN** las columnas repetidas se nombran `<tabla>_<columna>` (`l_id`, `e_id`)
+- **AND** ninguna fila devuelta pierde un valor por colisión de nombres (Art. 4)
+
+### Requirement: R-3.15 — Normalización de identificadores
+La herramienta SHALL normalizar los identificadores a minúsculas antes de aplicar la whitelist y SHALL
+preservar los literales de texto sin modificación.
+
+#### Scenario: identificador entre comillas
+- **GIVEN** la sentencia `SELECT id FROM "Libros"`
+- **WHEN** la herramienta evalúa la sentencia
+- **THEN** normaliza el identificador a minúsculas y lo acepta
+
+#### Scenario: literal preservado
+- **GIVEN** la sentencia `SELECT titulo FROM libros WHERE titulo = 'Cien años de soledad'`
+- **WHEN** se genera la sentencia normalizada
+- **THEN** el literal permanece idéntico
+- **AND** los valores citados en la respuesta coinciden con los valores devueltos (Art. 4)
 
 ### Requirement: R-3.16 — Error de ejecución
 La herramienta SHALL devolver el error tipado `EXECUTION_ERROR` cuando una sentencia válida falla al
