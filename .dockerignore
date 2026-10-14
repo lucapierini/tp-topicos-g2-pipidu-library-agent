@@ -21,3 +21,7 @@ README.md
 # Datos y dumps locales
 db/dumps/
 rag/documents/
+
+# Frontend: dependencias y build local (la imagen web los regenera)
+web/node_modules/
+web/dist/

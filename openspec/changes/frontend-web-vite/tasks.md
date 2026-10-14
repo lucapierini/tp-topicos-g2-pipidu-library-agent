@@ -2,9 +2,9 @@
 
 ## 1. Scaffolding de `web/`
 
-- [ ] 1.1 Ejecutar `npx shadcn@latest init --preset b1Vq8M9Q --template vite` dentro de `web/`; verificar que existen `web/package.json`, `web/components.json` (con `iconLibrary` `hugeicons`) y que `npm run build` termina sin errores (R-8.8)
-- [ ] 1.2 Agregar `vitest` y un script `npm test`; verificar que `npm test` corre con 0 tests fallando
-- [ ] 1.3 Agregar a `.dockerignore` y `.gitignore` `web/node_modules` y `web/dist`; verificar con `git status` que no aparecen en los cambios (R-8.9)
+- [x] 1.1 Ejecutar `npx shadcn@latest init --preset b1Vq8M9Q --template vite` dentro de `web/`; verificar que existen `web/package.json`, `web/components.json` (con `iconLibrary` `hugeicons`) y que `npm run build` termina sin errores (R-8.8)
+- [x] 1.2 Agregar `vitest` y un script `npm test`; verificar que `npm test` corre con 0 tests fallando
+- [x] 1.3 Agregar a `.dockerignore` y `.gitignore` `web/node_modules` y `web/dist`; verificar con `git status` que no aparecen en los cambios (R-8.9)
 
 ## 2. Cliente de la API
 
