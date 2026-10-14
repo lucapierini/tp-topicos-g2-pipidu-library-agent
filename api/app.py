@@ -64,6 +64,10 @@ async def _stream(question: str) -> AsyncIterator[str]:
     # evento y el `result` salía recién al vencer el latido (hasta HEARTBEAT_S de retraso por consulta).
     # Los eventos del agente se encolan antes que el marcador, así que el orden se conserva.
     task.add_done_callback(lambda _task: events.put_nowait((_DONE, {})))
+    # Si el cliente corta, el generador se cierra antes de leer el resultado y `AnswerCancelled` quedaba sin
+    # recuperar: asyncio lo registraba por el logger y ese registro rompía dentro de litellm, dejando la API
+    # sin responder a las consultas siguientes. Se lo consume acá, sea cual sea el camino de salida.
+    task.add_done_callback(lambda t: None if t.cancelled() else t.exception())
     try:
         while True:
             try:
