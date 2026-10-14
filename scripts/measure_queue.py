@@ -2,8 +2,12 @@
 
 Es un script de medición, no un test: afirma tiempos, no resultados, y un test de tiempos sería
 flaky en CI (Art. 6, suite determinística). Corre offline: no abre base, no lee credenciales y no
-llama a ningún modelo. `answer()` se reemplaza por un doble que duerme un tiempo de servicio fijo S,
-así que la espera observada es exactamente la cola del lock (`LibraryAgent._lock`, D77).
+llama a ningún modelo.
+
+Qué se prueba acá: se usa el `answer()` real de `LibraryAgent` con su `_lock` real (D77), sobre
+dobles de `tests/fakes.py` (base falsa, clasificador doble, recorder apagado). Lo único que tarda
+es la llamada al modelo: el runner doble duerme un tiempo de servicio S dentro del lock. Entonces la
+espera observada es la cola del lock real, y S sigue siendo simulado — no una latencia de modelo.
 
 Importante: el evento `start` se emite al abrir el stream, antes de tomar el lock. La espera real se
 ve en el primer evento del agente (`classified`) y en el `result`. Se usa un servidor real (uvicorn
@@ -23,8 +27,8 @@ import json
 import socket
 import statistics
 import sys
-import threading
 import time
+from dataclasses import replace
 from pathlib import Path
 
 import httpx
@@ -34,48 +38,52 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import api.app as api_module  # noqa: E402 - el path se agrega antes del import
-from agent.agent import AnswerCancelled  # noqa: E402
-from agent.contracts import AgentAnswer  # noqa: E402
+from agent.agent import LibraryAgent  # noqa: E402
+from agent.config import load_config  # noqa: E402
+from tests import fakes  # noqa: E402
 
 EVIDENCE_DIR = ROOT / "TP" / "evidencia"
 DEFAULT_COUNTS = (1, 2, 3, 5)
 DEFAULT_SERVICE_TIME_S = 1.0
 
-# Lock compartido del doble: reproduce la serialización de `LibraryAgent._lock` (D77).
-QUEUE_LOCK = threading.Lock()
-waits: dict[str, tuple[float, float]] = {}
+# Sentencia aceptada por el validador, para que el flujo real complete la etapa de herramientas.
+MEASURE_SQL = "SELECT l.titulo FROM prestamos p JOIN libros l ON l.id = p.libro_id"
+
+# `question -> [instante en que entra al agente, instante en que entra a la llamada al modelo]`.
+# El segundo instante está dentro del lock real: es el turno de la consulta.
+waits: dict[str, list[float]] = {}
+
+
+class SleepingModel(fakes.ScriptedRunner):
+    """Modelo simulado: duerme S dentro del lock. Es la única parte que tarda."""
+
+    def __init__(self, service_time_s: float) -> None:
+        super().__init__(steps=[("execute_sql", MEASURE_SQL)], text="respuesta simulada")
+        self.service_time_s = service_time_s
+
+    def run(self, *, question: str, system_prompt: str, tools, max_steps: int,
+           on_event=None, cancel=None) -> str:
+        waits[question][1] = time.monotonic()
+        time.sleep(self.service_time_s)
+        return super().run(question=question, system_prompt=system_prompt, tools=tools,
+                           max_steps=max_steps, on_event=on_event, cancel=cancel)
+
+
+def build_agent(service_time_s: float) -> LibraryAgent:
+    """El agente real, con backends dobles y sin registro en base (`runs_backend="off"`)."""
+    return LibraryAgent(
+        classifier=fakes.FakeClassifier("sql", "es"),
+        sql_backend=fakes.sql_backend(),
+        retriever=fakes.FakeRetriever(),
+        runner=SleepingModel(service_time_s),
+        config=replace(load_config(), runs_backend="off"),
+    )
 
 
 def _free_port() -> int:
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         return sock.getsockname()[1]
-
-
-def fake_answer(
-    question: str, on_event=None, cancel: threading.Event | None = None, service_time_s: float = 1.0,
-) -> AgentAnswer:
-    """Doble de `answer()`: espera el lock, informa la clasificación, duerme S y responde."""
-    entered = time.monotonic()
-    with QUEUE_LOCK:
-        acquired = time.monotonic()
-        if cancel is not None and cancel.is_set():
-            raise AnswerCancelled()
-        waits[question] = (entered, acquired)
-        if on_event is not None:
-            on_event("classified", {"classification": "sql", "language": "es"})
-        time.sleep(service_time_s)
-        if on_event is not None:
-            on_event("composing", {})
-    return AgentAnswer(
-        question=question,
-        classification="sql",
-        sources=["sql"],
-        answer="respuesta simulada",
-        evidence={"queue_wait_s": round(acquired - entered, 3)},
-        run_id=None,
-        trace=["classification"],
-    )
 
 
 async def one_request(client: httpx.AsyncClient, question: str) -> dict:
@@ -109,10 +117,14 @@ async def one_request(client: httpx.AsyncClient, question: str) -> dict:
 
 
 async def run_case(service_time_s: float, n: int) -> list[dict]:
-    def double(question, on_event=None, cancel=None):
-        return fake_answer(question, on_event, cancel, service_time_s)
+    agent = build_agent(service_time_s)
+    original_answer = api_module.answer
 
-    api_module.answer = double
+    def measured(question, on_event=None, cancel=None):
+        waits[question] = [time.monotonic(), None]
+        return agent.answer(question, on_event, cancel)
+
+    api_module.answer = measured
     waits.clear()
 
     port = _free_port()
@@ -126,6 +138,7 @@ async def run_case(service_time_s: float, n: int) -> list[dict]:
     finally:
         server.should_exit = True
         await task
+        api_module.answer = original_answer
     return sorted(results, key=lambda r: r["classified_s"] or 0.0)
 
 
@@ -154,7 +167,7 @@ def evidence_latencies() -> dict[str, dict[str, float]]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Mide la espera de la cola del lock (T9.11, D77).")
+    parser = argparse.ArgumentParser(description="Mide la espera de la cola del lock real (T9.11, D77).")
     parser.add_argument("--service-time", type=float, default=DEFAULT_SERVICE_TIME_S, help="S simulado en segundos")
     parser.add_argument("--counts", type=int, nargs="*", default=list(DEFAULT_COUNTS))
     parser.add_argument("--evidence", action="store_true", help="resume las latencias ya medidas en TP/evidencia/")
@@ -165,7 +178,8 @@ def main() -> None:
             print(f"{name}: n={st['n']} min={st['min']}{st['unit']} median={st['median']}{st['unit']} max={st['max']}{st['unit']}")
         return
 
-    print(f"S simulado = {args.service_time} s (no es latencia de modelo). HEARTBEAT_S = {api_module.HEARTBEAT_S} s")
+    print(f"S simulado = {args.service_time} s (no es latencia de modelo). "
+          f"HEARTBEAT_S = {api_module.HEARTBEAT_S} s. Lock: `LibraryAgent._lock` real.")
     for n in args.counts:
         rows = asyncio.run(run_case(args.service_time, n))
         print(f"\nN = {n}")

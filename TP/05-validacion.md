@@ -321,9 +321,11 @@ corrigieron (D79).
 
 Medición, no test: afirma tiempos y un test de tiempos sería flaky en CI. Corre sin base, sin
 credenciales y sin modelo (`scripts/measure_queue.py`): la app real sobre `uvicorn` en un puerto efímero
-con `answer()` reemplazado por un doble que duerme un tiempo de servicio S. S es simulado, no latencia
-de modelo. El evento `start` sale al abrir el stream, antes de tomar el lock, así que la espera se lee
-en el primer evento del agente (`classified`).
+con el `answer()` real de `LibraryAgent` (su `_lock` real, D77) sobre dobles de `tests/fakes.py` — base
+falsa, clasificador doble, registro apagado — y un runner doble donde lo único que tarda es la llamada
+al modelo, que duerme un tiempo de servicio S. S es simulado, no latencia de modelo. El evento `start`
+sale al abrir el stream, antes de tomar el lock, así que la espera se lee en el primer evento del agente
+(`classified`).
 
 | S (s) | N | Espera antes de trabajar, por orden de entrada (s) | `result` (s) | Latidos recibidos |
 |---|---|---|---|---|
@@ -333,7 +335,14 @@ en el primer evento del agente (`classified`).
 | 1.0 | 5 | 0.0, 1.0, 2.0, 3.0, 4.0 | 1.0, 2.0, 3.0, 4.0, 5.0 | 0 |
 | 6.0 | 3 | 0.0, 6.0, 12.0 | 6.0, 12.0, 18.0 | 1, 2, 3 |
 
-La espera de la k-ésima consulta es `(k-1)·S`, como predice R-1.3. Con `HEARTBEAT_S = 5` el cliente que
+La espera de la k-ésima consulta es `(k-1)·S`: el script ejerce el lock real del agente, así que esa
+espera es la serialización de R-1.3 medida, no una predicción; lo simulado sigue siendo solo S. En las
+corridas del 2026-10-13 el `result` llega en `k·S + 15–32 ms` (transporte y arranque del hilo del
+agente); la espera de cola, medida desde que la consulta entra al agente, es `(k-1)·S` sin ese agregado.
+Que dos consultas no se solapan en la llamada al modelo está probado por el test determinista
+`test_agent.py::test_two_concurrent_answers_do_not_overlap_in_the_model_call` (eventos de `threading`,
+sin reloj de pared); la serialización del agente la cubre el caso C1
+`test_agent.py::test_concurrent_answers_are_serialized`. Con `HEARTBEAT_S = 5` el cliente que
 espera recibe latidos (fila S=6), así que su conexión no se corta por inactividad mientras está en la
 cola (R-7.3). El cliente cancelado no se interrumpe mientras espera: `answer()` toma el lock antes de
 `_check_cancelled`, así que la señal se atiende al recibir el turno (R-7.5, D76).

@@ -397,6 +397,58 @@ def test_concurrent_answers_are_serialized() -> None:
     assert peak == 1
 
 
+def test_two_concurrent_answers_do_not_overlap_in_the_model_call() -> None:
+    """R-1.3, D77: dos consultas no se solapan en la llamada al modelo (flujo real del agente).
+
+    Determinista: sin `sleep` y sin reloj de pared. La primera consulta entra al modelo y queda ahí
+    hasta que el test comprueba que la segunda no pudo entrar; recién entonces se la suelta.
+    """
+    import threading
+
+    from agent.agent import LibraryAgent
+    from tests.fakes import FakeClassifier, FakeRetriever, sql_backend
+
+    entered: list[str] = []
+    active: list[str] = []
+    peak: list[int] = []
+    first_in_model = threading.Event()
+    let_first_leave = threading.Event()
+
+    class QueuedModel:
+        def run(self, *, question, system_prompt, tools, max_steps, on_event=None, cancel=None):
+            active.append(question)
+            peak.append(len(active))
+            entered.append(question)
+            if question == "primera":
+                first_in_model.set()
+                let_first_leave.wait(10.0)
+            active.remove(question)
+            return "Respuesta."
+
+    agent = LibraryAgent(
+        classifier=FakeClassifier("sql"),
+        sql_backend=sql_backend(),
+        retriever=FakeRetriever(),
+        runner=QueuedModel(),
+    )
+
+    first = threading.Thread(target=agent.answer, args=("primera",))
+    first.start()
+    assert first_in_model.wait(10.0), "la primera consulta no entró a la llamada al modelo"
+
+    second = threading.Thread(target=agent.answer, args=("segunda",))
+    second.start()
+    # El lock real está tomado por la primera: la segunda no puede entrar al modelo.
+    assert agent._lock.acquire(blocking=False) is False, "la segunda entró mientras la primera trabajaba"
+
+    let_first_leave.set()
+    first.join(10.0)
+    second.join(10.0)
+
+    assert entered == ["primera", "segunda"]
+    assert peak == [1, 1]
+
+
 def test_progress_events_follow_the_flow_in_order() -> None:
     agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)])
     events: list[tuple[str, dict]] = []
