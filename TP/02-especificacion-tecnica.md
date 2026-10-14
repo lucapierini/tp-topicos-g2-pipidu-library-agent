@@ -466,9 +466,58 @@ de otra y la segunda espera la latencia completa de la primera.
 - Una excepción inesperada produce `error` y cierra el flujo sin `result` (R-7.6).
 - Fechas y valores decimales de las filas se serializan como texto.
 
-**Qué no hay:** streaming de tokens del modelo (D75) ni autenticación (D81, D82). El CORS está implementado: los orígenes del frontend se declaran en `API_ALLOWED_ORIGINS` (R-7.8, D82); lo pendiente es la llamada desde el frontend real (9.12). Con la ejecución local (D81) el servicio no queda expuesto; exponerlo públicamente exigiría un control de acceso como condición previa, porque un endpoint público consume la cuota de la API del modelo.
+**Qué no hay:** streaming de tokens del modelo (D75) ni autenticación (D81, D82). El CORS está implementado: los orígenes del frontend se declaran en `API_ALLOWED_ORIGINS` (R-7.8, D82); lo pendiente es la llamada desde el frontend real (9.12). El procedimiento de integración está en §6.2. Con la ejecución local (D81) el servicio no queda expuesto; exponerlo públicamente exigiría un control de acceso como condición previa, porque un endpoint público consume la cuota de la API del modelo.
 
 **Despliegue:** la imagen `runtime` sirve la API con `uvicorn` en `$PORT` (8080 por defecto, D80); no hay otro proceso en la imagen.
+
+### 6.2 Integración del frontend: CORS y origen
+
+Lugar canónico del procedimiento de acceso del frontend. El requisito es R-7.8 y la decisión D82; acá no se
+repite su texto, solo cómo se aplica. Comprobado contra `uvicorn` local y `tests/test_api_cors.py` (2026-10-13).
+
+| Situación | Hace falta declarar el origen |
+| --- | --- |
+| App servida por un navegador desde un origen distinto al de la API | Sí |
+| Mismo origen, o un dev-server / reverse proxy que reenvía `/ask` y `/health` | No: el navegador no aplica CORS a una petición del mismo origen |
+| Cliente que no es navegador (`curl`, script, servicio server-to-server) | No: el servidor nunca rechaza una petición sin `Origin`; la responde igual, sin header CORS |
+
+**Qué aporta el integrante del frontend:** el origen exacto de cada entorno que use, como
+`scheme://host:port`, sin path y sin barra final (p. ej. `http://localhost:5173`). Para el navegador
+`http://localhost:5173` y `http://127.0.0.1:5173` son orígenes distintos (regla del navegador); hay que
+declarar el que realmente use. La comparación es exacta: el valor se toma tal cual, sin normalizar
+mayúsculas ni barra final, así que una barra final en la lista nunca coincide con lo que manda el navegador.
+
+**Qué hace el dueño del backend:** lo pone en `.env` como `API_ALLOWED_ORIGINS` (valores separados por comas;
+los espacios y las entradas vacías se ignoran) y **reinicia el servicio**: la lista se lee una sola vez al
+importar `api.app`, por lo que editar `.env` sin reiniciar `uvicorn` o el contenedor no tiene efecto. En la
+imagen `runtime` se pasa con `-e API_ALLOWED_ORIGINS=...` o `--env-file`.
+
+**Preflight:** se aceptan los métodos `POST` y `OPTIONS` y el header `Content-Type` (más los headers seguros
+que el navegador siempre permite: `Accept`, `Accept-Language`, `Content-Language`). `allow_credentials` es
+`False`: no se envían cookies ni credenciales (R-7.8, D82). Un preflight que pide un método o un header fuera
+de esa lista se rechaza con 400. El `POST /ask` de `fetch` con `Content-Type: application/json` no es una
+petición simple: siempre dispara preflight. Una petición simple (GET sin ese header) no lo genera.
+
+**Cómo se ve el fallo desde el navegador:** la consola muestra `blocked by CORS policy` y la respuesta no trae
+`Access-Control-Allow-Origin`. Un origen no declarado recibe 400 en el preflight; en una petición simple la
+respuesta llega normal (200) pero sin el header, y el navegador impide leerla. No es un bug del servidor.
+
+**Comprobación mínima sin el frontend** (corrida real, 2026-10-13, `uvicorn` en `127.0.0.1:8000` con
+`API_ALLOWED_ORIGINS=http://localhost:5173`):
+
+```bash
+curl -s -i -X OPTIONS http://127.0.0.1:8000/ask \
+  -H "Origin: http://localhost:5173" -H "Access-Control-Request-Method: POST"
+```
+
+Salida: `200` con `access-control-allow-origin: http://localhost:5173`. Con un origen no declarado: `400`
+(`Disallowed CORS origin`) y sin ese header.
+
+**Sin autenticación** (D81, D82): el servicio se ejecuta en entorno local.
+
+**Pendiente (9.12):** falta la llamada real desde el frontend. La cierra una corrida desde el frontend con su
+origen declarado que muestre el preflight 200 con el header y el rechazo de un origen no declarado, registrada
+en `TP/05`.
 
 ## 7. Despliegue
 

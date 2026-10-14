@@ -60,8 +60,6 @@ python scripts/measure_golden.py --db --rag-mock   # + recuperación simulada: c
 python scripts/measure_golden.py --db --rag-mock --bilingual   # + 2 casos en inglés (no cuentan para R-2.1)
 python scripts/export_runs.py --last 15  # agent_runs -> TP/evidencia/ (antes de pytest -m integration, que la trunca)
 uvicorn api.app:app --port 8000          # API del agente (único acceso); el frontend apunta a http://127.0.0.1:8000
-# El frontend necesita su origen en `API_ALLOWED_ORIGINS` (.env), separado por comas; sin él, el
-# navegador rechaza la respuesta (R-7.8, D82). Sin autenticación: el servicio corre en local (D81).
 # Consulta de prueba (JSON en UTF-8; en Windows conviene un cliente HTTP en vez de curl por el cuoteo):
 #   curl -N -X POST localhost:8000/ask -H "content-type: application/json" -d '{"question":"..."}'
 docker build -f docker/Dockerfile -t pipidu-agent .                    # imagen del agente (etapa runtime)
@@ -69,7 +67,7 @@ docker build -f docker/Dockerfile --target measure -t pipidu-measure . # + scrip
 # Corrida local (D81): solo se expone el puerto de la API ($PORT, 8080 por defecto).
 # Dentro del contenedor, POSTGRES_HOST=127.0.0.1 de `.env` apunta al propio contenedor: hay que
 # overridearlo con host.docker.internal para llegar a la base del host, si no la conexión se rechaza.
-# API_ALLOWED_ORIGINS es un ejemplo: poner el origen real del frontend externo (R-7.8, D82).
+# API_ALLOWED_ORIGINS es un ejemplo: el origen real del frontend y el procedimiento, en TP/02 §6.2 (R-7.8, D82).
 docker run --env-file .env -e POSTGRES_HOST=host.docker.internal -e API_ALLOWED_ORIGINS=http://localhost:5173 -p 8080:8080 pipidu-agent
 python -m pytest -q                      # suite offline: sin base ni credenciales
 python -m ruff check .                   # lint
