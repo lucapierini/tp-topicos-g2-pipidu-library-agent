@@ -7,6 +7,7 @@ latidos y qué pasa cuando el cliente corta.
 from __future__ import annotations
 
 import asyncio
+import gc
 import json
 import threading
 import time
@@ -203,3 +204,30 @@ def test_a_cancelled_answer_does_not_emit_a_result(monkeypatch) -> None:
     chunks = asyncio.run(collect())
 
     assert all("event: result" not in chunk and "event: error" not in chunk for chunk in chunks)
+
+
+def test_a_cancelled_answer_after_the_client_left_leaves_no_unretrieved_exception(monkeypatch) -> None:
+    # R-7.5: cortar la conexión no debe dejar la excepción de cancelación sin recuperar: asyncio la
+    # registra al recolectar la tarea y ese registro llegó a dejar la API sin responder.
+    def waits_for_cancel(question, on_event=None, cancel=None):
+        on_event("classified", {"classification": "sql", "language": "es"})
+        cancel.wait(timeout=5)
+        raise AnswerCancelled()
+
+    monkeypatch.setattr(api_app, "answer", waits_for_cancel)
+    reported: list[dict] = []
+
+    async def run() -> None:
+        asyncio.get_running_loop().set_exception_handler(lambda _loop, context: reported.append(context))
+        stream = api_app._stream("q")
+        await stream.__anext__()   # start
+        await stream.__anext__()   # classified
+        await stream.aclose()      # el cliente se fue
+        del stream
+        await asyncio.sleep(0.3)   # el hilo del agente termina con AnswerCancelled
+        gc.collect()               # asyncio avisa de las excepciones sin recuperar al recolectar la tarea
+
+    asyncio.run(run())
+
+    assert reported == []
+
