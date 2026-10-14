@@ -51,7 +51,7 @@ cp .env.example .env          # GEMINI_API_KEY y credenciales de BD
 # LLM_MODEL=openai/<id> y LLM_API_BASE=http://127.0.0.1:<puerto>/v1; la aceptación se mide después con
 # Gemini (dejar LLM_MODEL y LLM_API_BASE vacíos). Los resultados locales no cuentan como aceptación.
 python scripts/measure_golden.py --out TP/evidencia/<corrida>.json   # mide R-2.1 con el modelo configurado
-docker compose up -d --wait   # Postgres + pgvector + esquema + roles + agent_runs + datos de desarrollo
+docker compose up -d --wait   # todo junto: db (Postgres + pgvector, roles, agent_runs, datos de desarrollo) + api + web (D84)
 # (opcional) traer la base compartida de Neon: definir NEON_DATABASE_URL en .env y
 bash scripts/replicate_neon.sh --check   # versión y objetos de Neon; sin --check vuelca y restaura
 python -m pytest -m integration          # permisos por rol, esquema vs whitelist, flujo con datos reales
@@ -72,6 +72,29 @@ docker run --env-file .env -e POSTGRES_HOST=host.docker.internal -e API_ALLOWED_
 python -m pytest -q                      # suite offline: sin base ni credenciales
 python -m ruff check .                   # lint
 # Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3)
+```
+
+## Interfaz web (D84)
+
+`docker compose up -d --wait` levanta la base, la API y la interfaz, en ese orden (cada servicio espera a que el
+anterior esté sano). Requiere el `.env` completo (`GEMINI_API_KEY` y las contraseñas de la base).
+
+| Servicio | URL (solo loopback) | Qué es |
+|---|---|---|
+| `web` | http://localhost:3000 | SPA de `web/` (Vite + React + shadcn/ui) servida por nginx; reenvía `/api/` a la API |
+| `api` | http://localhost:8080 | API del agente (`POST /ask` SSE, `GET /health`); es el único acceso al agente |
+| `db` | `127.0.0.1:5432` | Postgres + pgvector |
+
+Puertos configurables con `WEB_PORT` y `API_PORT` en `.env`. La web no lleva secretos y, al llamar a la API por
+el mismo origen, no necesita `API_ALLOWED_ORIGINS`.
+
+Desarrollo de la SPA con recarga en caliente, usando la API local (`uvicorn api.app:app --port 8000`):
+
+```bash
+cd web && npm install
+npm run dev      # http://localhost:5173; /api se reenvía a http://127.0.0.1:8000 (VITE_API_TARGET lo cambia)
+npm test         # vitest
+npm run build    # tsc + vite build
 ```
 
 ## Criterios de promoción

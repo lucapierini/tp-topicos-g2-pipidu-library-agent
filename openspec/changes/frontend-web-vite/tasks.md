@@ -25,16 +25,16 @@
 
 ## 4. Docker
 
-- [ ] 4.1 Crear `docker/Dockerfile.web` (build con Node 24 y servido con `nginx:alpine`) y `docker/nginx.conf` (SPA con fallback a `index.html`, `/api/` a `http://api:8080/` con `proxy_buffering off`, `proxy_http_version 1.1` y `proxy_read_timeout` de 10 minutos); verificar con `docker build -f docker/Dockerfile.web -t pipidu-web .` (R-8.8)
-- [ ] 4.2 Agregar `api` y `web` a `docker-compose.yml` con `depends_on` por salud, `POSTGRES_HOST: db`, `POSTGRES_PORT: 5432`, healthchecks y puertos en `127.0.0.1`; verificar con `docker compose config` y `docker compose up -d --wait` con los tres servicios sanos (R-8.8)
+- [x] 4.1 Crear `docker/Dockerfile.web` (build con Node 24 y servido con `nginx:alpine`) y `docker/nginx.conf` (SPA con fallback a `index.html`, `/api/` a `http://api:8080/` con `proxy_buffering off`, `proxy_http_version 1.1` y `proxy_read_timeout` de 10 minutos); verificar con `docker build -f docker/Dockerfile.web -t pipidu-web .` (R-8.8)
+- [x] 4.2 Agregar `api` y `web` a `docker-compose.yml` con `depends_on` por salud, `POSTGRES_HOST: db`, `POSTGRES_PORT: 5432`, healthchecks y puertos en `127.0.0.1`; verificar con `docker compose config` y `docker compose up -d --wait` con los tres servicios sanos (R-8.8)
 - [ ] 4.3 Probar de punta a punta: abrir la web, enviar una consulta SQL y ver el progreso en vivo (sin buffering), la respuesta y la evidencia; verificar con el navegador y `curl -N localhost:<WEB_PORT>/api/ask` (R-8.2, R-8.8)
-- [ ] 4.4 Verificar que la base no está sana → la API no inicia (`docker compose up` con la base detenida) y que la imagen `web` no contiene `.env` ni claves (`docker run --rm pipidu-web sh -c 'grep -r GEMINI /usr/share/nginx/html || true'` sin salida) (R-8.8, R-8.9)
+- [x] 4.4 Verificar que la base no está sana → la API no inicia (`docker compose up` con la base detenida) y que la imagen `web` no contiene `.env` ni claves (`docker run --rm pipidu-web sh -c 'grep -r GEMINI /usr/share/nginx/html || true'` sin salida) (R-8.8, R-8.9)
 
 ## 5. Documentación y specs
 
 - [x] 5.1 Reformular R-7.0 en `consulta-por-api` y actualizar las docs que excluían la interfaz, registrando D84 en `TP/CHANGELOG.md`; verificado con `openspec validate --strict` en ambos changes
 - [ ] 5.2 Actualizar `README.md` (arranque con `docker compose up -d --wait`, puertos, `npm run dev`, criterio "Interfaz gráfica") y `.env.example` (`WEB_PORT`, `API_PORT`, `API_ALLOWED_ORIGINS` para desarrollo); verificar siguiendo el README desde un checkout limpio
-- [ ] 5.3 Ejecutar `python -m pytest -q`, `python -m ruff check .`, `npm test` y `npm run build` en `web/`; verificar que todo pasa
+- [x] 5.3 Ejecutar `python -m pytest -q`, `python -m ruff check .`, `npm test` y `npm run build` en `web/`; verificar que todo pasa
 
 ## Workflow follow-up
 
