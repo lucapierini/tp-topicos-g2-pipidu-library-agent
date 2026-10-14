@@ -39,7 +39,7 @@ flowchart TB
 | LLM | Google Gemini (API) para aceptación y despliegue; en desarrollo, un servidor local OpenAI-compatible vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`) para validar el flujo sin consumir cuota (R-2.8) |
 | Framework agéntico | Smolagents |
 | Acceso al agente | API HTTP con FastAPI + uvicorn y respuesta en streaming SSE (D75, D80, `consulta-por-api`). Sin interfaz gráfica propia: el frontend es un cliente externo |
-| Embeddings | Gemini Embeddings API (`text-embedding-004` o equivalente vigente) |
+| Embeddings | Gemini Embeddings API, `gemini-embedding-001` con `output_dimensionality = 768` (D5) |
 | Despliegue | **Entorno local** (Docker + `uvicorn`), D81. La alternativa de nube queda registrada en §7 |
 | Control de versiones | GitHub |
 | ORM / acceso a datos | SQLAlchemy (o psycopg2 directo, a definir en implementación) |
@@ -139,7 +139,7 @@ flowchart TB
 | `documentos` | `id`, `nombre_archivo` (único), `tipo` (`reglamento`/`manual`/`politica`/`resena`), `bucket_key`, `sha256`, `creado_en` |
 | `documentos_chunks` | `id`, `documento_id`, `chunk_index` (único por documento), `contenido`, `embedding vector(768)`, `metadata jsonb` |
 
-La herramienta de recuperación lee estas dos tablas (D66). La ubicación citable de un fragmento
+La herramienta de recuperación lee estas dos tablas (D66); qué columnas exactas lee está en §3.4. La ubicación citable de un fragmento
 (R-4.7) sale de `metadata` (`seccion`, `ubicacion` o `pagina`); si la ingesta no la guarda, la cita queda
 como "fragmento N". El índice HNSW usa `vector_cosine_ops` (D13). La herramienta SQL **no** puede leerlas
 (D21).
@@ -179,6 +179,79 @@ fechas relativas a `CURRENT_DATE`). `scripts/replicate_neon.sh` trae el esquema 
 - Generación programática (ej. con `Faker` para nombres/fechas + reglas de negocio simples para consistencia de disponibilidad de ejemplares).
 - Volumen objetivo: **15-20 registros por tabla** (mínimo exigido: 15).
 - Script de seed versionado en el repo (`scripts/seed_data.py` o similar).
+
+### 3.4 Contrato de datos que lee el agente
+
+Lo que el agente lee, verificado contra el código (no contra la propuesta inicial). Es el único lugar donde
+se enuncia este contrato: el DDL no se copia acá, vive en `db/schema.sql`; la lista vinculante de tablas y
+columnas para la herramienta SQL es `agent/config/schema_whitelist.py` (R-3.4).
+
+Verificación: `tests/test_schema_whitelist.py` (esquema ↔ whitelist, bidireccional) y
+`tests/test_seed_contract.py` (este apartado ↔ whitelist/esquema, y el volumen y las reglas de consistencia
+contra la base real con el rol `agent_ro`). Las entidades del seed que nombran los casos G1–G5 las verifica
+`tests/test_golden_seed.py`; acá no se repiten esas afirmaciones.
+
+#### 3.4.1 Objetos y columnas que lee el agente
+
+| Objeto (`db/schema.sql`) | Columnas que lee el agente | Vía |
+|---|---|---|
+| `autores` | `id`, `nombre`, `apellido`, `nacionalidad`, `fecha_nacimiento` | SQL (whitelist) |
+| `editoriales` | `id`, `nombre`, `pais` | SQL (whitelist) |
+| `categorias` | `id`, `nombre`, `descripcion` | SQL (whitelist) |
+| `libros` | `id`, `titulo`, `isbn`, `editorial_id`, `categoria_id`, `anio_publicacion`, `ejemplares_totales`, `ejemplares_disponibles` | SQL (whitelist) |
+| `libros_autores` | `libro_id`, `autor_id`, `orden` | SQL (whitelist) |
+| `socios` | `id`, `nombre`, `apellido`, `legajo`, `tipo_socio`, `email`, `fecha_alta` | SQL (whitelist) |
+| `prestamos` | `id`, `libro_id`, `socio_id`, `fecha_prestamo`, `fecha_devolucion_prevista`, `fecha_devolucion_real`, `estado` | SQL (whitelist) |
+| `v_prestamos_estado` | `id`, `libro_id`, `socio_id`, `fecha_prestamo`, `fecha_devolucion_prevista`, `fecha_devolucion_real`, `estado`, `estado_calculado`, `dias_atraso` | SQL (whitelist) |
+| `documentos` | `id`, `nombre_archivo`, `sha256` | RAG (`PgVectorStore`); fuera de la whitelist SQL (D21) |
+| `documentos_chunks` | `id`, `documento_id`, `chunk_index`, `contenido`, `embedding`, `metadata` | RAG (`PgVectorStore`); fuera de la whitelist SQL (D21) |
+
+El rol `agent_ro` necesita `GRANT SELECT` sobre los diez objetos (`db/post_restore.sql`), incluidas las dos
+tablas documentales: la herramienta de recuperación las lee por una conexión propia y necesita el JOIN
+`documentos` ↔ `documentos_chunks` para el nombre del PDF y el `sha256` del documento.
+
+Pendiente para la parte de datos: el comentario de `db/post_restore.sql` dice que `documentos` queda fuera de
+los permisos, pero la lista de `GRANT` lo incluye. El comportamiento correcto es el que necesita
+`agent/tools/rag_tool.py` (SELECT concedido); el comentario está desalineado y lo corrige el integrante de BD.
+
+#### 3.4.2 Lo que los casos G1–G5 y la semántica temporal necesitan del seed
+
+Las entidades son las de `tests/golden_set.py::SEED_ENTITIES`; las filas nombradas son las de
+`db/dev_seed.sql`, que es la foto actual de la base local.
+
+| Caso | Qué necesita del seed | Entidades / filas de las que depende |
+|---|---|---|
+| G1 | un socio con al menos un préstamo | `socios` Juan Pérez (`A-1001`) y sus `prestamos` |
+| G2 | al menos un préstamo con `fecha_prestamo` dentro del rango configurado (`CUATRIMESTRE_START` / `CUATRIMESTRE_END`, D6, R-3.11); el ranking no puede quedar vacío | los 11 `prestamos` de `dev_seed.sql` caen en el rango solo mientras `CURRENT_DATE` esté dentro de él: el seed entregable debe fijar fechas dentro del rango, no solo relativas a `CURRENT_DATE` |
+| G3 | al menos una fila con `estado_calculado = 'vencido'` en `v_prestamos_estado`; el seed **no** escribe `vencido` (D7, R-3.12) | `A-1001` (préstamo de hace 20 días) y `A-1003` (hace 35 días) |
+| G4 | la categoría con libros y `ejemplares_disponibles > 0` | `categorias` Ciencias de la Computación; `libros` Sistemas Operativos Modernos y Redes de Computadoras |
+| G5 | la editorial con libros vinculados a autores por `libros_autores` (no existe `libros.autor_id`, D64) | `editoriales` Sudamericana; `libros_autores` |
+| G13 | el libro existe y el modelo de datos **no** registra precio → la respuesta declara ausencia (Art. 4) | `libros` Rayuela |
+| R-3.8 | un socio sin préstamos, para el caso de resultado vacío | `socios` Sofía Díaz (`A-1004`) |
+
+Reglas de consistencia que el seed debe cumplir (T2.7): `ejemplares_disponibles <= ejemplares_totales` en
+`libros`, y todo préstamo vencido satisface `fecha_devolucion_real IS NULL AND CURRENT_DATE >
+fecha_devolucion_prevista`, resuelto por la vista y no por un valor escrito.
+
+Volumen (T2.5): >= 15 filas en cada una de las 7 tablas del dominio de la tabla de §3.4.1 (la vista no
+cuenta). El caso de `documentos` se resuelve en 2.9. Los conteos medidos se registran en `tasks.md` 2.5.
+
+#### 3.4.3 Lo que la recuperación necesita de la ingesta
+
+| Qué | Qué debe cumplir la ingesta |
+|---|---|
+| Nombre del documento | `documentos.nombre_archivo` guarda el nombre del PDF con extensión y el prefijo que comparan los casos: `reglamento_biblioteca`, `manual_uso_sistema`, `resenas_libro_` (D55) |
+| Ubicación citable | `metadata` con `seccion`, `ubicacion` o `pagina`; si la ingesta no la guarda, la cita queda como "fragmento N" (R-4.7, D66) |
+| Vector | `embedding vector(768)` con `gemini-embedding-001` y `output_dimensionality = 768` (D5); documentos con `task_type = RETRIEVAL_DOCUMENT` y la consulta con `RETRIEVAL_QUERY` |
+| Distancia | coseno (`<=>`), similitud = 1 − distancia; índice HNSW declarado con `vector_cosine_ops` (D13) |
+| Idempotencia | `sha256` es la clave de idempotencia (D11, R-4.5). En `db/schema.sql` el UNIQUE está sobre `nombre_archivo` y sobre `(documento_id, chunk_index)`, **no** sobre `sha256`: la ingesta debe hacer upsert por `nombre_archivo` (o se agrega el UNIQUE, lo define la parte de BD). Reejecutar la ingesta no cambia el conteo de chunks |
+| Identidad del fragmento | el `Chunk` que devuelve la tool lleva `document` = `nombre_archivo` y `content_hash` = `sha256` + `:` + `chunk_index` (D66) |
+
+Pregunta abierta (dueño: integrante de RAG y base de datos, D19): el nombre almacenado en
+`documentos.nombre_archivo` debe coincidir con el nombre real del PDF. La auditoría previa encontró la
+discrepancia entre los nombres del seed (`resenas_*`) y los nombres de los archivos (§4: `resenas_libro_1.pdf`
+… `resenas_libro_3.pdf`). No se decide acá; hay que confirmarla antes de medir G7 y R2, porque el aserto del
+golden set compara por prefijo.
 
 ## 4. Repositorio documental para RAG
 
