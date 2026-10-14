@@ -15,13 +15,13 @@
 
 ## 3. Interfaz
 
-- [ ] 3.1 Consultar `npx shadcn@latest docs` e instalar con `npx shadcn@latest add` los componentes necesarios (`button`, `field`, `textarea`, `card`, `badge`, `alert`, `table`, `collapsible`, `spinner`, `skeleton`, `empty`, `separator` y las primitivas de chat); verificar que existen en `web/src/components/ui/` y revisar cada archivo agregado según las reglas del skill
-- [ ] 3.2 Pantalla de consulta: `FieldGroup`/`Field` con el texto, botón enviar deshabilitado si está vacío o en curso, estado vacío con `Empty`; verificar con un test de componente que no llama a la API con texto vacío (R-8.1)
-- [ ] 3.3 Panel de progreso: clasificación, herramienta invocada, pasos y segundos de espera por `heartbeat`, con `Spinner`; verificar con un test de componente que no muestra fuentes antes de `result` (R-8.2)
-- [ ] 3.4 Vista de respuesta: texto, `Badge` por fuente y variante visual distinta para `no_coverage` y `error`; verificar con tests de componente de los tres `answer_kind` (R-8.3)
-- [ ] 3.5 Vista de evidencia: SQL y filas en `Table`, fragmentos con `document` y `location`, sin sección si no hay evidencia; verificar con tests de componente de cada caso (R-8.4)
-- [ ] 3.6 Botón cancelar y manejo de errores con `Alert` y reintento; verificar con test de componente que cancelar no deja respuesta parcial (R-8.5, R-8.6)
-- [ ] 3.7 Confirmar que consultas en castellano e inglés se envían y muestran sin modificarse; verificar con un test del cliente (R-8.7)
+- [x] 3.1 Consultar `npx shadcn@latest docs` e instalar con `npx shadcn@latest add` los componentes necesarios (`button`, `field`, `textarea`, `card`, `badge`, `alert`, `table`, `collapsible`, `spinner`, `skeleton`, `empty`, `separator` y las primitivas de chat); verificar que existen en `web/src/components/ui/` y revisar cada archivo agregado según las reglas del skill
+- [x] 3.2 Pantalla de consulta: `FieldGroup`/`Field` con el texto, botón enviar deshabilitado si está vacío o en curso, estado vacío con `Empty`; verificar con un test de componente que no llama a la API con texto vacío (R-8.1)
+- [x] 3.3 Panel de progreso: clasificación, herramienta invocada, pasos y segundos de espera por `heartbeat`, con `Spinner`; verificar con un test de componente que no muestra fuentes antes de `result` (R-8.2)
+- [x] 3.4 Vista de respuesta: texto, `Badge` por fuente y variante visual distinta para `no_coverage` y `error`; verificar con tests de componente de los tres `answer_kind` (R-8.3)
+- [x] 3.5 Vista de evidencia: SQL y filas en `Table`, fragmentos con `document` y `location`, sin sección si no hay evidencia; verificar con tests de componente de cada caso (R-8.4)
+- [x] 3.6 Botón cancelar y manejo de errores con `Alert` y reintento; verificar con test de componente que cancelar no deja respuesta parcial (R-8.5, R-8.6)
+- [x] 3.7 Confirmar que consultas en castellano e inglés se envían y muestran sin modificarse; verificar con un test del cliente (R-8.7)
 
 ## 4. Docker
 
