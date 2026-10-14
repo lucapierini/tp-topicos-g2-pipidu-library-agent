@@ -1,14 +1,14 @@
 {
-  "exported_at": "2026-10-11T06:44:16+00:00",
-  "count": 15,
+  "exported_at": "2026-10-11T16:40:50+00:00",
+  "count": 13,
   "by_classification": {
-    "sql": 6,
-    "rag": 5,
+    "sql": 5,
+    "rag": 4,
     "hybrid": 3,
     "none": 1
   },
   "by_status": {
-    "ok": 14,
+    "ok": 12,
     "no_coverage": 1
   },
   "models": [
@@ -20,8 +20,8 @@
   "counts_as_acceptance_evidence": true,
   "runs": [
     {
-      "id": 18,
-      "created_at": "2026-10-11T06:39:14.061086+00:00",
+      "id": 1,
+      "created_at": "2026-10-11T16:34:57.942708+00:00",
       "question": "¿Qué libros tiene prestados el socio Juan Pérez?",
       "classification": "sql",
       "status": "ok",
@@ -35,7 +35,7 @@
       "executed_sql": "SELECT l.titulo AS titulo, p.fecha_prestamo AS fecha_prestamo, p.fecha_devolucion_prevista AS fecha_devolucion_prevista FROM prestamos AS p JOIN socios AS s ON s.id = p.socio_id JOIN libros AS l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL",
       "chunks": [],
       "answer": "El socio Juan Pérez tiene actualmente prestados los siguientes libros:\n- \"Cien años de soledad\" (prestado el 2026-09-21, con fecha de devolución prevista para el 2026-10-06).\n- \"Rayuela\" (prestado el 2026-10-08, con fecha de devolución prevista para el 2026-10-23).\n\nFuente: SQL",
-      "latency_ms": 13385,
+      "latency_ms": 15276,
       "attempts": [
         {
           "rows": 2,
@@ -43,7 +43,7 @@
           "detail": null,
           "attempt": 1,
           "executed": true,
-          "latency_ms": 19,
+          "latency_ms": 166,
           "executed_sql": "SELECT l.titulo AS titulo, p.fecha_prestamo AS fecha_prestamo, p.fecha_devolucion_prevista AS fecha_devolucion_prevista FROM prestamos AS p JOIN socios AS s ON s.id = p.socio_id JOIN libros AS l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL",
           "sql_original": "SELECT l.titulo, p.fecha_prestamo, p.fecha_devolucion_prevista FROM prestamos p JOIN socios s ON s.id = p.socio_id JOIN libros l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL"
         }
@@ -58,8 +58,8 @@
       ]
     },
     {
-      "id": 19,
-      "created_at": "2026-10-11T06:39:21.893684+00:00",
+      "id": 2,
+      "created_at": "2026-10-11T16:35:07.399669+00:00",
       "question": "¿Cuáles son los 5 libros más prestados este cuatrimestre?",
       "classification": "sql",
       "status": "ok",
@@ -73,7 +73,7 @@
       "executed_sql": "SELECT l.titulo AS titulo, COUNT(*) AS total_prestamos FROM prestamos AS p JOIN libros AS l ON l.id = p.libro_id WHERE p.fecha_prestamo BETWEEN '2026-08-01' AND '2026-11-30' GROUP BY l.titulo ORDER BY total_prestamos DESC LIMIT 5",
       "chunks": [],
       "answer": "Los 5 libros más prestados durante este cuatrimestre (del 1 de agosto al 30 de noviembre de 2026) son:\n\n1. **Cien años de soledad**: 4 préstamos.\n2. **Ficciones**: 2 préstamos.\n3. **Rayuela**: 2 préstamos.\n4. **El Aleph**: 1 préstamo.\n5. **Redes de Computadoras**: 1 préstamo.\n\nFuente: SQL",
-      "latency_ms": 7827,
+      "latency_ms": 9451,
       "attempts": [
         {
           "rows": 5,
@@ -81,7 +81,7 @@
           "detail": null,
           "attempt": 1,
           "executed": true,
-          "latency_ms": 2,
+          "latency_ms": 4,
           "executed_sql": "SELECT l.titulo AS titulo, COUNT(*) AS total_prestamos FROM prestamos AS p JOIN libros AS l ON l.id = p.libro_id WHERE p.fecha_prestamo BETWEEN '2026-08-01' AND '2026-11-30' GROUP BY l.titulo ORDER BY total_prestamos DESC LIMIT 5",
           "sql_original": "SELECT l.titulo, count(*) AS total_prestamos FROM prestamos p JOIN libros l ON l.id = p.libro_id WHERE p.fecha_prestamo BETWEEN '2026-08-01' AND '2026-11-30' GROUP BY l.titulo ORDER BY total_prestamos DESC LIMIT 5"
         }
@@ -96,8 +96,8 @@
       ]
     },
     {
-      "id": 20,
-      "created_at": "2026-10-11T06:39:28.473611+00:00",
+      "id": 3,
+      "created_at": "2026-10-11T16:35:12.710578+00:00",
       "question": "¿Qué socios tienen préstamos vencidos?",
       "classification": "sql",
       "status": "ok",
@@ -111,7 +111,7 @@
       "executed_sql": "SELECT DISTINCT s.nombre AS nombre, s.apellido AS apellido, v.dias_atraso AS dias_atraso FROM v_prestamos_estado AS v JOIN socios AS s ON s.id = v.socio_id WHERE v.estado_calculado = 'vencido' ORDER BY v.dias_atraso DESC",
       "chunks": [],
       "answer": "Los socios que tienen préstamos vencidos son Pedro Ruiz, con 20 días de atraso, y Juan Pérez, con 5 días de atraso.\n\nFuente: SQL",
-      "latency_ms": 6575,
+      "latency_ms": 5298,
       "attempts": [
         {
           "rows": 2,
@@ -119,7 +119,7 @@
           "detail": null,
           "attempt": 1,
           "executed": true,
-          "latency_ms": 1,
+          "latency_ms": 10,
           "executed_sql": "SELECT DISTINCT s.nombre AS nombre, s.apellido AS apellido, v.dias_atraso AS dias_atraso FROM v_prestamos_estado AS v JOIN socios AS s ON s.id = v.socio_id WHERE v.estado_calculado = 'vencido' ORDER BY v.dias_atraso DESC",
           "sql_original": "SELECT DISTINCT s.nombre, s.apellido, v.dias_atraso FROM v_prestamos_estado v JOIN socios s ON s.id = v.socio_id WHERE v.estado_calculado = 'vencido' ORDER BY v.dias_atraso DESC"
         }
@@ -134,8 +134,8 @@
       ]
     },
     {
-      "id": 21,
-      "created_at": "2026-10-11T06:39:36.064146+00:00",
+      "id": 4,
+      "created_at": "2026-10-11T16:35:18.732246+00:00",
       "question": "¿Cuántos libros de la categoría \"Ciencias de la Computación\" hay disponibles?",
       "classification": "sql",
       "status": "ok",
@@ -149,7 +149,7 @@
       "executed_sql": "SELECT COALESCE(SUM(l.ejemplares_disponibles), 0) AS disponibles FROM libros AS l JOIN categorias AS c ON c.id = l.categoria_id WHERE c.nombre ILIKE 'Ciencias de la Computación'",
       "chunks": [],
       "answer": "Hay 7 ejemplares disponibles de libros en la categoría \"Ciencias de la Computación\".\n\nFuente: SQL",
-      "latency_ms": 7587,
+      "latency_ms": 6012,
       "attempts": [
         {
           "rows": 1,
@@ -157,7 +157,7 @@
           "detail": null,
           "attempt": 1,
           "executed": true,
-          "latency_ms": 1,
+          "latency_ms": 4,
           "executed_sql": "SELECT COALESCE(SUM(l.ejemplares_disponibles), 0) AS disponibles FROM libros AS l JOIN categorias AS c ON c.id = l.categoria_id WHERE c.nombre ILIKE 'Ciencias de la Computación'",
           "sql_original": "SELECT coalesce(sum(l.ejemplares_disponibles), 0) AS disponibles FROM libros l JOIN categorias c ON c.id = l.categoria_id WHERE c.nombre ILIKE 'Ciencias de la Computación'"
         }
@@ -172,8 +172,8 @@
       ]
     },
     {
-      "id": 22,
-      "created_at": "2026-10-11T06:39:43.403315+00:00",
+      "id": 5,
+      "created_at": "2026-10-11T16:35:24.748698+00:00",
       "question": "¿Qué autor tiene más libros publicados por la editorial Sudamericana?",
       "classification": "sql",
       "status": "ok",
@@ -187,7 +187,7 @@
       "executed_sql": "SELECT a.nombre AS nombre, a.apellido AS apellido, COUNT(l.id) AS cantidad_libros FROM autores AS a JOIN libros_autores AS la ON a.id = la.autor_id JOIN libros AS l ON la.libro_id = l.id JOIN editoriales AS e ON l.editorial_id = e.id WHERE e.nombre ILIKE 'Sudamericana' GROUP BY a.id, a.nombre, a.apellido ORDER BY cantidad_libros DESC LIMIT 1",
       "chunks": [],
       "answer": "El autor con más libros publicados por la editorial Sudamericana es Gabriel García Márquez, con 1 libro registrado.\n\nFuente: SQL",
-      "latency_ms": 7338,
+      "latency_ms": 6007,
       "attempts": [
         {
           "rows": 1,
@@ -195,7 +195,7 @@
           "detail": null,
           "attempt": 1,
           "executed": true,
-          "latency_ms": 2,
+          "latency_ms": 13,
           "executed_sql": "SELECT a.nombre AS nombre, a.apellido AS apellido, COUNT(l.id) AS cantidad_libros FROM autores AS a JOIN libros_autores AS la ON a.id = la.autor_id JOIN libros AS l ON la.libro_id = l.id JOIN editoriales AS e ON l.editorial_id = e.id WHERE e.nombre ILIKE 'Sudamericana' GROUP BY a.id, a.nombre, a.apellido ORDER BY cantidad_libros DESC LIMIT 1",
           "sql_original": "SELECT a.nombre, a.apellido, count(l.id) AS cantidad_libros FROM autores a JOIN libros_autores la ON a.id = la.autor_id JOIN libros l ON la.libro_id = l.id JOIN editoriales e ON l.editorial_id = e.id WHERE e.nombre ILIKE 'Sudamericana' GROUP BY a.id, a.nombre, a.apellido ORDER BY cantidad_libros DESC LIMIT 1"
         }
@@ -210,8 +210,8 @@
       ]
     },
     {
-      "id": 23,
-      "created_at": "2026-10-11T06:40:06.755196+00:00",
+      "id": 6,
+      "created_at": "2026-10-11T16:36:11.896566+00:00",
       "question": "¿Cuántos días tengo para devolver un libro antes de que me multen?",
       "classification": "rag",
       "status": "ok",
@@ -241,8 +241,8 @@
           "content_hash": "mock:9912ce7e64432ead"
         }
       ],
-      "answer": "El plazo de devolución depende de tu tipo de socio: los alumnos disponen de 15 días corridos (Art. 12, reglamento_biblioteca.pdf), mientras que los docentes disponen de 30 días corridos (Art. 13, reglamento_biblioteca.pdf). En ambos casos, una vez vencido el plazo, se aplica una multa de un día de suspensión por cada día de atraso.\n\nFuente: RAG",
-      "latency_ms": 23347,
+      "answer": "El plazo de devolución depende de tu tipo de socio: los alumnos disponen de 15 días corridos (Art. 12, reglamento_biblioteca.pdf) y los docentes disponen de 30 días corridos (Art. 13, reglamento_biblioteca.pdf). Una vez vencido dicho plazo, se aplica una multa de un día de suspensión por cada día de atraso.\n\nFuente: RAG",
+      "latency_ms": 47138,
       "attempts": [],
       "error_code": null,
       "error_detail": null,
@@ -254,8 +254,8 @@
       ]
     },
     {
-      "id": 24,
-      "created_at": "2026-10-11T06:40:15.676608+00:00",
+      "id": 7,
+      "created_at": "2026-10-11T16:36:20.230527+00:00",
       "question": "¿De qué trata el libro \"Cien años de soledad\"?",
       "classification": "rag",
       "status": "ok",
@@ -277,8 +277,8 @@
           "content_hash": "mock:e7582930e572a014"
         }
       ],
-      "answer": "El libro \"Cien años de soledad\", escrito por Gabriel García Márquez, trata sobre la historia de la familia Buendía a lo largo de siete generaciones en el pueblo ficticio de Macondo (Fuente: resenas_libro_1.pdf, Reseña).\n\nFuente: RAG",
-      "latency_ms": 8918,
+      "answer": "El libro \"Cien años de soledad\", escrito por Gabriel García Márquez, narra la historia de la familia Buendía a lo largo de siete generaciones en el pueblo ficticio de Macondo (Fuente: resenas_libro_1.pdf, Reseña).\n\nFuente: RAG",
+      "latency_ms": 8325,
       "attempts": [],
       "error_code": null,
       "error_detail": null,
@@ -290,8 +290,8 @@
       ]
     },
     {
-      "id": 25,
-      "created_at": "2026-10-11T06:40:24.690232+00:00",
+      "id": 8,
+      "created_at": "2026-10-11T16:36:29.404580+00:00",
       "question": "¿Cómo renuevo un préstamo desde el sistema?",
       "classification": "rag",
       "status": "ok",
@@ -329,8 +329,8 @@
           "content_hash": "mock:31b5dea9414b6335"
         }
       ],
-      "answer": "Para renovar un préstamo desde el sistema, debés ingresar con tu usuario, abrir la sección \"Mis préstamos\", elegir el libro correspondiente y presionar el botón \"Renovar\" (Manual de uso del sistema, Sección 3.2).\n\nTené en cuenta que, según el reglamento de la biblioteca (Art. 14), cada socio puede renovar un préstamo hasta 2 veces, siempre que el libro no tenga reservas y el préstamo no se encuentre vencido.\n\nFuente: RAG",
-      "latency_ms": 9009,
+      "answer": "Para renovar un préstamo desde el sistema, debés ingresar con tu usuario, abrir la sección \"Mis préstamos\", seleccionar el libro correspondiente y presionar el botón \"Renovar\" (Manual de uso del sistema, Sección 3.2).\n\nTené en cuenta que, según el Reglamento de la biblioteca (Art. 14), cada socio puede renovar un préstamo hasta 2 veces, siempre que el libro no tenga reservas y el préstamo no esté vencido.\n\nFuente: RAG",
+      "latency_ms": 9159,
       "attempts": [],
       "error_code": null,
       "error_detail": null,
@@ -342,8 +342,8 @@
       ]
     },
     {
-      "id": 26,
-      "created_at": "2026-10-11T06:40:32.948520+00:00",
+      "id": 9,
+      "created_at": "2026-10-11T16:36:34.613696+00:00",
       "question": "¿Cuál es el horario de la biblioteca?",
       "classification": "rag",
       "status": "ok",
@@ -366,7 +366,7 @@
         }
       ],
       "answer": "El horario de atención de la biblioteca es de lunes a viernes de 8 a 20 horas y los sábados de 9 a 13 horas. Los domingos y feriados permanece cerrada (reglamento_biblioteca.pdf, Art. 20).\n\nFuente: RAG",
-      "latency_ms": 8253,
+      "latency_ms": 5200,
       "attempts": [],
       "error_code": null,
       "error_detail": null,
@@ -378,8 +378,8 @@
       ]
     },
     {
-      "id": 27,
-      "created_at": "2026-10-11T06:43:22.068840+00:00",
+      "id": 10,
+      "created_at": "2026-10-11T16:40:19.143480+00:00",
       "question": "Juan Pérez tiene un libro prestado hace 20 días, ¿le corresponde multa según el reglamento?",
       "classification": "hybrid",
       "status": "ok",
@@ -392,8 +392,8 @@
         "retrieve_documents",
         "execute_sql"
       ],
-      "generated_sql": "SELECT tipo_socio FROM socios WHERE nombre ILIKE 'Juan' AND apellido ILIKE 'Pérez'",
-      "executed_sql": "SELECT socios.tipo_socio AS tipo_socio FROM socios WHERE socios.nombre ILIKE 'Juan' AND socios.apellido ILIKE 'Pérez'",
+      "generated_sql": "SELECT s.tipo_socio FROM socios s WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez'",
+      "executed_sql": "SELECT s.tipo_socio AS tipo_socio FROM socios AS s WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez'",
       "chunks": [
         {
           "id": 1,
@@ -428,8 +428,8 @@
           "content_hash": "mock:cb5d96dbc5ed2c9b"
         }
       ],
-      "answer": "Sí, a Juan Pérez le corresponde una multa.\n\nHechos verificados:\n- Juan Pérez tiene prestado el libro \"Cien años de soledad\" desde el 2026-09-21, lo que confirma que el préstamo está activo y supera los 20 días.\n- Juan Pérez es un socio de tipo 'alumno'.\n\nReglamento:\n- Según el Art. 12 del reglamento_biblioteca.pdf, el plazo de devolución para alumnos es de 15 días corridos. Vencido este plazo, corresponde una multa de un día de suspensión por cada día de atraso.\n\nConclusión:\nDado que el préstamo tiene 20 días de antigüedad y el plazo máximo para alumnos es de 15 días, el préstamo se encuentra vencido por 5 días, por lo que le corresponde una multa de 5 días de suspensión.\n\nFuente: SQL + RAG",
-      "latency_ms": 169117,
+      "answer": "Juan Pérez tiene prestado el libro \"Cien años de soledad\" desde el 2026-09-21. Dado que es alumno, el plazo de devolución es de 15 días corridos (Art. 12 del reglamento_biblioteca.pdf). Al haber transcurrido más de 20 días, el préstamo se encuentra vencido, por lo que le corresponde una multa de un día de suspensión por cada día de atraso.\n\nFuente: SQL + RAG",
+      "latency_ms": 224517,
       "attempts": [
         {
           "rows": 1,
@@ -437,7 +437,7 @@
           "detail": null,
           "attempt": 1,
           "executed": true,
-          "latency_ms": 4,
+          "latency_ms": 5,
           "executed_sql": "SELECT p.id AS id, p.fecha_prestamo AS fecha_prestamo, l.titulo AS titulo FROM prestamos AS p JOIN socios AS s ON s.id = p.socio_id JOIN libros AS l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL AND p.fecha_prestamo <= CURRENT_DATE - INTERVAL '20 DAYS'",
           "sql_original": "SELECT p.id, p.fecha_prestamo, l.titulo FROM prestamos p JOIN socios s ON s.id = p.socio_id JOIN libros l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL AND p.fecha_prestamo <= CURRENT_DATE - INTERVAL '20 days'"
         },
@@ -447,9 +447,9 @@
           "detail": null,
           "attempt": 2,
           "executed": true,
-          "latency_ms": 1,
-          "executed_sql": "SELECT socios.tipo_socio AS tipo_socio FROM socios WHERE socios.nombre ILIKE 'Juan' AND socios.apellido ILIKE 'Pérez'",
-          "sql_original": "SELECT tipo_socio FROM socios WHERE nombre ILIKE 'Juan' AND apellido ILIKE 'Pérez'"
+          "latency_ms": 2,
+          "executed_sql": "SELECT s.tipo_socio AS tipo_socio FROM socios AS s WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez'",
+          "sql_original": "SELECT s.tipo_socio FROM socios s WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez'"
         }
       ],
       "error_code": null,
@@ -464,8 +464,8 @@
       ]
     },
     {
-      "id": 28,
-      "created_at": "2026-10-11T06:43:35.281481+00:00",
+      "id": 11,
+      "created_at": "2026-10-11T16:40:24.917906+00:00",
       "question": "¿El socio con más préstamos puede renovar según el reglamento?",
       "classification": "hybrid",
       "status": "ok",
@@ -506,8 +506,8 @@
           "content_hash": "mock:31b5dea9414b6335"
         }
       ],
-      "answer": "El socio con más préstamos es Luis Martínez (ID 4), quien cuenta con 4 préstamos registrados.\n\nSegún el **Art. 14 del reglamento_biblioteca.pdf**, un socio puede renovar un préstamo hasta 2 veces siempre que el libro no tenga reservas y el préstamo no esté vencido.\n\nHe verificado que Luis Martínez no tiene actualmente préstamos vencidos (según la vista `v_prestamos_estado`), por lo que, cumpliendo con las condiciones de no tener reservas sobre los libros, estaría habilitado para realizar la renovación siguiendo los pasos indicados en la **Sección 3.2 del manual_uso_sistema.pdf** (ingresar al sistema, abrir \"Mis préstamos\", elegir el libro y presionar \"Renovar\").\n\nFuente: SQL + RAG",
-      "latency_ms": 13208,
+      "answer": "El socio con más préstamos es Luis Martínez (ID 4), con un total de 4 préstamos.\n\nSegún el **reglamento de la biblioteca (Art. 14)**, un socio puede renovar un préstamo hasta 2 veces, siempre que el libro no tenga reservas y el préstamo no esté vencido.\n\nHe verificado que Luis Martínez no tiene actualmente préstamos vencidos (según la vista `v_prestamos_estado`). Por lo tanto, cumple con la condición de no tener préstamos vencidos para poder realizar una renovación, siempre que se cumplan las demás condiciones reglamentarias (que el libro no tenga reservas y no haya superado el límite de 2 renovaciones).\n\nFuente: SQL + RAG",
+      "latency_ms": 5766,
       "attempts": [
         {
           "rows": 1,
@@ -515,7 +515,7 @@
           "detail": null,
           "attempt": 1,
           "executed": true,
-          "latency_ms": 1,
+          "latency_ms": 3,
           "executed_sql": "SELECT s.id AS id, s.nombre AS nombre, s.apellido AS apellido, COUNT(*) AS total_prestamos FROM prestamos AS p JOIN socios AS s ON s.id = p.socio_id GROUP BY s.id, s.nombre, s.apellido ORDER BY total_prestamos DESC LIMIT 1",
           "sql_original": "SELECT s.id, s.nombre, s.apellido, count(*) AS total_prestamos FROM prestamos p JOIN socios s ON s.id = p.socio_id GROUP BY s.id, s.nombre, s.apellido ORDER BY total_prestamos DESC LIMIT 1"
         },
@@ -525,7 +525,7 @@
           "detail": null,
           "attempt": 2,
           "executed": true,
-          "latency_ms": 1,
+          "latency_ms": 5,
           "executed_sql": "SELECT v.estado_calculado AS estado_calculado FROM v_prestamos_estado AS v WHERE v.socio_id = 4 AND v.estado_calculado = 'vencido'",
           "sql_original": "SELECT v.estado_calculado FROM v_prestamos_estado v WHERE v.socio_id = 4 AND v.estado_calculado = 'vencido'"
         }
@@ -542,8 +542,8 @@
       ]
     },
     {
-      "id": 29,
-      "created_at": "2026-10-11T06:43:45.614884+00:00",
+      "id": 12,
+      "created_at": "2026-10-11T16:40:29.284499+00:00",
       "question": "¿Un docente tiene un plazo distinto que un alumno para el libro más prestado?",
       "classification": "hybrid",
       "status": "ok",
@@ -591,8 +591,8 @@
           "content_hash": "mock:cb5d96dbc5ed2c9b"
         }
       ],
-      "answer": "Sí, los docentes y los alumnos tienen plazos distintos para el préstamo de libros, incluyendo el libro más prestado (\"Cien años de soledad\").\n\nSegún el reglamento de la biblioteca:\n- Los docentes disponen de un plazo de devolución de 30 días corridos (Art. 13, reglamento_biblioteca.pdf).\n- Los alumnos disponen de un plazo de devolución de 15 días corridos (Art. 12, reglamento_biblioteca.pdf).\n\nFuente: SQL + RAG",
-      "latency_ms": 10331,
+      "answer": "Sí, los docentes y los alumnos tienen plazos distintos para el libro más prestado (\"Cien años de soledad\").\n\nHechos verificados:\n- El libro más prestado es \"Cien años de soledad\".\n- Según el Art. 12 del reglamento_biblioteca.pdf, el plazo de devolución para los alumnos es de 15 días corridos.\n- Según el Art. 13 del reglamento_biblioteca.pdf, el plazo de devolución para los docentes es de 30 días corridos.\n\nConclusión:\nLos docentes disponen de un plazo de 30 días corridos, mientras que los alumnos disponen de 15 días corridos para la devolución de este libro.\n\nFuente: SQL + RAG",
+      "latency_ms": 4357,
       "attempts": [
         {
           "rows": 1,
@@ -600,7 +600,7 @@
           "detail": null,
           "attempt": 1,
           "executed": true,
-          "latency_ms": 1,
+          "latency_ms": 4,
           "executed_sql": "SELECT l.titulo AS titulo, COUNT(*) AS total_prestamos FROM prestamos AS p JOIN libros AS l ON l.id = p.libro_id GROUP BY l.titulo ORDER BY total_prestamos DESC LIMIT 1",
           "sql_original": "SELECT l.titulo, count(*) AS total_prestamos FROM prestamos p JOIN libros l ON l.id = p.libro_id GROUP BY l.titulo ORDER BY total_prestamos DESC LIMIT 1"
         }
@@ -616,8 +616,8 @@
       ]
     },
     {
-      "id": 30,
-      "created_at": "2026-10-11T06:43:48.405154+00:00",
+      "id": 13,
+      "created_at": "2026-10-11T16:40:30.212513+00:00",
       "question": "¿Cuál es el precio del libro \"Rayuela\"?",
       "classification": "none",
       "status": "no_coverage",
@@ -627,7 +627,7 @@
       "executed_sql": null,
       "chunks": [],
       "answer": "No dispongo de información suficiente para responder esta consulta con los datos de la biblioteca ni con sus documentos.\n\nFuente: ninguna",
-      "latency_ms": 2786,
+      "latency_ms": 922,
       "attempts": [],
       "error_code": null,
       "error_detail": null,
@@ -635,88 +635,6 @@
       "endpoint": "api",
       "trace": [
         "classification"
-      ]
-    },
-    {
-      "id": 31,
-      "created_at": "2026-10-11T06:43:57.115761+00:00",
-      "question": "Which books does Juan Pérez currently have on loan?",
-      "classification": "sql",
-      "status": "ok",
-      "sources": [
-        "sql"
-      ],
-      "tools": [
-        "execute_sql"
-      ],
-      "generated_sql": "SELECT l.titulo FROM prestamos p JOIN socios s ON s.id = p.socio_id JOIN libros l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL",
-      "executed_sql": "SELECT l.titulo AS titulo FROM prestamos AS p JOIN socios AS s ON s.id = p.socio_id JOIN libros AS l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL",
-      "chunks": [],
-      "answer": "Juan Pérez currently has the following books on loan: \"Cien años de soledad\" and \"Rayuela\".\n\nSource: SQL",
-      "latency_ms": 8707,
-      "attempts": [
-        {
-          "rows": 2,
-          "error": null,
-          "detail": null,
-          "attempt": 1,
-          "executed": true,
-          "latency_ms": 1,
-          "executed_sql": "SELECT l.titulo AS titulo FROM prestamos AS p JOIN socios AS s ON s.id = p.socio_id JOIN libros AS l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL",
-          "sql_original": "SELECT l.titulo FROM prestamos p JOIN socios s ON s.id = p.socio_id JOIN libros l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL"
-        }
-      ],
-      "error_code": null,
-      "error_detail": null,
-      "model_id": "gemini/gemini-3.1-flash-lite",
-      "endpoint": "api",
-      "trace": [
-        "classification",
-        "execute_sql"
-      ]
-    },
-    {
-      "id": 32,
-      "created_at": "2026-10-11T06:44:06.603148+00:00",
-      "question": "How many days do I have to return a book before I get fined?",
-      "classification": "rag",
-      "status": "ok",
-      "sources": [
-        "rag"
-      ],
-      "tools": [
-        "retrieve_documents"
-      ],
-      "generated_sql": null,
-      "executed_sql": null,
-      "chunks": [
-        {
-          "id": 2,
-          "text": "Los docentes disponen de un plazo de devolución de 30 días corridos para los libros prestados. La multa por atraso es la misma que para los alumnos.",
-          "document": "reglamento_biblioteca.pdf",
-          "location": "Art. 13",
-          "similarity": 0.522,
-          "content_hash": "mock:31b5dea9414b6335"
-        },
-        {
-          "id": 1,
-          "text": "El plazo de devolución de un libro prestado es de 15 días corridos para los alumnos. Vencido el plazo, corresponde una multa de un día de suspensión por cada día de atraso.",
-          "document": "reglamento_biblioteca.pdf",
-          "location": "Art. 12",
-          "similarity": 0.482,
-          "content_hash": "mock:9912ce7e64432ead"
-        }
-      ],
-      "answer": "The return period for books depends on your status:\n- Students have 15 calendar days to return a book (reglamento_biblioteca.pdf, Art. 12).\n- Teachers have 30 calendar days to return a book (reglamento_biblioteca.pdf, Art. 13).\n\nIf the deadline is exceeded, a fine of one day of suspension per day of delay is applied (reglamento_biblioteca.pdf, Art. 12).\n\nSource: RAG",
-      "latency_ms": 9483,
-      "attempts": [],
-      "error_code": null,
-      "error_detail": null,
-      "model_id": "gemini/gemini-3.1-flash-lite",
-      "endpoint": "api",
-      "trace": [
-        "classification",
-        "retrieve_documents"
       ]
     }
   ]

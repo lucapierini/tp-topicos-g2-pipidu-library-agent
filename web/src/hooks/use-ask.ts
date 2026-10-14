@@ -9,17 +9,26 @@ export type AskState =
   | { status: "done"; question: string; result: AgentResult }
   | { status: "failed"; question: string; kind: FailureKind; message: string }
 
+/** Un turno terminado. El historial es solo de pantalla: el agente nunca lo recibe (R-7.0, D17). */
+export type FinishedTurn = Extract<AskState, { status: "done" | "failed" }>
+
+export interface AskView {
+  history: FinishedTurn[]
+  current: AskState
+}
+
 type Action =
-  | { type: "submit"; question: string }
+  | { type: "submit"; question: string; retry?: boolean }
   | { type: "event"; event: AskEvent }
   | { type: "closed" } // el flujo terminó sin `result` ni `error`
   | { type: "failure"; kind: FailureKind; message: string }
   | { type: "reset" }
 
 export const initialState: AskState = { status: "idle" }
+export const initialView: AskView = { history: [], current: initialState }
 
 /** `sources` solo existe en `done`: el progreso nunca declara fuente (R-7.2, R-8.2). */
-export function askReducer(state: AskState, action: Action): AskState {
+function turnReducer(state: AskState, action: Action): AskState {
   switch (action.type) {
     case "submit":
       return { status: "running", question: action.question, progress: [], elapsed: 0 }
@@ -51,22 +60,38 @@ export function askReducer(state: AskState, action: Action): AskState {
   }
 }
 
+/**
+ * Una consulta nueva archiva la anterior en el historial en lugar de borrarla; reintentar una consulta
+ * fallida la reemplaza. Cancelar descarta solo la consulta en curso, sin respuesta parcial (R-8.5, R-8.10).
+ */
+export function askReducer(view: AskView, action: Action): AskView {
+  const { history, current } = view
+  if (action.type === "submit") {
+    const finished = current.status === "done" || current.status === "failed"
+    return {
+      history: finished && !action.retry ? [...history, current] : history,
+      current: turnReducer(current, action),
+    }
+  }
+  return { history, current: turnReducer(current, action) }
+}
+
 function describe(error: unknown): { kind: FailureKind; message: string } {
   if (error instanceof AskHttpError) return { kind: error.kind, message: error.message }
   return { kind: "http", message: "Ocurrió un error inesperado al consultar la API." }
 }
 
 export function useAsk(baseUrl?: string) {
-  const [state, dispatch] = useReducer(askReducer, initialState)
+  const [{ history, current: state }, dispatch] = useReducer(askReducer, initialView)
   const controller = useRef<AbortController | null>(null)
 
   const ask = useCallback(
-    async (raw: string) => {
+    async (raw: string, options: { retry?: boolean } = {}) => {
       const question = raw.trim()
       if (!question || controller.current) return // vacía o ya hay una en curso (R-8.1)
       const ctrl = new AbortController()
       controller.current = ctrl
-      dispatch({ type: "submit", question })
+      dispatch({ type: "submit", question, retry: options.retry })
       try {
         let finished = false
         for await (const event of askStream(question, { signal: ctrl.signal, baseUrl })) {
@@ -91,7 +116,5 @@ export function useAsk(baseUrl?: string) {
     dispatch({ type: "reset" })
   }, [])
 
-  const reset = useCallback(() => dispatch({ type: "reset" }), [])
-
-  return { state, ask, cancel, reset }
+  return { state, history, ask, cancel }
 }

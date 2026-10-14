@@ -1,5 +1,4 @@
-import { Marker, MarkerContent, MarkerIcon } from "@/components/ui/marker"
-import { Spinner } from "@/components/ui/spinner"
+import { Marker, MarkerContent } from "@/components/ui/marker"
 import type { AskEvent } from "@/lib/ask-stream"
 import { describeEvent } from "@/lib/progress"
 
@@ -12,11 +11,8 @@ export function ProgressPanel({ progress, elapsed }: { progress: AskEvent[]; ela
           <MarkerContent>{line}</MarkerContent>
         </Marker>
       ))}
-      <Marker>
-        <MarkerIcon>
-          <Spinner />
-        </MarkerIcon>
-        <MarkerContent>{elapsed > 0 ? `Trabajando… ${elapsed} s` : "Trabajando…"}</MarkerContent>
+      <Marker role="status">
+        <MarkerContent className="shimmer">{elapsed > 0 ? `Trabajando… ${elapsed} s` : "Trabajando…"}</MarkerContent>
       </Marker>
     </div>
   )

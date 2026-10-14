@@ -51,8 +51,10 @@ en el estado `done`.
 `Message` y `Bubble`; entrada con `FieldGroup` + `Field` + `Textarea` (o `InputGroup`); fuentes con `Badge`;
 evidencia SQL con `Table` dentro de `Collapsible`/`Accordion`; errores con `Alert`; carga con `Spinner` y
 `Skeleton`; vacío con `Empty`. Cada componente se instala con `npx shadcn@latest add` y se revisa tras
-agregarlo (regla del skill). v1 es de un solo turno (R-7.0): se muestra la consulta actual y la respuesta,
-no un historial acumulado.
+agregarlo (regla del skill). El agente es de un solo turno (R-7.0): cada
+consulta viaja sola, pero la pantalla acumula las consultas y respuestas de la sesión (R-8.10), en estado
+del navegador (`history` del hook `useAsk`). La espera se indica con la clase `shimmer` de
+`shadcn/tailwind.css` sobre el texto de estado (sin `Spinner`).
 
 **6. Un único origen con nginx como proxy.** La imagen `web` construye la SPA y la sirve con nginx; nginx
 reenvía `/api/` a `http://api:8080/` con `proxy_buffering off`, `proxy_http_version 1.1`, `proxy_read_timeout`

@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from "@testing-library/react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { askReducer, initialState, useAsk } from "./use-ask"
+import { askReducer, initialView, useAsk } from "./use-ask"
 
 const enc = new TextEncoder()
 const sse = (event: string, data: object) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
@@ -22,19 +22,44 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe("askReducer", () => {
   it("el progreso no declara fuentes: solo `done` tiene sources", () => {
-    let s = askReducer(initialState, { type: "submit", question: "q" })
-    s = askReducer(s, { type: "event", event: { type: "classified", classification: "sql" } })
-    expect(s.status).toBe("running")
-    expect("sources" in s).toBe(false)
-    s = askReducer(s, { type: "event", event: { type: "result", result: RESULT as never } })
-    expect(s.status === "done" && s.result.sources).toEqual(["SQL"])
+    let v = askReducer(initialView, { type: "submit", question: "q" })
+    v = askReducer(v, { type: "event", event: { type: "classified", classification: "sql" } })
+    expect(v.current.status).toBe("running")
+    expect("sources" in v.current).toBe(false)
+    v = askReducer(v, { type: "event", event: { type: "result", result: RESULT as never } })
+    expect(v.current.status === "done" && v.current.result.sources).toEqual(["SQL"])
   })
 
   it("el heartbeat actualiza los segundos sin sumar progreso", () => {
-    let s = askReducer(initialState, { type: "submit", question: "q" })
-    s = askReducer(s, { type: "event", event: { type: "heartbeat", elapsed_s: 10 } })
-    expect(s.status === "running" && s.elapsed).toBe(10)
-    expect(s.status === "running" && s.progress).toEqual([])
+    let v = askReducer(initialView, { type: "submit", question: "q" })
+    v = askReducer(v, { type: "event", event: { type: "heartbeat", elapsed_s: 10 } })
+    expect(v.current.status === "running" && v.current.elapsed).toBe(10)
+    expect(v.current.status === "running" && v.current.progress).toEqual([])
+  })
+
+  it("una consulta nueva archiva la anterior en el historial en vez de borrarla (R-8.10)", () => {
+    let v = askReducer(initialView, { type: "submit", question: "uno" })
+    v = askReducer(v, { type: "event", event: { type: "result", result: RESULT as never } })
+    v = askReducer(v, { type: "submit", question: "dos" })
+    expect(v.history.map((t) => t.question)).toEqual(["uno"])
+    expect(v.current).toMatchObject({ status: "running", question: "dos" })
+  })
+
+  it("reintentar una consulta fallida la reemplaza, no la duplica", () => {
+    let v = askReducer(initialView, { type: "submit", question: "uno" })
+    v = askReducer(v, { type: "failure", kind: "unreachable", message: "x" })
+    v = askReducer(v, { type: "submit", question: "uno", retry: true })
+    expect(v.history).toEqual([])
+    expect(v.current.status).toBe("running")
+  })
+
+  it("cancelar descarta solo la consulta en curso y conserva el historial", () => {
+    let v = askReducer(initialView, { type: "submit", question: "uno" })
+    v = askReducer(v, { type: "event", event: { type: "result", result: RESULT as never } })
+    v = askReducer(v, { type: "submit", question: "dos" })
+    v = askReducer(v, { type: "reset" })
+    expect(v.current).toEqual({ status: "idle" })
+    expect(v.history.map((t) => t.question)).toEqual(["uno"])
   })
 })
 
