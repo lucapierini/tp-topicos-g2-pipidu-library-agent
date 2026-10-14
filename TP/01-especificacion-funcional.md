@@ -3,8 +3,9 @@
 > Documento incremental. Se irá completando/ajustando a medida que avance el diseño.
 >
 > **Nivel en el ciclo SDD:** Spec (WHAT). Las capacidades detalladas del agente y sus tools están en
-> `03-especificaciones-por-capacidad.md`; las tareas en `04-tareas.md`; la validación en
-> `05-validacion.md`; los principios en `00-constitucion.md`.
+> `openspec/changes/agente-y-tools/specs/<capacidad>/spec.md`; las tareas en
+> `openspec/changes/agente-y-tools/tasks.md`; la validación en `05-validacion.md`; los principios en
+> `00-constitucion.md`.
 
 ## 1. Datos generales
 
@@ -39,13 +40,16 @@ Desarrollar un **SQL AI Agent** capaz de:
 ## 5. Alcance funcional
 
 ### 5.1 Base de datos relacional
-- Modelo de datos con **mínimo 6 tablas** (cumple el mínimo de 5 exigido):
+- Modelo de datos con **mínimo 6 tablas** (cumple el mínimo de 5 exigido). Son 7, según `db/schema.sql` (D64):
   1. Socios (alumnos/docentes)
   2. Libros
   3. Autores
   4. Préstamos
   5. Categorías/Géneros
   6. Editoriales
+  7. `libros_autores` (relación N:M libros-autores; no existe `libros.autor_id`, D64)
+- El repositorio documental (`documentos` y `documentos_chunks`) es el índice RAG, no una tabla del modelo
+  relacional: se describe en la especificación técnica (§3.2.1) y su volumen se decide en T2.9.
 - Cada tabla poblada con **15-20 registros sintéticos** como mínimo (cumple el mínimo de 15 exigido).
 - Los datos deben ser coherentes y permitir consultas significativas (joins, agregaciones, filtros, rankings).
 
@@ -114,7 +118,7 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 ## 8. Criterios de promoción directa (2+ de 5, elegidos 4)
 
-- [ ] Despliegue en la nube (GCP): **descartado por D81** (2026-10-13): el sistema se prepara para correr en entorno local. Quedan cubiertos `framework agéntico` y `SDD`; hay que confirmarlo con el equipo (riesgo D83)
+- [ ] Despliegue en la nube (GCP): **descartado por D81** (2026-10-13): el sistema se prepara para correr en entorno local. Quedan cubiertos `framework agéntico` y `SDD`; hay que confirmarlo con la cátedra (T9.13, riesgo D83)
 - [ ] Interfaz gráfica: la provee un frontend externo que consume la API (D80); **no está en este repositorio**, hay que confirmar con el equipo cómo se entrega y evidencia para este criterio
 - [x] Framework agéntico (Smolagents)
 - [x] SDD (artefactos de esta carpeta `TP/`)

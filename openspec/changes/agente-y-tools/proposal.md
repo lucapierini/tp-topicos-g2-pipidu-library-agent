@@ -43,8 +43,9 @@ _(ninguna — es el primer change del proyecto)_
   `prestamos`, la vista `v_prestamos_estado` y el repositorio documental `documentos` +
   `documentos_chunks` (pgvector). Este change agrega `agent_runs` (`db/migrations/001_agent_runs.sql`).
 - Roles de base de datos: `agent_ro` (solo lectura) y `agent_logger` (solo `INSERT` en `agent_runs`, D63).
-- Nuevas dependencias: `smolagents[litellm]`, `psycopg2-binary`, `pypdf`, `google-genai`, `sqlglot`,
-  `fastapi`, `uvicorn` (la API HTTP, D75) y `pytest`.
+- Nuevas dependencias de ejecución (`requirements.txt`): `smolagents[litellm]`, `psycopg2-binary`, `pypdf`,
+  `google-genai`, `sqlglot`, `fastapi`, `uvicorn` (la API HTTP, D75) y `python-dotenv` (`.env`, Art. 9).
+  `pytest`, `faker` y `ruff` son de desarrollo (`requirements-dev.txt`) y no entran a la imagen (D54).
 - Contenedor en ejecución: la imagen `runtime` arranca `uvicorn api.app:app` en `PORT` (8080 por defecto, D80).
 - Nuevas variables de entorno: `GEMINI_API_KEY`, credenciales de BD y, para cambiar de proveedor sin
   tocar código, `LLM_MODEL`, `LLM_API_BASE` y `LLM_API_KEY` (R-2.8). El flujo se valida primero contra un

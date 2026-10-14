@@ -9,7 +9,7 @@ vía RAG, decidiendo autónomamente qué fuente consultar en cada caso.
 
 ## Stack
 
-Python 3.11+ · PostgreSQL + pgvector · Gemini · Smolagents · FastAPI · ejecución local (D81)
+Python 3.12+ · PostgreSQL + pgvector · Gemini · Smolagents · FastAPI · ejecución local (D81)
 
 ## Estructura
 
@@ -20,7 +20,7 @@ db/            schema.sql, dev_seed.sql, migrations/, init/, post_restore.sql (+
 rag/           documents/ (PDFs), ingest.py, chunking.py (pendientes)
 agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
-scripts/       measure_golden.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+scripts/       measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
 tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py, test_agent.py, test_runs.py, ...
 docker/        Dockerfile (etapas runtime y measure, verificado en T9.2 y T9.10)
@@ -82,5 +82,5 @@ El enunciado pide al menos dos de cinco. Estado real:
 - [x] Framework agéntico (Smolagents): implementado
 - [x] SDD (artefactos en `TP/` y `openspec/`): implementados
 - [ ] Interfaz gráfica: la provee un frontend externo que consume la API (D80); no está en este repositorio
-- [ ] Despliegue en la nube (GCP): **descartado por D81** (decisión del equipo, 2026-10-13): el sistema se prepara para correr en entorno local. Queda cubierto solo con `framework agéntico` y `SDD`; hay que confirmarlo con el equipo (riesgo D83). La imagen `runtime` sigue siendo válida para correr local con `uvicorn`
+- [ ] Despliegue en la nube (GCP): **descartado por D81** (decisión del equipo, 2026-10-13): el sistema se prepara para correr en entorno local. Queda cubierto solo con `framework agéntico` y `SDD`; hay que confirmarlo con la cátedra (T9.13, riesgo D83). La imagen `runtime` sigue siendo válida para correr local con `uvicorn`
 - [ ] Observabilidad (LangSmith): excluida explícitamente

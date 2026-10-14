@@ -3,8 +3,8 @@
 > Documento incremental. Se irá completando/ajustando a medida que avance el diseño e implementación.
 >
 > **Nivel en el ciclo SDD:** Plan (HOW). Los requisitos verificables del agente y sus tools están en
-> `03-especificaciones-por-capacidad.md`; la división en tareas en `04-tareas.md`; la validación en
-> `05-validacion.md`.
+> `openspec/changes/agente-y-tools/specs/<capacidad>/spec.md`; la división en tareas en
+> `openspec/changes/agente-y-tools/tasks.md`; la validación en `05-validacion.md`.
 
 ## 1. Arquitectura general
 
@@ -33,7 +33,7 @@ flowchart TB
 
 | Componente | Tecnología |
 |---|---|
-| Lenguaje | Python 3.11+ |
+| Lenguaje | Python 3.12+ (el código usa sintaxis de 3.12; `target-version = "py312"` en `pyproject.toml`) |
 | Base de datos | PostgreSQL |
 | Vector store | pgvector (extensión sobre el mismo PostgreSQL) |
 | LLM | Google Gemini (API) para aceptación y despliegue; en desarrollo, un servidor local OpenAI-compatible vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`) para validar el flujo sin consumir cuota (R-2.8) |
@@ -42,11 +42,14 @@ flowchart TB
 | Embeddings | Gemini Embeddings API, `gemini-embedding-001` con `output_dimensionality = 768` (D5) |
 | Despliegue | **Entorno local** (Docker + `uvicorn`), D81. La alternativa de nube queda registrada en §7 |
 | Control de versiones | GitHub |
-| ORM / acceso a datos | SQLAlchemy (o psycopg2 directo, a definir en implementación) |
+| ORM / acceso a datos | psycopg2 directo, sin ORM (D9) |
 
-## 3. Modelo de datos relacional (propuesta inicial)
+## 3. Modelo de datos relacional
 
-> Sujeto a ajuste fino durante la implementación. Cumple el mínimo de 5 tablas (6 propuestas).
+> Modelo adoptado (D64): el esquema versionado en `db/schema.sql`, verificado contra el código. Son 7 tablas
+> del dominio — `autores`, `editoriales`, `categorias`, `libros`, `libros_autores`, `socios`, `prestamos` —
+> más el repositorio documental (§3.2.1) y la vista `v_prestamos_estado`. El DDL no se copia acá: vive en
+> `db/schema.sql`.
 
 ### 3.1 Tablas
 
@@ -178,7 +181,7 @@ fechas relativas a `CURRENT_DATE`). `scripts/replicate_neon.sh` trae el esquema 
 
 - Generación programática (ej. con `Faker` para nombres/fechas + reglas de negocio simples para consistencia de disponibilidad de ejemplares).
 - Volumen objetivo: **15-20 registros por tabla** (mínimo exigido: 15).
-- Script de seed versionado en el repo (`scripts/seed_data.py` o similar).
+- Script de seed versionado en el repo (`db/seed_data.py`, pendiente: T2.4).
 
 ### 3.4 Contrato de datos que lee el agente
 
@@ -266,8 +269,8 @@ Total: entre 4 y 6 PDFs (mínimo exigido: 2).
 
 ### 4.1 Pipeline de ingesta RAG
 
-1. Extracción de texto de los PDFs (`pypdf` / `pdfplumber`).
-2. Chunking (ej. 500-1000 tokens con overlap).
+1. Extracción de texto de los PDFs (`pypdf`).
+2. Chunking por cláusula/párrafo, con tope de 800 tokens y solapamiento de 150 (D10).
 3. Generación de embeddings (Gemini Embeddings API).
 4. Almacenamiento en `pgvector`: un registro en `documentos` y un fragmento por fila en
    `documentos_chunks` (`embedding vector(768)`, `metadata jsonb` con la ubicación citable). Ver §3.2.1.
@@ -323,9 +326,9 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
 - El fallo de ejecución se reporta como `EXECUTION_ERROR` (R-3.16): la herramienta no reinterpreta el
   mensaje de la base ni completa hechos desde fuera del resultado. Una sentencia rechazada por la
   validación nunca abre conexión.
-- Conexión a BD con usuario dedicado **`agent_ro`** (`GRANT SELECT` sobre las 7 tablas del dominio y la
-  vista `v_prestamos_estado`; sobre `documentos_chunks` solo para la herramienta de recuperación;
-  sin acceso a `agent_runs`, que escribe `agent_logger` con solo `INSERT`, D63),
+- Conexión a BD con usuario dedicado **`agent_ro`** (`GRANT SELECT` sobre las 7 tablas del dominio, la
+  vista `v_prestamos_estado` y los objetos documentales que lee la herramienta de recuperación, según
+  §3.4.1; sin acceso a `agent_runs`, que escribe `agent_logger` con solo `INSERT`, D63),
   `statement_timeout = 10000`, `search_path` restringido) como defensa en profundidad (D14).
 - Regeneración de sentencia limitada a **2 intentos** (D8); al segundo rechazo se reporta el error al
   usuario (R-3.10, R-5.7).
@@ -449,7 +452,7 @@ lanza `EmptyQuestionError`.
 serializa las consultas con un `threading.Lock`, por lo que dos sesiones simultáneas se atienden una detrás
 de otra y la segunda espera la latencia completa de la primera.
 
-**Requisitos y decisiones:** el contrato HTTP está en la capacidad `consulta-por-api` (R-7.0 a R-7.7); las decisiones, en D75 a D80. Las pruebas están en `tests/test_api.py` y se listan en `TP/05` §7.
+**Requisitos y decisiones:** el contrato HTTP está en la capacidad `consulta-por-api` (R-7.0 a R-7.8); las decisiones, en D75 a D83. Las pruebas están en `tests/test_api.py` y `tests/test_api_cors.py`, y se listan en `TP/05` §7.
 
 **Garantías del flujo:**
 
@@ -458,7 +461,7 @@ de otra y la segunda espera la latencia completa de la primera.
 - Una excepción inesperada produce `error` y cierra el flujo sin `result` (R-7.6).
 - Fechas y valores decimales de las filas se serializan como texto.
 
-**Qué no hay:** streaming de tokens del modelo (D75), autenticación (Non-Goal) ni CORS configurado. Un endpoint público consume la cuota de la API del modelo: hace falta restringir el acceso antes de exponerlo, y un frontend que corra en un navegador desde otro origen necesita CORS (tarea 9.12).
+**Qué no hay:** streaming de tokens del modelo (D75) ni autenticación (D81, D82). El CORS está implementado: los orígenes del frontend se declaran en `API_ALLOWED_ORIGINS` (R-7.8, D82); lo pendiente es la llamada desde el frontend real (9.12). Con la ejecución local (D81) el servicio no queda expuesto; exponerlo públicamente exigiría un control de acceso como condición previa, porque un endpoint público consume la cuota de la API del modelo.
 
 **Despliegue:** la imagen `runtime` sirve la API con `uvicorn` en `$PORT` (8080 por defecto, D80); no hay otro proceso en la imagen.
 
@@ -477,53 +480,60 @@ local.
 **Alternativa no ejecutada (D81):** Cloud Run para el servicio y Cloud SQL (PostgreSQL con pgvector) para la
 base.
 
-## 8. Estructura de repositorio propuesta
+## 8. Estructura de repositorio
+
+Estado real, verificada con `git ls-files`. Lo marcado *pendiente* no existe todavía.
 
 ```
 pipidu-library-agent/
 ├── README.md
-├── requirements.txt
-├── pytest.ini
+├── requirements.txt              # dependencias de ejecución
+├── requirements-dev.txt          # pytest, faker, ruff
+├── pyproject.toml                # configuración de ruff
+├── pytest.ini                    # marcadores `integration` y `llm` (D34)
 ├── .env.example
-├── docker/
-│   ├── Dockerfile
-│   └── docker-compose.yml
+├── docker/Dockerfile             # etapas base, measure, runtime (D74)
+├── docker-compose.yml            # Postgres + pgvector local
 ├── db/
-│   ├── schema.sql          # 7 tablas del dominio + documentos(+chunks) + vista v_prestamos_estado
-│   ├── migrations/         # 001_agent_runs.sql (trazabilidad, R-6.x)
-│   ├── init/               # roles agent_ro / agent_logger y orden de inicialización (Docker)
-│   ├── post_restore.sql    # permisos de agent_ro tras crear o restaurar el esquema
-│   ├── dev_seed.sql        # datos de desarrollo (no es el seed entregable)
-│   ├── seed_data.py
-│   └── dump.sql
+│   ├── schema.sql                # 7 tablas del dominio + documentos(+chunks) + vista v_prestamos_estado
+│   ├── migrations/               # 001_agent_runs.sql (trazabilidad, R-6.x)
+│   ├── init/                     # roles agent_ro / agent_logger y orden de inicialización (Docker)
+│   ├── post_restore.sql          # permisos de agent_ro tras crear o restaurar el esquema
+│   ├── dev_seed.sql              # datos de desarrollo (no es el seed entregable)
+│   ├── seed_data.py              # pendiente (T2.4)
+│   └── dump.sql                  # pendiente (T2.8)
 ├── rag/
-│   ├── documents/          # PDFs fuente
-│   ├── chunking.py
-│   └── ingest.py
+│   ├── documents/                # PDFs fuente (pendiente, T3.1)
+│   ├── chunking.py               # pendiente (T3.2)
+│   └── ingest.py                 # pendiente (T3.3)
 ├── agent/
-│   ├── config/
-│   │   ├── __init__.py     # Config desde entorno (D6, D12, D15)
-│   │   └── schema_whitelist.py
-│   ├── contracts.py        # SqlResult, Chunk, RagResult, AgentAnswer
-│   ├── errors.py           # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, COLUMN_NOT_ALLOWED, FUNCTION_NOT_ALLOWED, TIMEOUT, EXECUTION_ERROR
-│   ├── sql_validator.py    # validación estática con sqlglot (D4)
-│   ├── prompts/system_prompt.md
-│   ├── tools/
-│   │   ├── sql_tool.py     # execute_sql: valida y ejecuta, no genera SQL (D1)
-│   │   └── rag_tool.py
-│   └── agent.py            # orquestador: ToolCallingAgent (D2), eventos de progreso y cancelación (D75, D76), lock (D77)
+│   ├── agent.py                  # orquestador: ToolCallingAgent (D2), eventos y cancelación (D75, D76), lock (D77)
+│   ├── classifier.py             # clasificación con salida estructurada (D3)
+│   ├── retry.py                  # reintento ante 429 (D57)
+│   ├── runs.py                   # registro en agent_runs (R-6.x, D67)
+│   ├── contracts.py              # SqlResult, Chunk, RagResult, AgentAnswer
+│   ├── errors.py                 # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, COLUMN_NOT_ALLOWED, FUNCTION_NOT_ALLOWED, TIMEOUT, EXECUTION_ERROR
+│   ├── sql_validator.py          # validación estática con sqlglot (D4)
+│   ├── config/                   # Config desde entorno (D6, D12, D15) + schema_whitelist.py (R-3.4)
+│   ├── prompts/                  # system_prompt.md, classifier_prompt.md
+│   └── tools/                    # sql_tool.py (execute_sql, D1), rag_tool.py, smol_tools.py
 ├── api/
 │   ├── __init__.py
-│   └── app.py              # FastAPI: POST /ask (SSE), GET /health; único acceso al agente (D75, D80)
-├── TP/                     # artefactos SDD legibles para la entrega
-├── informe/
-│   └── informe_tecnico.pdf
+│   └── app.py                    # FastAPI: POST /ask (SSE), GET /health; único acceso al agente (D75, D80)
+├── scripts/                      # measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+├── TP/                           # artefactos SDD legibles para la entrega
+├── informe/                      # pendiente (T9.5)
 └── tests/
-    ├── golden_set.py       # fixtures compartidas (D16)
-    ├── test_sql_validator.py
-    ├── test_rag_tool.py
-    ├── test_golden_set.py
-    └── test_contracts.py
+    ├── golden_set.py             # fixtures compartidas (D16)
+    ├── fakes.py, rag_fixture.py, conftest.py
+    ├── test_sql_validator.py y test_sql_validator_hardening.py (casos S1–S35)
+    ├── test_sql_tool.py, test_sql_tool_offline.py
+    ├── test_rag_tool.py, test_rag_fixture.py
+    ├── test_golden_set.py, test_golden_seed.py, test_seed_contract.py
+    ├── test_agent.py, test_agent_smolagents.py, test_classifier.py, test_retry.py
+    ├── test_contracts.py, test_prompts.py, test_config.py, test_schema_whitelist.py
+    ├── test_api.py, test_api_cors.py, test_dockerfile.py
+    └── test_runs.py, test_runs_integration.py, test_export_runs.py, test_llm_smoke.py
 ```
 
 ## 9. Plan de pruebas
@@ -546,7 +556,7 @@ Los cuatro pendientes originales se cerraron en `CHANGELOG.md`:
 - Capa de acceso a datos: **psycopg2 directo** (D9).
 - Estrategia de chunking: **por cláusula, tope 800 tokens / 150 de solapamiento** (D10).
 - Memoria conversacional: **single-turn**, historial solo visual (D17).
-- Despliegue: **entorno local** (Docker + `uvicorn`), D81, que reemplaza D18 para la parte del servicio. La base que comparte el equipo sigue en Neon (9.6 abierta).
+- Despliegue: **entorno local** (Docker + `uvicorn`), D81, que reemplaza D18 para la parte del servicio. La base de trabajo es la local de Docker; el uso de Neon para los datos compartidos del equipo queda opcional en 9.7 (9.6 descartada por D81).
 
 Queda un pendiente numérico, no conceptual: el umbral de similitud definitivo (D12), que se cierra con
 la medición de T3.6.

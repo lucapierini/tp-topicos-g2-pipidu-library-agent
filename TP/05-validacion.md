@@ -264,7 +264,7 @@ local no representa la del modelo definitivo.
 
 ## 5. Definition of Done (por tarea)
 
-Una tarea de `04-tareas.md` está terminada solo si:
+Una tarea de `openspec/changes/agente-y-tools/tasks.md` está terminada solo si:
 
 - [ ] Traza a un requisito con ID (`R-x.y`).
 - [ ] Su validación específica está aprobada.
@@ -278,10 +278,10 @@ Una tarea de `04-tareas.md` está terminada solo si:
 
 - Salida de la API (`curl -N` sobre `POST /ask`) por cada tipo de consulta (SQL, RAG, híbrida, no-cobertura), o capturas del frontend que la consume.
 - Export de `agent_runs` con las 13 consultas del golden set.
-- Output de `pytest` con los 10 casos de sanitización.
+- Output de `pytest` con los casos de sanitización (S1–S35: 33 adversos más S11 y S12 de regeneración).
 - Conteo por tabla (`SELECT count(*)`) mostrando ≥15 registros.
 
-## 7. Pruebas de la API (R-1.3, R-6.7, R-7.0 a R-7.7)
+## 7. Pruebas de la API (R-1.3, R-6.7, R-7.0 a R-7.8)
 
 Corren sin modelo ni base (`pytest -q`): la API contra un doble de `answer()`. Verifican el **contrato**
 (qué eventos salen, en qué orden, qué se rechaza), no la calidad de las respuestas, que se mide con el
@@ -308,9 +308,18 @@ y la evidencia (R-5.3, R-5.4) corresponden al frontend, que consume el evento `r
 | C5 | R-7.2 | Los eventos `step` salen de los callbacks del framework; `cancel` interrumpe antes del siguiente paso | `test_agent_smolagents.py::test_step_events_come_from_the_framework_callbacks`, `::test_cancel_interrupts_the_framework_before_the_next_step` |
 | E1 | R-5.3, R-5.4 | La evidencia trae la sentencia y cada fragmento con documento, ubicación y texto | `test_agent.py::test_rag_answer_cites_document_and_location`, `test_agent.py::test_sql_answer_declares_source_and_shows_the_executed_statement` |
 | I1 | R-7.0 | La imagen `runtime` sirve la API y no una interfaz; no hay Streamlit en las dependencias | `test_dockerfile.py::test_the_runtime_stage_serves_the_http_api_and_no_ui`, `::test_the_runtime_dependencies_do_not_include_a_ui_framework` |
+| O1 | R-7.8 (origen permitido) | Preflight `OPTIONS` a `POST /ask`: 200 con `Access-Control-Allow-Origin` del origen declarado | `test_api_cors.py::test_allowed_origin_gets_the_cors_header` |
+| O2 | R-7.8 (origen permitido) | Llamada simple, sin preflight, lleva el header | `test_api_cors.py::test_a_simple_request_from_an_allowed_origin_carries_the_header` |
+| O3 | R-7.8 (origen no declarado) | Preflight rechazado y sin `Access-Control-Allow-Origin` | `test_api_cors.py::test_a_disallowed_origin_is_rejected_without_the_cors_header` |
+| O4 | R-7.8 (sin orígenes configurados) | Con `API_ALLOWED_ORIGINS` vacío no hay wildcard `*` ni header | `test_api_cors.py::test_no_wildcard_when_no_origins_are_configured` |
+| O5 | R-7.8 (origen permitido, streaming) | El stream SSE conserva el header y termina con `result` | `test_api_cors.py::test_the_stream_from_an_allowed_origin_carries_the_header` |
+| O6 | R-7.8 (configuración por entorno) | Los orígenes se leen de `API_ALLOWED_ORIGINS` y la app los usa | `test_api_cors.py::test_origins_are_read_from_api_allowed_origins`, `::test_the_app_uses_the_configured_origins` |
+| O7 | R-7.8 (sin credenciales) | La consulta se procesa sin credenciales y la respuesta no las refleja | `test_api_cors.py::test_no_credentials_are_required_from_an_allowed_origin` |
 
-**Qué no cubren:** el streaming real sobre `uvicorn` y un proxy (los tests usan `TestClient`), el acceso
-desde un navegador en otro origen (CORS: tarea 9.12) y la presentación, que es del frontend.
+**Qué no cubren:** el streaming real sobre `uvicorn` y un proxy (los tests usan `TestClient`). Del CORS se
+cubren el preflight y el comportamiento de los headers con `TestClient` (O1–O7); lo que no se cubre es la
+llamada real desde un navegador con el frontend, que es la tarea 9.12. La presentación de la respuesta y la
+evidencia es del frontend.
 
 **Hallazgos al escribirlas (2026-10-13):** (1) A9 falló con 5,01 s: el `result` se retrasaba hasta el
 intervalo de latido en cada consulta; (2) `test_step_events_come_from_the_framework_callbacks` fallaba en

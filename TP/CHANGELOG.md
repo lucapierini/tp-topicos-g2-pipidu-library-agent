@@ -3,7 +3,7 @@
 > Registro incremental del ciclo SDD. Cada decisión relevante se consigna aquí con fecha,
 > alternativa descartada y motivo. Es el artefacto que la cátedra pide adjuntar.
 >
-> Los IDs `D1…D18` son los mismos que usa `openspec/changes/agente-y-tools/design.md`. La numeración
+> Los IDs `D1…D83` son los mismos que usa `openspec/changes/agente-y-tools/design.md`. La numeración
 > anterior (D8–D13 de la tabla de "decisiones vigentes") quedó **superada** por esta.
 
 ---

@@ -2,7 +2,8 @@
 
 ## Context
 
-Proyecto greenfield. No existe código todavía. La motivación está en `proposal.md`. Las
+El change cubre el agente, sus tools y la API HTTP. El estado de lo implementado se sigue en
+`tasks.md`, que es el lugar canónico. La motivación está en `proposal.md`. Las
 restricciones que condicionan el diseño son las de `TP/00-constitucion.md` (read-only por diseño,
 proveniencia obligatoria, trazabilidad de ejecución) y los criterios de promoción elegidos: el de
 despliegue en la nube queda descartado por D81; siguen cubiertos framework agéntico y SDD, y el de interfaz
@@ -151,10 +152,11 @@ del mismo contenido.
    local no cuentan como aceptación (D59).
 7. Despliegue local (D81): `docker compose` para Postgres + pgvector; imagen `runtime` o
    `uvicorn api.app:app`; `GEMINI_API_KEY` vía `.env` y `docker run --env-file`.
-8. Rollback: el despliegue no muta datos; basta con redeployear la imagen anterior.
+8. Rollback: la ejecución local no muta datos; basta con volver a levantar la imagen o el commit anterior.
 
 ## Open Questions
 
-Ninguna abierta. Las tres que había se cerraron: evaluación del golden set (D16), semántica temporal
-(D6) y origen de los PDFs (D19). Lo único pendiente es numérico, no conceptual: el umbral de similitud
-definitivo (D12) se cierra con la medición de T3.6.
+Las tres preguntas que había se cerraron: evaluación del golden set (D16), semántica temporal
+(D6) y origen de los PDFs (D19). Lo que queda abierto son decisiones y mediciones, y vive en `tasks.md`
+por su ID: 9.11, 9.13 y 2.9. Lo único numérico es el umbral de similitud definitivo (D12), que se cierra
+con la medición de T3.6.

@@ -1,4 +1,4 @@
-# Imagen del agente (T9.2, D18). Se construye desde la raíz del repo:
+# Imagen del agente (T9.2, D74, D81). Se construye desde la raíz del repo:
 #
 #   docker build -f docker/Dockerfile -t pipidu-agent .                   # runtime (por defecto)
 #   docker build -f docker/Dockerfile --target measure -t pipidu-measure . # + scripts de medición
@@ -28,7 +28,7 @@ USER agent
 
 # --- measure: agrega los scripts de medición y lo que importan (dobles y golden set) ----------------
 # `scripts/measure_golden.py` y `scripts/export_runs.py` no son parte del servicio: esta etapa existe
-# para correr la validación dentro de la imagen, no para desplegarla.
+# para correr la validación dentro de la imagen, no para correr el servicio.
 FROM base AS measure
 USER root
 COPY scripts/ scripts/
@@ -37,7 +37,7 @@ RUN chown -R agent:agent /app
 USER agent
 CMD ["python", "scripts/measure_golden.py", "--help"]
 
-# --- runtime: lo que se despliega (última etapa = destino por defecto) ------------------------------
+# --- runtime: lo que se ejecuta (última etapa = destino por defecto) ------------------------------
 # Un solo servicio: la API HTTP del agente (D80). El frontend es un cliente externo que la consume;
 # esta imagen no sirve ninguna interfaz gráfica.
 FROM base AS runtime
