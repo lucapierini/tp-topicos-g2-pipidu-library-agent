@@ -1,7 +1,7 @@
 # Base local para pruebas: PostgreSQL + pgvector con los roles del proyecto (T1.3, D14).
 #
 #   cp .env.example .env     # completar las contraseñas
-#   docker compose up -d     # espera al healthcheck
+#   docker compose up -d --wait   # db + api + web; la interfaz queda en http://localhost:3000
 #   bash scripts/replicate_neon.sh   # (opcional) trae el esquema y los datos de Neon
 #
 # La imagen debe tener la misma versión mayor que Neon para poder restaurar su dump: `PG_IMAGE`.
@@ -35,6 +35,47 @@ services:
       interval: 3s
       timeout: 3s
       retries: 20
+
+  # API del agente (imagen `runtime`, D74, D81). Lee `.env` (GEMINI_API_KEY, roles de la base); dentro de la
+  # red de compose la base es el servicio `db`, no 127.0.0.1, y siempre en el puerto 5432.
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    image: pipidu-agent
+    container_name: pipidu-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # Solo en loopback; la web llega a la API por la red interna. Se publica para depurar y medir.
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Interfaz web (D84): SPA de `web/` servida por nginx, que reenvía `/api/` a la API (R-8.8).
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    image: pipidu-web
+    container_name: pipidu-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:80"
 
 volumes:
   pipidu-pgdata:
