@@ -17,8 +17,8 @@ seguridad del SQL quedan como decisiones implícitas durante la implementación.
 - Nuevo registro de ejecución por consulta (tabla `agent_runs`) como evidencia para el informe.
 - Pipeline de ingesta RAG idempotente sobre 4–6 PDFs.
 - Nueva API HTTP (`POST /ask`), único acceso al agente (D80), con respuesta en streaming de eventos de
-  progreso y cancelación cuando el cliente corta la conexión. No hay interfaz gráfica propia: el frontend
-  es un cliente externo que consume la API.
+  progreso y cancelación cuando el cliente corta la conexión. El agente no se invoca en proceso desde
+  ninguna interfaz: el frontend (`web/`, change `frontend-web-vite`, D84) es un cliente que consume la API.
 - Atención en serie de las consultas simultáneas, porque cada backend guarda una única conexión.
 
 ## Capabilities

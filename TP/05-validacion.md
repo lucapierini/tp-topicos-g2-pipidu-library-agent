@@ -287,7 +287,7 @@ Una tarea de `openspec/changes/agente-y-tools/tasks.md` está terminada solo si:
 Corren sin modelo ni base (`pytest -q`): la API contra un doble de `answer()`. Verifican el **contrato**
 (qué eventos salen, en qué orden, qué se rechaza), no la calidad de las respuestas, que se mide con el
 golden set (§1 y §4). La API es el único acceso al agente (R-7.0, D80): la presentación de la respuesta
-y la evidencia (R-5.3, R-5.4) corresponden al frontend, que consume el evento `result`.
+y la evidencia (R-5.3, R-5.4) corresponden al frontend (`web/`, D84; sus pruebas, en el change `frontend-web-vite`), que consume el evento `result`.
 
 | ID | Requisito | Caso | Test |
 |---|---|---|---|

@@ -2,22 +2,28 @@
 
 ## Purpose
 
-Define cómo el frontend (un cliente externo a este sistema) consulta al agente por HTTP y cómo sigue
-el progreso de una consulta que puede tardar de segundos a minutos (cuota de la API del modelo). La API
-es el **único** punto de acceso al agente: este sistema no incluye interfaz gráfica propia.
+Define cómo el frontend (un cliente de la API, ver `interfaz-web`) consulta al agente por HTTP y cómo
+sigue el progreso de una consulta que puede tardar de segundos a minutos (cuota de la API del modelo). La
+API es el **único** punto de acceso al agente: ningún cliente lo invoca por otra vía.
 
 ## ADDED Requirements
 
 ### Requirement: R-7.0 — La API es el único punto de acceso al agente
-El sistema SHALL ofrecer el acceso al agente exclusivamente por la API HTTP. El sistema SHALL NO
-incluir una interfaz gráfica propia: la presentación de la respuesta, la evidencia y el historial
-corresponden al frontend que consume la API.
+El sistema SHALL ofrecer el acceso al agente exclusivamente por la API HTTP. Ninguna interfaz gráfica
+SHALL invocar al agente en proceso: la presentación de la respuesta, la evidencia y el historial
+corresponden a un frontend que consume la API, aunque se distribuya en este repositorio (D84).
 
 #### Scenario: imagen que se ejecuta
 - **GIVEN** la imagen `runtime` que se ejecuta en entorno local (D81)
 - **WHEN** arranca
 - **THEN** sirve la API HTTP
-- **AND** no sirve ninguna interfaz gráfica
+- **AND** no sirve ninguna interfaz gráfica ni contiene su código
+
+#### Scenario: la interfaz usa la API
+- **GIVEN** la interfaz web del repositorio (`interfaz-web`)
+- **WHEN** consulta al agente
+- **THEN** lo hace únicamente con `POST /ask`
+- **AND** no importa ni ejecuta código del agente
 
 #### Scenario: el historial no pertenece al agente
 - **GIVEN** un frontend que conserva el historial de una conversación
