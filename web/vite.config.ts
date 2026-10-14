@@ -11,6 +11,15 @@ export default defineConfig({
       "@": resolve(import.meta.dirname, "./src"),
     },
   },
+  server: {
+    // En desarrollo `/api` llega a la API local sin CORS; en Docker lo resuelve nginx (design.md, decisión 6).
+    proxy: {
+      "/api": {
+        target: process.env.VITE_API_TARGET ?? "http://127.0.0.1:8000",
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],

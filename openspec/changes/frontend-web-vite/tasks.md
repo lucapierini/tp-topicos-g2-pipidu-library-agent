@@ -8,10 +8,10 @@
 
 ## 2. Cliente de la API
 
-- [ ] 2.1 Implementar `web/src/lib/ask-stream.ts`: `fetch` POST a `/api/ask`, parser SSE sobre `ReadableStream` (eventos partidos entre chunks, UTF-8), tipos de los eventos y de `result`; verificar con tests de `vitest` que cubren chunk partido, `result` con fechas/decimales como texto y `error` (R-8.2, R-8.3)
-- [ ] 2.2 Implementar el hook `useAsk` con los estados `idle/running/done/failed/cancelled` y `AbortController`; verificar con tests que `sources` solo existe en `done`, que cancelar vuelve a `idle` sin respuesta y que un flujo sin `result` termina en `failed` (R-8.2, R-8.5, R-8.6)
-- [ ] 2.3 Mapear fallas: API inalcanzable, 422 y corte antes de `result` a mensajes distintos; verificar con tests de `vitest` de cada caso (R-8.6)
-- [ ] 2.4 Configurar el proxy de `/api` en `vite.config.ts` hacia `http://127.0.0.1:8000`; verificar que `npm run dev` con la API local responde `/api/health` sin CORS
+- [x] 2.1 Implementar `web/src/lib/ask-stream.ts`: `fetch` POST a `/api/ask`, parser SSE sobre `ReadableStream` (eventos partidos entre chunks, UTF-8), tipos de los eventos y de `result`; verificar con tests de `vitest` que cubren chunk partido, `result` con fechas/decimales como texto y `error` (R-8.2, R-8.3)
+- [x] 2.2 Implementar el hook `useAsk` con los estados `idle/running/done/failed/cancelled` y `AbortController`; verificar con tests que `sources` solo existe en `done`, que cancelar vuelve a `idle` sin respuesta y que un flujo sin `result` termina en `failed` (R-8.2, R-8.5, R-8.6)
+- [x] 2.3 Mapear fallas: API inalcanzable, 422 y corte antes de `result` a mensajes distintos; verificar con tests de `vitest` de cada caso (R-8.6)
+- [x] 2.4 Configurar el proxy de `/api` en `vite.config.ts` hacia `http://127.0.0.1:8000`; verificar que `npm run dev` con la API local responde `/api/health` sin CORS
 
 ## 3. Interfaz
 
