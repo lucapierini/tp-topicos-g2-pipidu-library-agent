@@ -316,3 +316,58 @@ desde un navegador en otro origen (CORS: tarea 9.12) y la presentación, que es 
 intervalo de latido en cada consulta; (2) `test_step_events_come_from_the_framework_callbacks` fallaba en
 Windows porque un paso rápido da `duration_s == 0.0` y `0.0 or 0` devolvía un entero. Ambos se
 corrigieron (D79).
+
+### 7.1 Costo de atender en serie (R-1.3, D77, T9.11)
+
+Medición, no test: afirma tiempos y un test de tiempos sería flaky en CI. Corre sin base, sin
+credenciales y sin modelo (`scripts/measure_queue.py`): la app real sobre `uvicorn` en un puerto efímero
+con `answer()` reemplazado por un doble que duerme un tiempo de servicio S. S es simulado, no latencia
+de modelo. El evento `start` sale al abrir el stream, antes de tomar el lock, así que la espera se lee
+en el primer evento del agente (`classified`).
+
+| S (s) | N | Espera antes de trabajar, por orden de entrada (s) | `result` (s) | Latidos recibidos |
+|---|---|---|---|---|
+| 1.0 | 1 | 0.0 | 1.0 | 0 |
+| 1.0 | 2 | 0.0, 1.0 | 1.0, 2.0 | 0 |
+| 1.0 | 3 | 0.0, 1.0, 2.0 | 1.0, 2.0, 3.0 | 0 |
+| 1.0 | 5 | 0.0, 1.0, 2.0, 3.0, 4.0 | 1.0, 2.0, 3.0, 4.0, 5.0 | 0 |
+| 6.0 | 3 | 0.0, 6.0, 12.0 | 6.0, 12.0, 18.0 | 1, 2, 3 |
+
+La espera de la k-ésima consulta es `(k-1)·S`, como predice R-1.3. Con `HEARTBEAT_S = 5` el cliente que
+espera recibe latidos (fila S=6), así que su conexión no se corta por inactividad mientras está en la
+cola (R-7.3). El cliente cancelado no se interrumpe mientras espera: `answer()` toma el lock antes de
+`_check_cancelled`, así que la señal se atiende al recibir el turno (R-7.5, D76).
+
+Reproducir: `python scripts/measure_queue.py --service-time 1.0 --counts 1 2 3 5` y
+`python scripts/measure_queue.py --evidence`. No necesita base, API key ni modelo.
+
+Latencias reales ya medidas en `TP/evidencia/` (no se volvió a llamar al modelo; las mayores están
+infladas por esperas de cuota, D70):
+
+| Archivo | n | min | mediana | max |
+|---|---|---|---|---|
+| `agent_runs_2026-10-11.json` | 15 | 2,8 s | 8,9 s | 169,1 s |
+| `golden_gemini-3.1-flash-lite_2026-10-10.json` | 13 | 3,0 s | 11,8 s | 73,8 s |
+| `golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json` | 15 | 2,8 s | 8,9 s | 169,1 s |
+| `golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` | 13 | 4,9 s | 40,7 s | 253,8 s |
+| `golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-11_db-mock.json` | 13 | 5,3 s | 22,8 s | 91,6 s |
+
+Espera del último concurrente con la mediana de `agent_runs_2026-10-11.json` (8,9 s): 17,8 s para 3
+personas y 35,6 s para 5. Peor caso con las latencias mayores ya medidas: 192,5 s (suma de las 2
+mayores, 3 personas) y 219,1 s (suma de las 4 mayores, 5 personas).
+
+**Dos opciones (análisis, no implementado).** Verificado en código: cada backend guarda una sola
+conexión (`sql_backend`, `retriever`, `recorder`: tres por agente), el agente es un singleton de módulo
+(`get_agent()`) con backends compartidos, y el estado por consulta no se comparte porque `ToolSession` y
+`ToolCallingAgent` se crean en cada consulta.
+
+| Opción | Impacto | Riesgo | Compatible con R-1.3, R-6.7, D76 |
+|---|---|---|---|
+| Un agente por sesión | Cada sesión abre sus tres conexiones; la serialización queda dentro de la sesión | El número de conexiones crece con las sesiones y choca con `max_connections` de la base; hace falta un registro de agentes en lugar del singleton | R-1.3 se cumple por sesión; R-6.7 y D76 no cambian |
+| Pool de conexiones con agente compartido | Una conexión prestada por consulta; varias consultas avanzan a la vez | Requiere ciclo de vida del pool y que `SET LOCAL` / sesión solo lectura se aplique por conexión prestada; el estado de espera del recorder sigue siendo compartido. Seguridad de la instancia compartida del cliente de modelo: no verificado | R-1.3 deja de ser serial global: hay que reescribirlo |
+
+**Recomendación:** para una demostración de 3 a 5 personas mantener la serialización (D77) — la espera
+típica es de 17,8 a 35,6 s y los latidos mantienen viva la conexión. Cambiar solo si la consigna exige
+consultas realmente simultáneas; en ese caso conviene la opción por sesión, que no exige reescribir el
+requisito de serialización. Como propuesta, no aplicada: un R-1.4 nuevo que fije el ámbito de la
+serialización (por sesión o por pool) y el máximo de conexiones.
