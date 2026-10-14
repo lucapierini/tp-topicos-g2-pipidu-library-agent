@@ -99,6 +99,15 @@ detalle y SHALL cerrar el flujo de forma ordenada, sin enviar `result`.
 - **THEN** el flujo contiene `start` y `error`
 - **AND** no contiene `result`
 
+### Requirement: R-7.7 — Estado del servicio
+El sistema SHALL exponer `GET /health`, que responde `{"status": "ok"}` sin invocar al agente ni
+a la base.
+
+#### Scenario: comprobación de salud
+- **WHEN** el cliente consulta `GET /health`
+- **THEN** la respuesta es 200 con `{"status": "ok"}`
+- **AND** no se invoca al agente
+
 ### Requirement: R-7.8 — Orígenes permitidos (CORS)
 El sistema SHALL aceptar las llamadas del frontend únicamente desde los orígenes declarados en
 `API_ALLOWED_ORIGINS`. Un origen no declarado SHALL NO recibir `Access-Control-Allow-Origin` y su
@@ -127,10 +136,3 @@ autenticación: el servicio corre en entorno local (D81).
 - **WHEN** llama a `POST /ask` sin credenciales
 - **THEN** la consulta se procesa
 - **AND** la respuesta no refleja credenciales de la aplicación
-El sistema SHALL exponer `GET /health`, que responde `{"status": "ok"}` sin invocar al agente ni
-a la base.
-
-#### Scenario: comprobación de salud
-- **WHEN** el cliente consulta `GET /health`
-- **THEN** la respuesta es 200 con `{"status": "ok"}`
-- **AND** no se invoca al agente

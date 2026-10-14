@@ -655,5 +655,5 @@ def get_agent() -> LibraryAgent:
 def answer(
     question: str, on_event: EventSink | None = None, cancel: threading.Event | None = None,
 ) -> AgentAnswer:
-    """Punto de entrada de la UI y del golden set: `answer(question) -> AgentAnswer`."""
+    """Punto de entrada de la API HTTP y del golden set: `answer(question) -> AgentAnswer`."""
     return get_agent().answer(question, on_event, cancel)

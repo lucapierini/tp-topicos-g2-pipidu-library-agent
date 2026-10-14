@@ -21,7 +21,7 @@ def _instructions() -> list[str]:
 
 
 def test_every_copied_source_exists_in_the_repo() -> None:
-    # Un `ui/` vacío no existe en un clon limpio (git no versiona directorios vacíos): COPY fallaría.
+    # Un directorio vacío no existe en un clon limpio (git no versiona directorios vacíos): COPY fallaría.
     missing = []
     for line in _instructions():
         if not line.upper().startswith("COPY "):

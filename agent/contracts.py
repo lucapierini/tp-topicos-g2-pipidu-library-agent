@@ -1,6 +1,6 @@
 """Contratos entre herramientas, orquestador e interfaz (T4.5, T5.2, T7.1).
 
-Son la interfaz con el resto del equipo: se congelan acá y no se duplican en la UI.
+Son la interfaz con el resto del equipo: se congelan acá y no se duplican en el frontend externo (la API).
 Traza a `TP/02-especificacion-tecnica.md` §5.4 y al Art. 4 de la constitución.
 
 Forma de `AgentAnswer.evidence` (D52):
