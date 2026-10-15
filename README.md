@@ -43,13 +43,69 @@ justifica el esquema, el seed y los documentos fuente del RAG (rama `feature/dat
 
 ## Instalación y ejecución
 
-Para levantar todo alcanza con `cp .env.example .env` (completar `GEMINI_API_KEY` y las contraseñas) y
-`docker compose up -d --build --wait`: crea la base con el catálogo completo (`db/seed.sql`), ingesta los
-documentos del RAG (los embeddings usan Gemini, por eso la clave es obligatoria) y levanta la API y la web en
-http://localhost:3000. Sin `GEMINI_API_KEY` el arranque falla en el paso `ingest`.
+### Arranque rápido (lo único que hace falta)
+
+Requisitos: **Docker Desktop** (con `docker compose`) y una **API key de Gemini** (https://aistudio.google.com/apikey).
+No hace falta instalar Python, Node ni PostgreSQL.
 
 ```bash
-cp .env.example .env          # GEMINI_API_KEY y credenciales de BD
+git clone https://github.com/lucapierini/tp-topicos-g2-pipidu-library-agent.git
+cd tp-topicos-g2-pipidu-library-agent
+cp .env.example .env        # en Windows (PowerShell): Copy-Item .env.example .env
+```
+
+Editar `.env` y completar **solo estas cuatro variables** (el resto ya tiene valores por defecto):
+
+| Variable | Qué poner |
+|---|---|
+| `GEMINI_API_KEY` | tu clave de Gemini (obligatoria: también genera los embeddings del RAG) |
+| `POSTGRES_PASSWORD` | contraseña inventada para el rol de lectura `agent_ro` |
+| `POSTGRES_LOG_PASSWORD` | contraseña inventada para el rol `agent_logger` (registro en `agent_runs`) |
+| `POSTGRES_ADMIN_PASSWORD` | contraseña inventada para el superusuario de la base local |
+
+Luego, un único comando:
+
+```bash
+docker compose up -d --build --wait
+```
+
+Eso hace todo, sin pasos manuales (la primera vez tarda unos minutos por la construcción de las imágenes):
+
+1. **Base:** levanta PostgreSQL + pgvector, crea el esquema, los roles (`agent_ro`, `agent_logger`) y `agent_runs`, y carga el catálogo completo (`db/seed.sql`: 70 libros, 20 socios, 28 préstamos).
+2. **RAG:** el servicio `ingest` parte los 6 PDFs de `rag/documents/`, calcula los embeddings con Gemini y los guarda en pgvector (44 fragmentos). Corre una vez y termina; es idempotente.
+3. **API y web:** levanta la API del agente y la interfaz.
+
+Cuando termina, abrir **http://localhost:3000** y preguntar, por ejemplo:
+
+- «¿Cuántos cómics de Marvel hay?» (SQL)
+- «¿De qué trata El Hobbit?» (RAG, cita `resenas_tolkien.pdf`)
+- «¿Cuántos días puedo tener un libro prestado siendo alumno?» (reglamento)
+
+Comandos útiles:
+
+```bash
+docker compose ps                       # estado de db, api y web
+docker compose logs -f api              # logs de la API
+docker compose run --rm ingest          # re-ingesta manual del RAG (normalmente no hace falta)
+docker compose down                     # apaga todo y conserva los datos
+docker compose down -v                  # apaga todo y BORRA la base (el próximo `up` la recarga de cero)
+```
+
+Problemas frecuentes:
+
+- **`docker compose up` falla en `ingest`**: falta o es inválida `GEMINI_API_KEY`, o se alcanzó la cuota de Gemini (reintentar).
+- **`variable is not set`**: falta alguna de las cuatro variables de la tabla de arriba.
+- **El puerto 5432, 3000 u 8080 está ocupado**: cambiar `POSTGRES_PORT`, `WEB_PORT` o `API_PORT` en `.env`.
+- **El chat responde que no tiene información de los documentos**: `docker compose logs ingest` debe terminar con «6 documentos, 44 fragmentos».
+- **Si `.env` apunta a Neon** (`POSTGRES_HOST` o `NEON_DATABASE_URL` completos), el compose igual usa la base local de Docker para `api`, `ingest` y `agent`.
+
+`DEV_SEED` (opcional, en `.env`): `full` (por defecto) carga el catálogo completo; `1` carga el seed mínimo de
+pruebas (`db/dev_seed.sql`, lo que esperan los tests de integración); `0` deja la base vacía. Solo aplica al
+crear el volumen: para cambiarlo hay que hacer `docker compose down -v`.
+
+### Desarrollo, pruebas y medición
+
+```bash
 # Desarrollo sin cuota: apuntar a un servidor local OpenAI-compatible (R-2.8). Validar el flujo con
 # LLM_MODEL=openai/<id> y LLM_API_BASE=http://127.0.0.1:<puerto>/v1; la aceptación se mide después con
 # Gemini (dejar LLM_MODEL y LLM_API_BASE vacíos). Los resultados locales no cuentan como aceptación.
