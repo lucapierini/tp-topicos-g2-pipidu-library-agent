@@ -208,6 +208,10 @@ class RagRetriever:
             return RagResult(chunks=[], error=NO_RELEVANT_RESULTS, latency_ms=elapsed_ms())
         return RagResult(chunks=relevant, error=None, latency_ms=elapsed_ms())
 
+    def ranked(self, query: str) -> list[Chunk]:
+        """Los `top_k` fragmentos de mayor a menor similitud, **sin** aplicar el umbral (calibración, R-4.8)."""
+        return self._candidates(query)
+
     def scores(self, query: str) -> list[float]:
         """Similitudes del top-k **sin** aplicar el umbral. Insumo de la calibración (R-4.8)."""
         return [c.similarity for c in self._candidates(query)]
