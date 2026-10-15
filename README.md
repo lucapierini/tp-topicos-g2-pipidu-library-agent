@@ -143,6 +143,9 @@ anterior esté sano). Requiere el `.env` completo (`GEMINI_API_KEY` y las contra
 | `api` | http://localhost:8080 | API del agente (`POST /ask` SSE, `GET /health`); es el único acceso al agente |
 | `db` | `127.0.0.1:5432` | Postgres + pgvector |
 
+La respuesta del agente se muestra como Markdown (listas, énfasis, tablas; HTML sin interpretar) con `react-markdown` + `remark-gfm` y
+los componentes de shadcn/ui (D94, R-8.11).
+
 Puertos configurables con `WEB_PORT` y `API_PORT` en `.env`. La web no lleva secretos y, al llamar a la API por
 el mismo origen, no necesita `API_ALLOWED_ORIGINS`.
 

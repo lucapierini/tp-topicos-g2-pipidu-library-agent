@@ -57,4 +57,42 @@ describe("AnswerView", () => {
     expect(await screen.findByText("reglamento.pdf · p. 4")).toBeInTheDocument()
     expect(screen.getByText("El préstamo dura 14 días.")).toBeInTheDocument()
   })
+
+  describe("respuesta como Markdown (R-8.11)", () => {
+    it("lista con negritas, sin asteriscos visibles", () => {
+      render(<AnswerView result={{ ...base, answer: "Libros:\n\n*   **Clean Code**\n*   **Alas de sangre**" }} />)
+      expect(screen.getAllByRole("listitem")).toHaveLength(2)
+      expect(screen.getByText("Clean Code").tagName).toBe("STRONG")
+      expect(document.body.textContent).not.toContain("*")
+    })
+
+    it("tabla GFM con el componente Table", () => {
+      render(<AnswerView result={{ ...base, answer: "| Editorial | Libro |\n| --- | --- |\n| Planeta | Alas de hierro |" }} />)
+      expect(screen.getByRole("table")).toHaveAttribute("data-slot", "table")
+      expect(screen.getByRole("columnheader", { name: "Editorial" })).toBeInTheDocument()
+      expect(screen.getByRole("cell", { name: "Alas de hierro" })).toBeInTheDocument()
+    })
+
+    it("no interpreta HTML de la respuesta", () => {
+      const { container } = render(<AnswerView result={{ ...base, answer: "Hola <img src=x onerror=alert(1)> <script>x</script>" }} />)
+      expect(container.querySelector("img, script")).toBeNull()
+    })
+
+    it("texto plano con saltos de línea queda completo", () => {
+      render(<AnswerView result={{ ...base, answer: "Primera línea\nSegunda línea" }} />)
+      expect(document.querySelector("br")).not.toBeNull()
+      expect(screen.getByText(/Primera línea/)).toBeInTheDocument()
+      expect(screen.getByText(/Segunda línea/)).toBeInTheDocument()
+    })
+
+    it("abre los enlaces en otra pestaña", () => {
+      render(<AnswerView result={{ ...base, answer: "[doc](https://example.com)" }} />)
+      expect(screen.getByRole("link", { name: "doc" })).toHaveAttribute("target", "_blank")
+    })
+
+    it("no_coverage y error siguen en Alert, sin formato", () => {
+      render(<AnswerView result={{ ...base, answer_kind: "no_coverage", answer: "**No** hay datos." }} />)
+      expect(screen.getByText("**No** hay datos.")).toBeInTheDocument()
+    })
+  })
 })

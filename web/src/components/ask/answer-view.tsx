@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Bubble, BubbleContent } from "@/components/ui/bubble"
 import type { AgentResult } from "@/lib/ask-stream"
 import { EvidenceView } from "./evidence-view"
+import { Markdown } from "./markdown"
 
 /** `no_coverage` y `error` no se presentan como una respuesta con fuente (R-8.3). */
 export function AnswerView({ result }: { result: AgentResult }) {
@@ -30,8 +31,10 @@ export function AnswerView({ result }: { result: AgentResult }) {
   }
   return (
     <div className="flex flex-col gap-3">
-      <Bubble variant="muted">
-        <BubbleContent className="whitespace-pre-wrap">{result.answer}</BubbleContent>
+      <Bubble variant="muted" className="max-w-full">
+        <BubbleContent>
+          <Markdown>{result.answer}</Markdown>
+        </BubbleContent>
       </Bubble>
       {result.sources.length ? (
         <div className="flex flex-wrap items-center gap-2" aria-label="Fuentes">
