@@ -16,7 +16,7 @@ Python 3.12+ · PostgreSQL + pgvector · Gemini · Smolagents · FastAPI · ejec
 ```
 TP/            artefactos SDD (constitución, specs, validación, changelog, enunciado)
 openspec/      raíz operativa de SDD (project.md, config.yaml, changes/)
-db/            schema.sql, seed.sql (catálogo real: 70 libros), dev_seed.sql, init/ (dump.sql: pendiente)
+db/            schema.sql, seed.sql (catálogo real: 70 libros; lo carga `docker compose up`), dev_seed.sql (`DEV_SEED=1`), init/ (dump.sql: pendiente)
 rag/           documentos fuente (.md y pdf/), ingest.py (ingesta a pgvector) y build_pdfs.py
 agent/         orquestador, clasificador, validador de SQL, configuración, prompts y tools
 scripts/       scripts de medición y de exportación de evidencia

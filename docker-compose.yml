@@ -23,8 +23,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-pipidu}
       AGENT_RO_PASSWORD: ${POSTGRES_PASSWORD:?definí POSTGRES_PASSWORD en .env (contraseña de agent_ro)}
       AGENT_LOGGER_PASSWORD: ${POSTGRES_LOG_PASSWORD:?definí POSTGRES_LOG_PASSWORD en .env (agent_logger)}
-      # 1 = carga db/dev_seed.sql (pocas filas deterministas para pruebas); 0 = base vacía.
-      DEV_SEED: ${DEV_SEED:-1}
+      # full (por defecto) = db/seed.sql, el catálogo completo; 1 = db/dev_seed.sql (pocas filas
+      # deterministas para los tests de integración); 0 = base vacía.
+      DEV_SEED: ${DEV_SEED:-full}
     ports:
       # Solo en loopback: la base de pruebas no se expone a la red.
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
@@ -34,6 +35,7 @@ services:
       - ./db/migrations:/migrations:ro
       - ./db/schema.sql:/schema.sql:ro
       - ./db/post_restore.sql:/post_restore.sql:ro
+      - ./db/seed.sql:/seed.sql:ro
       - ./db/dev_seed.sql:/dev_seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-pipidu}"]

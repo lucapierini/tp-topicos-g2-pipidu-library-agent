@@ -34,7 +34,16 @@ echo "[init] agent_runs (T7.4)"
 echo "[init] permisos de agent_ro"
 "${PSQL[@]}" -f /post_restore.sql
 
-if [[ "${DEV_SEED:-1}" == "1" ]]; then
-  echo "[init] datos de desarrollo (db/dev_seed.sql)"
-  "${PSQL[@]}" -f /dev_seed.sql
-fi
+case "${DEV_SEED:-full}" in
+  full)
+    echo "[init] catálogo completo (db/seed.sql)"
+    "${PSQL[@]}" -f /seed.sql
+    ;;
+  1)
+    echo "[init] datos de desarrollo (db/dev_seed.sql)"
+    "${PSQL[@]}" -f /dev_seed.sql
+    ;;
+  *)
+    echo "[init] base vacía (DEV_SEED=${DEV_SEED})"
+    ;;
+esac
