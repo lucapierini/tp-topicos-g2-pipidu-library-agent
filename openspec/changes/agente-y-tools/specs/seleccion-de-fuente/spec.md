@@ -54,14 +54,15 @@ El agente SHALL clasificar la consulta como `none` cuando ninguna fuente contien
 - **WHEN** el usuario pregunta "¿Cuál es el precio del libro X?"
 - **THEN** el agente declara que no dispone de información suficiente
 - **AND** no inventa una respuesta
-- **AND** declara `fuente: ninguna`
+- **AND** el resultado declara `sources` vacío
 
-### Requirement: R-2.6 — Declaración de fuente en la respuesta
-El agente SHALL declarar en la respuesta la fuente o fuentes utilizadas.
+### Requirement: R-2.6 — Declaración de fuente en el resultado
+El agente SHALL declarar en el resultado la fuente o fuentes utilizadas, en un campo estructurado y no
+en el texto de la respuesta (R-5.2).
 
 #### Scenario: fuente visible
 - **WHEN** el agente entrega una respuesta
-- **THEN** la respuesta indica la fuente usada (`SQL`, `RAG`, `SQL + RAG` o `ninguna`)
+- **THEN** el resultado indica la fuente usada en `sources` (`sql`, `rag` o ambas; vacío si ninguna)
 
 ### Requirement: R-2.7 — Clasificación en salida estructurada obligatoria
 El agente SHALL emitir la clasificación mediante una salida estructurada obligatoria antes de invocar

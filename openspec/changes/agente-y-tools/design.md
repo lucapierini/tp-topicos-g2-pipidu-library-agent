@@ -119,6 +119,7 @@ del mismo contenido.
 | D81 | No se despliega en la nube: el sistema se prepara para correr en entorno local (Docker + `uvicorn`) | D18, criterio de promoción 1 |
 | D82 | CORS con allowlist `API_ALLOWED_ORIGINS`, sin wildcard y sin autenticación | R-7.8, D81 |
 | D83 | Riesgo de promoción aceptado explícitamente: margen 2/5, desviación del requisito de nube y confirmación con la cátedra abierta | criterios de promoción 1 y 3, D18, D80, D81 |
+| D84 | La fuente se declara solo en `sources`; el texto de `answer` no lleva línea de fuente | R-5.2, R-2.6, D58 |
 
 ## Risks / Trade-offs
 

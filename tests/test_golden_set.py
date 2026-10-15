@@ -108,19 +108,19 @@ def test_english_cases_are_extra_and_do_not_change_the_acceptance_denominator() 
 def test_english_sql_case_requires_rows_the_declared_language_and_english_prose() -> None:
     b1 = next(c for c in BILINGUAL_SET if c.id == "B1").check
     answered = {"rows": [{"titulo": "Rayuela"}], "language": "en",
-                "answer": "Juan has the following books on loan: Rayuela.\n\nSource: SQL"}
+                "answer": "Juan has the following books on loan: Rayuela."}
     assert b1(answered)
     assert not b1({**answered, "language": "es"}), "el idioma declarado debe ser inglés"
-    assert not b1({**answered, "answer": "Tiene prestados estos libros: Rayuela.\n\nFuente: SQL"})
+    assert not b1({**answered, "answer": "Tiene prestados estos libros: Rayuela."})
     assert not b1({**answered, "rows": []})
 
 
 def test_english_rag_case_requires_the_regulation_and_english_prose() -> None:
     b2 = next(c for c in BILINGUAL_SET if c.id == "B2").check
     answered = {"chunks": [{"document": "reglamento_biblioteca.pdf"}], "language": "en",
-                "answer": "You have 15 days to return a book; after that a fine applies.\n\nSource: RAG"}
+                "answer": "You have 15 days to return a book; after that a fine applies."}
     assert b2(answered)
-    assert not b2({**answered, "answer": "Tenés 15 días para devolver el libro.\n\nFuente: RAG"})
+    assert not b2({**answered, "answer": "Tenés 15 días para devolver el libro."})
     assert not b2({**answered, "chunks": [{"document": "manual_uso_sistema.pdf"}]})
 
 
