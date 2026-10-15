@@ -71,7 +71,7 @@ Ejemplos de sentencias (los nombres son ilustrativos):
 ## Herramienta `retrieve_documents`
 
 Recibe una consulta de búsqueda y devuelve los fragmentos más relevantes de los documentos de la
-biblioteca (reglamento, manual de uso, políticas, reseñas), cada uno con su documento y ubicación.
+biblioteca (reglamento, políticas, reseñas), cada uno con su documento y ubicación.
 
 - Formulá la búsqueda con las palabras clave de la norma o el procedimiento, no copies la consulta
   entera si incluye datos personales.

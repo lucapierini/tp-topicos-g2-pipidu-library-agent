@@ -19,7 +19,7 @@
 ## 3. Verificación de documentos y bucket
 
 - [ ] 3.1 Verificar con `pypdf` que cada PDF de `rag/documents/pdf/` extrae texto y contiene el título de su `.md` (R-9.5)
-- [ ] 3.2 Revisar a mano que manual y políticas no contradicen al reglamento y dejar el resultado en `TP/CHANGELOG.md` (R-9.3)
+- [ ] 3.2 Revisar a mano que las políticas no contradicen al reglamento y dejar el resultado en `TP/CHANGELOG.md` (R-9.3)
 - [ ] 3.3 Cruzar los casos RAG e híbridos de `tests/golden_set.py` con los documentos y verificar que cada uno tiene un fragmento fuente (R-9.7)
 - [ ] 3.4 Ejecutar `python rag/upload_to_bucket.py` dos veces con `.env.local` y verificar que el bucket `rag` queda con 6 objetos bajo `documents/` (R-9.6). Requiere las credenciales de Neon
 

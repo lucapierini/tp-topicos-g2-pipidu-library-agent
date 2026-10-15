@@ -121,7 +121,7 @@ def test_english_rag_case_requires_the_regulation_and_english_prose() -> None:
                 "answer": "You have 15 days to return a book; after that a fine applies.\n\nSource: RAG"}
     assert b2(answered)
     assert not b2({**answered, "answer": "Tenés 15 días para devolver el libro.\n\nFuente: RAG"})
-    assert not b2({**answered, "chunks": [{"document": "manual_uso_sistema.pdf"}]})
+    assert not b2({**answered, "chunks": [{"document": "politicas_universidad.pdf"}]})
 
 
 def test_none_check_requires_no_sources_rows_or_chunks() -> None:

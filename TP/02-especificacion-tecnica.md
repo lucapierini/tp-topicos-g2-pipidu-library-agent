@@ -185,7 +185,6 @@ fechas relativas a `CURRENT_DATE`). `scripts/replicate_neon.sh` trae el esquema 
 | Documento | Tipo de contenido |
 |---|---|
 | `reglamento_biblioteca.pdf` | Normas de préstamo, sanciones, plazos, horarios |
-| `manual_uso_sistema.pdf` | Instrucciones de uso de la plataforma de biblioteca |
 | `politicas_universidad.pdf` | Políticas institucionales generales |
 | `resenas_libro_1.pdf` … `resenas_libro_3.pdf` | Sinopsis/reseñas de 1 a 3 libros del catálogo |
 

@@ -37,11 +37,6 @@ CORPUS: list[tuple[str, str, str]] = [
     ("reglamento_biblioteca.pdf", "Art. 20",
      "El horario de atención de la biblioteca es de lunes a viernes de 8 a 20 horas y los sábados de 9 a "
      "13 horas. Los domingos y feriados permanece cerrada."),
-    ("manual_uso_sistema.pdf", "Sección 3.2",
-     "Pasos para renovar un préstamo desde el sistema: ingresá con tu usuario, abrí Mis préstamos, "
-     "elegí el libro y presioná Renovar."),
-    ("manual_uso_sistema.pdf", "Sección 2.1",
-     "Para buscar un libro en el catálogo ingresá el título, el autor o la categoría en el buscador."),
     ("resenas_libro_1.pdf", "Reseña",
      "Cien años de soledad es una novela de Gabriel García Márquez que narra la historia de la familia "
      "Buendía a lo largo de siete generaciones en el pueblo ficticio de Macondo."),

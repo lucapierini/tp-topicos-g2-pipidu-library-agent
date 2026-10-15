@@ -325,7 +325,7 @@ class LibraryAgent:
         return ToolSpec(
             name=TOOL_RETRIEVE,
             description=(
-                "Busca en los documentos de la biblioteca (reglamento, manual de uso, políticas, reseñas) "
+                "Busca en los documentos de la biblioteca (reglamento, políticas, reseñas) "
                 "y devuelve los fragmentos más relevantes con su documento y ubicación."
             ),
             parameter="query",

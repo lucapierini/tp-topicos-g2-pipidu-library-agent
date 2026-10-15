@@ -37,7 +37,7 @@ Cada caso queda en `tests/test_golden_set.py` con la afirmación automática y e
 |---|---|---|---|
 | G6 | ¿Cuántos días tengo para devolver un libro antes de que me multen? | RAG | Plazo exacto citado del reglamento |
 | G7 | ¿De qué trata el libro "X"? | RAG | Sinopsis citada de la reseña |
-| G8 | ¿Cómo renuevo un préstamo desde el sistema? | RAG | Pasos del manual de uso |
+| G8 | ¿Cómo renuevo un préstamo desde el sistema? | RAG | Renovación citada (Art. 4 del reglamento) |
 | G9 | ¿Cuál es el horario de la biblioteca? | RAG | Horario citado del reglamento |
 
 ### Casos híbridos (≥3, requisito R-2.4)
@@ -122,7 +122,7 @@ pasar la validación.
 |---|---|---|
 | R1 | Pregunta sobre plazo de devolución | top-1 pertenece a `reglamento_biblioteca.pdf` |
 | R2 | Pregunta sobre sinopsis de un libro del catálogo | top-1 pertenece a la reseña correspondiente |
-| R3 | Pregunta sobre pasos del sistema | top-1 pertenece a `manual_uso_sistema.pdf` |
+| R3 | Pregunta sobre condiciones de renovación | top-1 pertenece a `reglamento_biblioteca.pdf` |
 | R4 | Pregunta fuera de cobertura | similitud máxima < umbral → reporte de no-relevancia |
 
 top-k = 5 y umbral de similitud de coseno = 0.35, calibrados contra los PDFs reales antes de fijarlos
@@ -239,7 +239,7 @@ Es la primera medición de **contenido**: el SQL que genera el modelo corre cont
 devuelve lo esperado. Los casos RAG e híbridos siguen sin evaluarse en contenido (faltan los PDFs).
 Datos de desarrollo, no el seed entregable: el volumen de T2.5 sigue pendiente.
 
-**Recuperación simulada (D69).** `--rag-mock` reemplaza el fragmento fijo por un corpus de 7 fragmentos de
+**Recuperación simulada (D69).** `--rag-mock` reemplaza el fragmento fijo por un corpus de 5 fragmentos de
 prueba (`tests/rag_fixture.py`) con un `RagRetriever` real. Combinado con `--db`, permite evaluar el
 contenido de los 13 casos. Qué mide y qué no:
 

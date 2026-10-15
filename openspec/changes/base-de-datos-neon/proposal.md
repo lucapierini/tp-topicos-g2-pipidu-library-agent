@@ -16,7 +16,7 @@ Este change trae esa justificación y los artefactos que la sostienen, y la deja
   base compartida, y sus consecuencias sobre el despliegue en GCP (solo agente + UI).
 - Se versiona la justificación del DDL (decisiones D-DB1 a D-DB10 en `design.md`).
 - Se incorpora el **seed** con catálogo real y socios/préstamos sintéticos (`db/seed.sql`).
-- Se incorporan los **6 documentos fuente del RAG** en Markdown, sus PDFs, y los scripts de
+- Se incorporan los **5 documentos fuente del RAG** en Markdown, sus PDFs, y los scripts de
   conversión y subida al bucket (`rag/`).
 - Se registran las reglas de negocio que viven en el reglamento y no en la base.
 

@@ -61,7 +61,6 @@ El agente debe poder responder preguntas del estilo (ejemplos no exhaustivos):
 El agente debe responder preguntas que requieren contenido no estructurado, usando un repositorio de **4 a 6 PDFs** (mínimo exigido: 2), compuesto por:
 - Reglamento de biblioteca (normas de préstamo, sanciones, horarios)
 - Reseñas/sinopsis de libros del catálogo
-- Manual de uso del sistema
 - Políticas generales de la universidad
 
 Ejemplos de preguntas RAG:

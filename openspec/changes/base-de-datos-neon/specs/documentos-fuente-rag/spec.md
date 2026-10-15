@@ -12,7 +12,7 @@ El repositorio SHALL contener entre 4 y 6 documentos fuente en Markdown en `rag/
 
 #### Scenario: inventario
 - **WHEN** se listan los `.md` de `rag/documents/`
-- **THEN** hay 6: `reglamento_biblioteca`, `manual_uso_sistema`, `politicas_universidad`, `resenas_cien_anios_de_soledad`, `resenas_clean_code`, `resenas_ia_enfoque_moderno`
+- **THEN** hay 5: `reglamento_biblioteca`, `politicas_universidad`, `resenas_cien_anios_de_soledad`, `resenas_clean_code`, `resenas_ia_enfoque_moderno`
 
 ### Requirement: R-9.2 — El reglamento es la fuente de las reglas de negocio
 `reglamento_biblioteca.md` SHALL declarar plazo de préstamo, máximo de libros simultáneos, renovaciones y multa por atraso, y SHALL ser la única fuente de esas reglas.
@@ -26,8 +26,8 @@ El repositorio SHALL contener entre 4 y 6 documentos fuente en Markdown en `rag/
 ### Requirement: R-9.3 — Consistencia entre documentos
 Ninguna regla repetida en otro documento SHALL contradecir al reglamento.
 
-#### Scenario: plazos en el manual
-- **GIVEN** el manual y las políticas, que mencionan préstamos, renovaciones, multas o sanciones
+#### Scenario: sanciones en las políticas
+- **GIVEN** las políticas, que mencionan préstamos, renovaciones, multas o sanciones
 - **WHEN** se comparan con el reglamento
 - **THEN** ningún valor ni condición lo contradice
 

@@ -119,7 +119,7 @@ GOLDEN_SET: list[GoldenCase] = [
     GoldenCase("G7", f'¿De qué trata el libro "{SEED_ENTITIES["libro_con_resena"]}"?', "rag",
                _document("resenas_libro_"), "sinopsis citada"),
     GoldenCase("G8", "¿Cómo renuevo un préstamo desde el sistema?", "rag",
-               _document("manual_uso_sistema"), "pasos del manual"),
+               _document("reglamento_biblioteca"), "renovación citada (Art. 4)"),
     GoldenCase("G9", "¿Cuál es el horario de la biblioteca?", "rag",
                _document("reglamento_biblioteca"), "horario citado"),
 
@@ -151,7 +151,7 @@ BILINGUAL_SET: list[GoldenCase] = [
 RETRIEVAL_TESTS: list[GoldenCase] = [
     GoldenCase("R1", "plazo de devolución y multas", "rag", _document("reglamento_biblioteca")),
     GoldenCase("R2", f"sinopsis del libro {SEED_ENTITIES['libro_con_resena']}", "rag", _document("resenas_libro_")),
-    GoldenCase("R3", "pasos para renovar un préstamo", "rag", _document("manual_uso_sistema")),
+    GoldenCase("R3", "condiciones para renovar un préstamo", "rag", _document("reglamento_biblioteca")),
     GoldenCase("R4", f"precio del libro {SEED_ENTITIES['libro_sin_precio']}", "none",
                lambda out: not out.get("chunks"), "similitud máxima < umbral → reporte de no-relevancia"),
 ]
@@ -168,7 +168,7 @@ CALIBRATION_EXTRA: list[GoldenCase] = [
     GoldenCase("R8", "¿Cuánto cuesta imprimir o sacar fotocopias?", "none", lambda out: not out.get("chunks")),
     GoldenCase("R9", "¿cuánto es la multa por día de atraso?", "rag", _document("reglamento_biblioteca")),
     GoldenCase("R10", "¿hasta qué hora está abierta la biblioteca?", "rag", _document("reglamento_biblioteca")),
-    GoldenCase("R11", "¿cómo hago para pagar una multa?", "rag", _document("manual_uso_sistema")),
+    GoldenCase("R11", "¿cuántos libros puedo tener prestados a la vez?", "rag", _document("reglamento_biblioteca")),
 ]
 
 ACCEPTANCE_MIN = 11  # ≥ 11/13 (R-2.1)

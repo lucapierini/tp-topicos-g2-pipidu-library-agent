@@ -11,7 +11,6 @@ qué fuente de información hace falta para responder la consulta. No respondas 
 
 **RAG: documentos de texto** (PDFs) de la biblioteca:
 - Reglamento: plazos de devolución, multas y sanciones, renovaciones, límites de préstamo, horarios.
-- Manual de uso del sistema: cómo se hace una operación en la plataforma.
 - Políticas institucionales de la universidad.
 - Reseñas y sinopsis de algunos libros.
 - Sirve para: normas, procedimientos, explicaciones, de qué trata un libro.
