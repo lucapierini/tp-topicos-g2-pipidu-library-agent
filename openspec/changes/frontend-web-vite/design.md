@@ -78,7 +78,7 @@ contexto compartido complica la imagen de la API, se usa `context: ./web` para l
 **9. Reformulación de R-7.0.** La API sigue siendo el único punto de acceso *al agente* y el servidor
 Python no sirve interfaz; la SPA es un cliente en su propio servicio. Se edita el delta
 `consulta-por-api` del change `agente-y-tools` (que aún no está archivado) y se registra en
-`TP/CHANGELOG.md` como D84, que matiza D80. Ya aplicado en `consulta-por-api`, `TP/01`, `TP/02`, `TP/05`,
+`TP/CHANGELOG.md` como D93, que matiza D80. Ya aplicado en `consulta-por-api`, `TP/01`, `TP/02`, `TP/05`,
 `README.md`, `openspec/project.md` y el `design.md`/`proposal.md` de `agente-y-tools`.
 
 ## Risks / Trade-offs
