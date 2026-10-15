@@ -1,8 +1,13 @@
 # Base local para pruebas: PostgreSQL + pgvector con los roles del proyecto (T1.3, D14).
 #
 #   cp .env.example .env     # completar las contraseñas
-#   docker compose up -d     # espera al healthcheck
+#   docker compose up -d --wait   # db + api + web; la interfaz queda en http://localhost:3000
 #   bash scripts/replicate_neon.sh   # (opcional) trae el esquema y los datos de Neon
+#
+# Infraestructura local completa (base + RAG + agente), sin tocar Neon:
+#   docker compose up -d --wait db                 # Postgres + pgvector + esquema + roles + datos de desarrollo
+#   docker compose run --rm ingest                 # recarga el RAG a mano (`up` ya lo hace solo)
+#   docker compose run --rm agent "<pregunta>"     # el agente real contra la base local
 #
 # La imagen debe tener la misma versión mayor que Neon para poder restaurar su dump: `PG_IMAGE`.
 # El script de réplica la detecta y te dice cuál usar.
@@ -18,8 +23,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-pipidu}
       AGENT_RO_PASSWORD: ${POSTGRES_PASSWORD:?definí POSTGRES_PASSWORD en .env (contraseña de agent_ro)}
       AGENT_LOGGER_PASSWORD: ${POSTGRES_LOG_PASSWORD:?definí POSTGRES_LOG_PASSWORD en .env (agent_logger)}
-      # 1 = carga db/dev_seed.sql (pocas filas deterministas para pruebas); 0 = base vacía.
-      DEV_SEED: ${DEV_SEED:-1}
+      # full (por defecto) = db/seed.sql, el catálogo completo; 1 = db/dev_seed.sql (pocas filas
+      # deterministas para los tests de integración); 0 = base vacía.
+      DEV_SEED: ${DEV_SEED:-full}
     ports:
       # Solo en loopback: la base de pruebas no se expone a la red.
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
@@ -29,12 +35,101 @@ services:
       - ./db/migrations:/migrations:ro
       - ./db/schema.sql:/schema.sql:ro
       - ./db/post_restore.sql:/post_restore.sql:ro
+      - ./db/seed.sql:/seed.sql:ro
       - ./db/dev_seed.sql:/dev_seed.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d ${POSTGRES_DB:-pipidu}"]
       interval: 3s
       timeout: 3s
       retries: 20
+
+  # Ingesta del RAG en la base LOCAL (rag/ingest.py). Escribe como superusuario local; el agente lee como agent_ro.
+  # Corre solo al hacer `up` (antes de la API) y termina: es idempotente por sha256, así que reejecutarlo es barato.
+  # Necesita GEMINI_API_KEY en .env (embeddings); sin ella `up` falla acá en vez de dejar el RAG vacío.
+  ingest:
+    restart: "no"
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: local
+    image: pipidu-local
+    entrypoint: ["python", "rag/ingest.py"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GEMINI_API_KEY: ${GEMINI_API_KEY:?definí GEMINI_API_KEY en .env}
+      PGHOST: db
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB:-pipidu}
+      INGEST_DATABASE_URL: ""   # fuerza PG*: nunca la URL de Neon que pueda haber en .env
+      NEON_DATABASE_URL: ""
+
+  # El agente real (Gemini + SQL + RAG) contra la base local. Sin UI todavía (tarea 8.1): una pregunta por corrida.
+  agent:
+    profiles: ["tools"]
+    image: pipidu-local   # la construye `ingest` (docker compose --profile tools build ingest)
+    pull_policy: never
+    entrypoint: ["python", "scripts/ask.py"]
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      # .env puede apuntar a Neon: dentro de la red de compose el agente usa SIEMPRE la base local.
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-pipidu}
+      POSTGRES_SSLMODE: ""
+      NEON_DATABASE_URL: ""
+
+  # API del agente (imagen `runtime`, D74, D81). Lee `.env` (GEMINI_API_KEY, roles de la base); dentro de la
+  # red de compose la base es el servicio `db`, no 127.0.0.1, y siempre en el puerto 5432.
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runtime
+    image: pipidu-agent
+    container_name: pipidu-api
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${POSTGRES_DB:-pipidu}
+      POSTGRES_SSLMODE: ""   # .env puede apuntar a Neon (require); la base de la red de compose es local
+      NEON_DATABASE_URL: ""
+      PORT: "8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      ingest:
+        condition: service_completed_successfully   # el RAG ya tiene sus documentos cuando la API arranca
+    ports:
+      # Solo en loopback; la web llega a la API por la red interna. Se publica para depurar y medir.
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8080/health', timeout=2)"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  # Interfaz web (D93): SPA de `web/` servida por nginx, que reenvía `/api/` a la API (R-8.8).
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    image: pipidu-web
+    container_name: pipidu-web
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:80"
 
 volumes:
   pipidu-pgdata:

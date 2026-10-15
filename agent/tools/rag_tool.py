@@ -133,6 +133,7 @@ class PgVectorStore:
                 port=self.cfg.db_port,
                 password=os.environ.get("POSTGRES_PASSWORD"),  # Art. 9
                 options=connection_options(self.cfg),
+                sslmode=self.cfg.db_sslmode or None,
                 connect_timeout=self.cfg.api_timeout_s,
             )
             self._conn.set_session(readonly=True)

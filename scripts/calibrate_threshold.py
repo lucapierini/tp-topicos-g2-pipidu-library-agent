@@ -1,6 +1,6 @@
 """Calibra el umbral de similitud con los documentos reales (T3.6, R-4.8, D12).
 
-El 0.35 de la configuración es una **hipótesis inicial**. Este script mide, contra los PDFs ya
+El 0.35 inicial era una **hipótesis**; la calibración lo fijó en 0.67 (D85). Este script mide, contra los PDFs ya
 indexados en `documentos_embeddings`, la similitud máxima de cada prueba de retrieval:
 
 - R1–R3 (consultas con cobertura): la similitud máxima debe quedar **por encima** del umbral.
@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from agent.config import load_config  # noqa: E402
 from agent.tools.rag_tool import GeminiEmbedder, PgVectorStore, RagRetriever  # noqa: E402
-from tests.golden_set import RETRIEVAL_TESTS  # noqa: E402
+from tests.golden_set import BILINGUAL_SET, CALIBRATION_EXTRA, GOLDEN_SET, RETRIEVAL_TESTS  # noqa: E402
 
 
 def propose_threshold(positive_max: list[float], negative_max: list[float]) -> dict:
@@ -63,7 +63,11 @@ def main() -> int:
     negative: list[float] = []
     rows = []
     try:
-        for case in RETRIEVAL_TESTS:
+        # Positivos: las pruebas de retrieval, los casos extra y las preguntas `rag` del golden set (incluido el inglés,
+        # que puntúa más bajo y es el que más acota el umbral). Los híbridos no: su consulta documental la redacta el modelo.
+        cases = [*RETRIEVAL_TESTS, *CALIBRATION_EXTRA,
+                 *(c for c in [*GOLDEN_SET, *BILINGUAL_SET] if c.expected_classification == "rag")]
+        for case in cases:
             scores = retriever.scores(case.question)
             top = max(scores) if scores else 0.0
             (negative if case.expected_classification == "none" else positive).append(top)

@@ -202,7 +202,8 @@ def test_la_conexion_propia_se_cierra_y_se_reabre() -> None:
 
 
 def test_las_opciones_de_sesion_fijan_timeout_search_path_y_zona_horaria() -> None:
-    # D14 / D47: `CURRENT_DATE` no puede depender de la zona del servidor (Cloud SQL usa UTC).
+    # D14 / D47: `CURRENT_DATE` no puede depender de la zona del servidor (servidor o contenedor
+    # en UTC, R-3.11).
     cfg = load_config()
     options = connection_options(cfg)
     assert f"statement_timeout={cfg.statement_timeout_ms}" in options

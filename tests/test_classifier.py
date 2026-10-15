@@ -174,3 +174,12 @@ def test_gemini_classifier_requires_the_key_from_the_environment(monkeypatch) ->
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     with pytest.raises(ClassificationError, match="GEMINI_API_KEY"):
         GeminiClassifier(load_config()).classify("¿hola?")
+
+
+@pytest.mark.parametrize(("raw", "expected"), [(True, True), (False, False), ("true", False), (1, False), (None, False)])
+def test_write_request_is_only_true_for_a_real_boolean(raw, expected) -> None:
+    assert parse_classification(payload(write_request=raw)).write_request is expected
+
+
+def test_write_request_defaults_to_false() -> None:
+    assert parse_classification(payload()).write_request is False

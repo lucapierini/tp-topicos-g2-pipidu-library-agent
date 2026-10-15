@@ -3,8 +3,9 @@
 > Documento incremental. Se irá completando/ajustando a medida que avance el diseño.
 >
 > **Nivel en el ciclo SDD:** Spec (WHAT). Las capacidades detalladas del agente y sus tools están en
-> `03-especificaciones-por-capacidad.md`; las tareas en `04-tareas.md`; la validación en
-> `05-validacion.md`; los principios en `00-constitucion.md`.
+> `openspec/changes/agente-y-tools/specs/<capacidad>/spec.md`; las tareas en
+> `openspec/changes/agente-y-tools/tasks.md`; la validación en `05-validacion.md`; los principios en
+> `00-constitucion.md`.
 
 ## 1. Datos generales
 
@@ -32,20 +33,23 @@ Desarrollar un **SQL AI Agent** capaz de:
 
 | Actor | Descripción |
 |---|---|
-| Usuario final | Persona que interactúa con el agente vía interfaz web (Streamlit) haciendo preguntas en lenguaje natural |
+| Usuario final | Persona que interactúa con el agente a través de la interfaz web del repositorio (`web/`, D93), que lo consulta por la API HTTP (D80) haciendo preguntas en lenguaje natural |
 | Agente IA | Componente que interpreta la consulta, decide la estrategia (SQL / RAG / mixta) y genera la respuesta |
 | Administrador/Desarrollador | Responsable de poblar la base, cargar los PDFs e indexar embeddings |
 
 ## 5. Alcance funcional
 
 ### 5.1 Base de datos relacional
-- Modelo de datos con **mínimo 6 tablas** (cumple el mínimo de 5 exigido):
+- Modelo de datos con **mínimo 6 tablas** (cumple el mínimo de 5 exigido). Son 7, según `db/schema.sql` (D64):
   1. Socios (alumnos/docentes)
   2. Libros
   3. Autores
   4. Préstamos
   5. Categorías/Géneros
   6. Editoriales
+  7. `libros_autores` (relación N:M libros-autores; no existe `libros.autor_id`, D64)
+- El repositorio documental (`documentos` y `documentos_chunks`) es el índice RAG, no una tabla del modelo
+  relacional: se describe en la especificación técnica (§3.2.1) y su volumen se decide en T2.9.
 - Cada tabla poblada con **15-20 registros sintéticos** como mínimo (cumple el mínimo de 15 exigido).
 - Los datos deben ser coherentes y permitir consultas significativas (joins, agregaciones, filtros, rankings).
 
@@ -61,7 +65,6 @@ El agente debe poder responder preguntas del estilo (ejemplos no exhaustivos):
 El agente debe responder preguntas que requieren contenido no estructurado, usando un repositorio de **4 a 6 PDFs** (mínimo exigido: 2), compuesto por:
 - Reglamento de biblioteca (normas de préstamo, sanciones, horarios)
 - Reseñas/sinopsis de libros del catálogo
-- Manual de uso del sistema
 - Políticas generales de la universidad
 
 Ejemplos de preguntas RAG:
@@ -75,25 +78,32 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 ### 5.5 Exclusiones de alcance (no implementar sin cambiar esta spec)
 
-- Memoria conversacional multi-turno (v1 es single-turn); el historial de la UI es solo visual (D17).
+- Memoria conversacional multi-turno (v1 es single-turn); el historial lo conserva el frontend (la interfaz acumula las consultas de la sesión en pantalla, R-8.10) y no alimenta al agente (D17, R-7.0).
 - Observabilidad con LangSmith o evaluación automática de respuestas.
 - Fine-tuning del modelo.
 - Escritura sobre la base de datos.
 - Autenticación, usuarios y roles de aplicación.
 - Política de privacidad o restricción de columnas por PII: todos los usuarios acceden a toda la
   información del dominio (Art. 11). La whitelist es control de alcance y de inyección.
-- Streaming de respuestas parciales y reintentos ante fallo de API. La **regeneración de SQL** sí está
-  permitida, limitada a 2 intentos (D8); al segundo rechazo se reporta el error al usuario.
+- Streaming de **tokens** del modelo y respuestas parciales: la respuesta se compone al final con las
+  fuentes efectivamente invocadas (D58, D75). Sí está permitido el streaming de **progreso** de la consulta
+  por la API HTTP (D75) y el reintento ante límite de cuota (D57).
+- La **regeneración de SQL** sí está permitida, limitada a 2 intentos (D8); al segundo rechazo se reporta
+  el error al usuario.
 - Formatos documentales distintos de PDF.
 
-### 5.6 Interfaz de usuario
-- Interfaz gráfica desarrollada en **Streamlit**, donde el usuario escribe su consulta en un campo de texto y recibe la respuesta del agente, con indicación de la(s) fuente(s) utilizada(s) (SQL / RAG / ambas).
+### 5.6 Acceso al agente e interfaz de usuario
+- El agente se consulta **únicamente por la API HTTP** (`POST /ask`, respuesta en streaming de progreso; capacidad `consulta-por-api`, D75, D80). El servidor del agente no incluye interfaz gráfica: la interfaz es un cliente de la API (D93).
+- La interfaz gráfica es la **SPA de `web/`** (capacidad `interfaz-web`, D93), un cliente que consume la API: el usuario escribe su consulta en un campo de texto y el frontend muestra la respuesta del agente con indicación de la(s) fuente(s) utilizada(s) (SQL / RAG / ambas) y la evidencia que entrega el evento `result`.
 
 ## 6. Requisitos no funcionales
 
-- **Reproducibilidad:** cualquier evaluador debe poder clonar el repo, seguir el README y levantar el sistema completo (BD + agente + UI).
+- **Reproducibilidad:** cualquier evaluador debe poder clonar el repo, seguir el README y levantar el sistema completo (BD + agente + API); el frontend se levanta aparte y apunta a la API.
 - **Documentación:** código comentado donde sea necesario, README claro con instrucciones de instalación y ejecución.
-- **Despliegue en la nube:** el agente y la base de datos deben poder ejecutarse en GCP.
+- **Despliegue en entorno local:** el sistema se prepara para ejecutarse en entorno local (Docker con
+  Postgres + pgvector, `uvicorn api.app:app`), sin ningún servicio de nube (D81, que reemplaza a D18).
+  El enunciado del curso pedía despliegue en la nube (GCP): el informe debe justificar la desviación y que
+  el criterio de promoción 1 deja de estar cubierto.
 - **Trazabilidad SDD:** se documentará el proceso de desarrollo siguiendo Spec Driven Development (specs funcionales y técnicas, versionadas, previas a la implementación).
 
 ## 7. Criterios de aceptación (según enunciado)
@@ -107,8 +117,8 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 ## 8. Criterios de promoción directa (2+ de 5, elegidos 4)
 
-- [x] Despliegue en la nube (GCP)
-- [x] Interfaz gráfica (Streamlit)
+- [ ] Despliegue en la nube (GCP): **descartado por D81** (2026-10-13): el sistema se prepara para correr en entorno local. Quedan cubiertos `framework agéntico` y `SDD`; hay que confirmarlo con la cátedra (T9.13, riesgo D83)
+- [ ] Interfaz gráfica: SPA en `web/` que consume la API (D80, D93); queda tildada al verificar el change `frontend-web-vite`
 - [x] Framework agéntico (Smolagents)
 - [x] SDD (artefactos de esta carpeta `TP/`)
 - [ ] Observabilidad (LangSmith) — no incluido

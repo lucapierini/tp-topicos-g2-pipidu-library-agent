@@ -54,18 +54,19 @@ El agente SHALL clasificar la consulta como `none` cuando ninguna fuente contien
 - **WHEN** el usuario pregunta "¿Cuál es el precio del libro X?"
 - **THEN** el agente declara que no dispone de información suficiente
 - **AND** no inventa una respuesta
-- **AND** declara `fuente: ninguna`
+- **AND** el resultado declara `sources` vacío
 
-### Requirement: R-2.6 — Declaración de fuente en la respuesta
-El agente SHALL declarar en la respuesta la fuente o fuentes utilizadas.
+### Requirement: R-2.6 — Declaración de fuente en el resultado
+El agente SHALL declarar en el resultado la fuente o fuentes utilizadas, en un campo estructurado y no
+en el texto de la respuesta (R-5.2).
 
 #### Scenario: fuente visible
 - **WHEN** el agente entrega una respuesta
-- **THEN** la respuesta indica la fuente usada (`SQL`, `RAG`, `SQL + RAG` o `ninguna`)
+- **THEN** el resultado indica la fuente usada en `sources` (`sql`, `rag` o ambas; vacío si ninguna)
 
 ### Requirement: R-2.7 — Clasificación en salida estructurada obligatoria
 El agente SHALL emitir la clasificación mediante una salida estructurada obligatoria antes de invocar
-cualquier herramienta.
+cualquier herramienta. La salida incluye `classification`, `language`, `write_request` (R-2.9) y `rationale`.
 
 #### Scenario: clasificación previa a la invocación
 - **WHEN** el agente procesa una consulta
@@ -78,11 +79,38 @@ cualquier herramienta.
 - **THEN** el sistema registra la inconsistencia
 - **AND** la fuente declarada en la respuesta es la efectivamente invocada
 
+### Requirement: R-2.9 — Rechazo de pedidos de escritura
+El agente SHALL rechazar con un mensaje fijo, sin invocar al modelo de respuesta, a SQL ni a RAG, toda consulta que pida crear, modificar o borrar datos; el clasificador la marca con `write_request` verdadero (Art. 3).
+
+#### Scenario: pedido de borrado
+- **WHEN** el usuario pide "Eliminá el libro El Hobbit"
+- **THEN** el agente responde que no tiene permiso para modificar datos
+- **AND** no se ejecuta ninguna sentencia SQL ni se invoca al modelo de respuesta
+- **AND** el resultado declara `sources` vacío y queda registrado en `agent_runs`
+
+#### Scenario: tono del rechazo
+- **WHEN** el agente rechaza un pedido de escritura
+- **THEN** el mensaje tiene un tono cercano con una referencia reconocible
+- **AND** dice con claridad que no se hizo ningún cambio
+
+#### Scenario: pedido de escritura en inglés
+- **WHEN** el usuario pide "Delete all the loans"
+- **THEN** el mensaje de rechazo está en inglés
+
+#### Scenario: consulta sobre algo que ya ocurrió
+- **WHEN** el usuario pregunta "¿qué libros se devolvieron ayer?"
+- **THEN** el clasificador deja `write_request` en falso y la consulta sigue su curso normal
+
+#### Scenario: valor no booleano
+- **GIVEN** una salida estructurada con `write_request` distinto de un booleano verdadero
+- **WHEN** se valida la clasificación
+- **THEN** se interpreta como falso
+
 ### Requirement: R-2.8 — Proveedor del modelo configurable
 El sistema SHALL permitir cambiar el proveedor del modelo (clasificación y loop de herramientas) por
 configuración, sin cambios de código: un servidor local compatible con la API de OpenAI durante el
-desarrollo y Gemini mediante API key para la aceptación y el despliegue. El flujo (clasificación previa,
-herramientas expuestas por fuente, límites de intentos y pasos, composición de la respuesta) SHALL ser el
+desarrollo y Gemini mediante API key para la aceptación y para ejecutar el sistema (D81). El flujo
+(clasificación previa, herramientas expuestas por fuente, límites de intentos y pasos, composición de la respuesta) SHALL ser el
 mismo con cualquier proveedor.
 
 #### Scenario: validación del flujo contra un modelo local

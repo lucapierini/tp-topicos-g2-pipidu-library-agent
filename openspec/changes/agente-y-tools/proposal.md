@@ -16,6 +16,10 @@ seguridad del SQL quedan como decisiones implícitas durante la implementación.
 - Nueva política de composición de respuesta con proveniencia declarada y evidencia exhibida.
 - Nuevo registro de ejecución por consulta (tabla `agent_runs`) como evidencia para el informe.
 - Pipeline de ingesta RAG idempotente sobre 4–6 PDFs.
+- Nueva API HTTP (`POST /ask`), único acceso al agente (D80), con respuesta en streaming de eventos de
+  progreso y cancelación cuando el cliente corta la conexión. El agente no se invoca en proceso desde
+  ninguna interfaz: el frontend (`web/`, change `frontend-web-vite`, D93) es un cliente que consume la API.
+- Atención en serie de las consultas simultáneas, porque cada backend guarda una única conexión.
 
 ## Capabilities
 
@@ -27,6 +31,7 @@ seguridad del SQL quedan como decisiones implícitas durante la implementación.
 - `rag-retrieval-tool`: recuperación de fragmentos documentales relevantes con su referencia de origen.
 - `composicion-de-respuesta`: formato de la respuesta, idioma y proveniencia de la fuente.
 - `trazabilidad-de-ejecucion`: registro de cada consulta para validación y evidencias.
+- `consulta-por-api`: consulta por HTTP con progreso en streaming, latido, cancelación y estado del servicio.
 
 ### Modified Capabilities
 
@@ -38,8 +43,13 @@ _(ninguna — es el primer change del proyecto)_
   `prestamos`, la vista `v_prestamos_estado` y el repositorio documental `documentos` +
   `documentos_chunks` (pgvector). Este change agrega `agent_runs` (`db/migrations/001_agent_runs.sql`).
 - Roles de base de datos: `agent_ro` (solo lectura) y `agent_logger` (solo `INSERT` en `agent_runs`, D63).
-- Nuevas dependencias: `smolagents[litellm]`, `psycopg2-binary`, `pypdf`, `google-genai`, `streamlit`, `sqlglot`, `pytest`.
-- Nuevas variables de entorno: `GEMINI_API_KEY`, credenciales de Cloud SQL y, para cambiar de proveedor sin
+- Nuevas dependencias de ejecución (`requirements.txt`): `smolagents[litellm]`, `psycopg2-binary`, `pypdf`,
+  `google-genai`, `sqlglot`, `fastapi`, `uvicorn` (la API HTTP, D75) y `python-dotenv` (`.env`, Art. 9).
+  `pytest`, `faker` y `ruff` son de desarrollo (`requirements-dev.txt`) y no entran a la imagen (D54).
+- Contenedor en ejecución: la imagen `runtime` arranca `uvicorn api.app:app` en `PORT` (8080 por defecto, D80).
+- Nuevas variables de entorno: `GEMINI_API_KEY`, credenciales de BD y, para cambiar de proveedor sin
   tocar código, `LLM_MODEL`, `LLM_API_BASE` y `LLM_API_KEY` (R-2.8). El flujo se valida primero contra un
-  modelo local y la aceptación se mide después con Gemini.
-- Depende de un despliegue en GCP (Cloud Run + Cloud SQL) para el criterio de promoción 1.
+  modelo local y la aceptación se mide después con Gemini. `API_ALLOWED_ORIGINS` agrega la allowlist de
+  CORS del frontend (R-7.8, D82).
+- Despliegue en **entorno local** (D81): el criterio de promoción 1 (nube) deja de estar cubierto. Sin
+  autenticación: el endpoint no queda expuesto a clientes externos (D82).

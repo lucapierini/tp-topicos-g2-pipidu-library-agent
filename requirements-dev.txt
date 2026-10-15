@@ -1,5 +1,5 @@
 # Desarrollo y pruebas: no van a la imagen de producción.
 -r requirements.txt
 pytest>=8.0,<10
-faker>=27.0          # seed de datos (T2.x); scripts/seed_data.py
+faker>=27.0          # seed de datos (T2.x); db/seed_data.py
 ruff>=0.5,<1         # lint: `ruff check .` (configuración en pyproject.toml)

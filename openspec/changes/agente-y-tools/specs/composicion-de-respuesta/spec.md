@@ -25,18 +25,28 @@ La respuesta SHALL estar en el idioma de la consulta entrante.
 - **AND** la evidencia consigna el idioma con el que se compuso
 
 ### Requirement: R-5.2 — Proveniencia obligatoria
-La respuesta SHALL declarar la fuente o fuentes utilizadas.
+El resultado de la respuesta SHALL declarar la fuente o fuentes utilizadas en un campo estructurado
+(`sources`). El texto de la respuesta SHALL NO repetir la fuente: la presentación de la fuente
+corresponde al cliente, que la lee del campo estructurado.
 
 #### Scenario: respuesta con fuente SQL
 - **GIVEN** una consulta clasificada como `sql`
 - **WHEN** el agente compone la respuesta
-- **THEN** la respuesta declara `fuente: SQL`
+- **THEN** el resultado declara `sources` con `sql`
+- **AND** el texto de la respuesta no contiene una línea de fuente
 
 #### Scenario: respuesta sin fuente
 - **GIVEN** una consulta clasificada como `none`
 - **WHEN** el agente compone la respuesta
-- **THEN** la respuesta declara `fuente: ninguna`
+- **THEN** el resultado declara `sources` vacío y `answer_kind` `no_coverage`
+- **AND** el texto de la respuesta no contiene una línea de fuente
 - **AND** no contiene afirmaciones sobre datos del dominio
+
+#### Scenario: el modelo escribe una línea de fuente
+- **GIVEN** una respuesta del modelo que termina con una línea de fuente
+- **WHEN** el agente compone la respuesta
+- **THEN** esa línea se retira del texto
+- **AND** la fuente declarada sigue siendo la de las herramientas efectivamente invocadas
 
 ### Requirement: R-5.3 — Evidencia de fuente SQL
 Cuando la fuente sea SQL, la respuesta SHALL exhibir la sentencia ejecutada.
@@ -77,3 +87,30 @@ responder sin datos.
 - **WHEN** el agente compone la respuesta
 - **THEN** la respuesta informa el motivo del rechazo
 - **AND** no contiene afirmaciones sobre datos del dominio
+
+### Requirement: R-5.8 — Una sola nota del sistema
+Cuando el sistema agrega una nota a la respuesta (resultado limitado a N filas, dato o norma no obtenidos), la respuesta SHALL contener esa única nota: si el modelo escribió una nota propia al final del texto, el sistema SHALL retirarla antes de agregar la suya.
+
+#### Scenario: resultado truncado con nota del modelo
+- **GIVEN** un resultado de SQL limitado al máximo de filas
+- **AND** un texto del modelo que termina con "(Nota: la lista muestra los primeros 50 resultados)"
+- **WHEN** el agente compone la respuesta
+- **THEN** la respuesta contiene una sola nota, la del sistema
+
+#### Scenario: nota del modelo sin nota del sistema
+- **GIVEN** una respuesta sin truncado ni datos faltantes
+- **WHEN** el agente compone la respuesta
+- **THEN** la nota que escribió el modelo se conserva
+
+### Requirement: R-5.9 — Tono de los mensajes fijos
+Los mensajes fijos del sistema (falta de cobertura, ausencia en documentos, errores de herramienta, pedidos de escritura) SHALL tener un tono cercano y semiserio con una referencia reconocible, SHALL conservar el motivo técnico cuando existe (código y detalle del error) y SHALL estar en el idioma de la consulta.
+
+#### Scenario: consulta sin cobertura
+- **WHEN** el agente declara que no hay información
+- **THEN** el mensaje sugiere cómo reformular la pregunta
+
+#### Scenario: la frase va en el título
+- **WHEN** el agente entrega un mensaje fijo
+- **THEN** la frase con la referencia viaja en el campo `title` del resultado
+- **AND** `answer` contiene solo el cuerpo, con el motivo técnico si existe
+- **AND** una respuesta normal no lleva `title`

@@ -29,6 +29,7 @@ class Classification:
     label: str       # sql | rag | hybrid | none
     language: str    # es | en: idioma de la consulta, para responder en el mismo (R-5.1)
     rationale: str = ""
+    write_request: bool = False  # pide crear, modificar o borrar datos: el agente es de solo lectura
 
 
 class ClassificationError(Exception):
@@ -55,7 +56,10 @@ def parse_classification(raw: str) -> Classification:
     language = normalize_classification(data.get("language", DEFAULT_LANGUAGE))
     if language not in LANGUAGES:
         language = DEFAULT_LANGUAGE
-    return Classification(label=label, language=language, rationale=str(data.get("rationale", ""))[:300])
+    write_request = data.get("write_request") is True  # solo un booleano real; "false"/1/null no cuentan
+    return Classification(
+        label=label, language=language, rationale=str(data.get("rationale", ""))[:300], write_request=write_request
+    )
 
 
 _JSON_OBJECT = re.compile(r"\{.*\}", re.DOTALL)
@@ -161,6 +165,7 @@ class GeminiClassifier:
                 "classification": types.Schema(type=types.Type.STRING, enum=sorted(CLASSIFICATIONS)),
                 "language": types.Schema(type=types.Type.STRING, enum=list(LANGUAGES)),
                 "rationale": types.Schema(type=types.Type.STRING),
+                "write_request": types.Schema(type=types.Type.BOOLEAN),
             },
             required=["classification", "language"],
         )

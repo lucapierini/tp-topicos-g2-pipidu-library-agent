@@ -33,6 +33,13 @@ edita una copia en paralelo.
 4. `rag-retrieval-tool`
 5. `composicion-de-respuesta`
 6. `trazabilidad-de-ejecucion`
+7. `consulta-por-api`
+
+Change `base-de-datos-neon` (justificación del esquema, seed y documentos fuente del RAG):
+
+7. `esquema-de-base-de-datos`
+8. `datos-de-prueba`
+9. `documentos-fuente-rag`
 
 Los PDFs documentales los genera el integrante responsable de RAG y base de datos, y deben cubrir el
 contenido que sostienen los casos G6–G9 y R1–R3 del golden set.
@@ -48,6 +55,8 @@ openspec context               # contexto del proyecto
 ```
 
 ## Formato
+
+Para el change de base de datos: `openspec show base-de-datos-neon`.
 
 Cada requisito usa `### Requirement: R-x.y — <nombre>` y al menos un `#### Scenario:` con
 `- **WHEN**` / `- **THEN**`. El ID `R-x.y` coincide con `05-validacion.md`, de modo que cada escenario

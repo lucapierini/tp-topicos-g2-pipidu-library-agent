@@ -39,6 +39,11 @@ def _env_date(name: str, default: str) -> date:
     return date.fromisoformat(os.environ.get(name, default))
 
 
+def _env_list(name: str) -> tuple[str, ...]:
+    """Lista separada por comas. Un vacío significa 'no definido' (R-7.8)."""
+    return tuple(item.strip() for item in os.environ.get(name, "").split(",") if item.strip())
+
+
 @dataclass(frozen=True)
 class Config:
     # Semántica temporal (D6, R-3.11)
@@ -81,6 +86,11 @@ class Config:
     db_name: str
     db_host: str
     db_port: int
+    # `require` para Neon (TLS obligatorio); vacío = el valor por defecto de libpq (base local).
+    db_sslmode: str
+
+    # Frontend externo (R-7.8, D82): orígenes permitidos para CORS. Vacío = ninguno.
+    api_allowed_origins: tuple[str, ...]
 
 
 def load_config() -> Config:
@@ -88,11 +98,11 @@ def load_config() -> Config:
     return Config(
         cuatrimestre_start=_env_date("CUATRIMESTRE_START", "2026-08-01"),
         cuatrimestre_end=_env_date("CUATRIMESTRE_END", "2026-11-30"),
-        # `APP_TIMEZONE` y no `TZ`: `TZ` es una variable estándar del sistema (Cloud Run la fija
-        # en UTC) y el cuatrimestre se razona en hora argentina (D6, D47).
+        # `APP_TIMEZONE` y no `TZ`: `TZ` es una variable estándar del sistema (servidor o
+        # contenedor en UTC, D47) y el cuatrimestre se razona en hora argentina (D6, R-3.11).
         timezone=_env("APP_TIMEZONE", "America/Argentina/Buenos_Aires"),
         top_k=_env_int("RAG_TOP_K", "5"),
-        similarity_threshold=_env_float("RAG_SIMILARITY_THRESHOLD", "0.35"),
+        similarity_threshold=_env_float("RAG_SIMILARITY_THRESHOLD", "0.64"),
         max_rows=_env_int("SQL_MAX_ROWS", "50"),
         statement_timeout_ms=_env_int("SQL_STATEMENT_TIMEOUT_MS", "10000"),
         max_sql_attempts=_env_int("SQL_MAX_ATTEMPTS", "2"),
@@ -115,4 +125,6 @@ def load_config() -> Config:
         # ~2 s (medido); Docker publica el puerto solo en IPv4 loopback.
         db_host=_env("POSTGRES_HOST", "127.0.0.1"),
         db_port=_env_int("POSTGRES_PORT", "5432"),
+        db_sslmode=os.environ.get("POSTGRES_SSLMODE", ""),
+        api_allowed_origins=_env_list("API_ALLOWED_ORIGINS"),
     )

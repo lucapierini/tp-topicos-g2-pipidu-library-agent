@@ -11,7 +11,7 @@ def test_defaults_are_the_decided_values() -> None:
     assert (c.cuatrimestre_start.isoformat(), c.cuatrimestre_end.isoformat()) == ("2026-08-01", "2026-11-30")
     assert c.timezone == "America/Argentina/Buenos_Aires"
     assert c.top_k == 5
-    assert c.similarity_threshold == 0.35
+    assert c.similarity_threshold == 0.64
     assert c.max_rows == 50
     assert c.statement_timeout_ms == 10000
     assert c.max_sql_attempts == 2
@@ -22,7 +22,8 @@ def test_defaults_are_the_decided_values() -> None:
 
 
 def test_timezone_does_not_depend_on_the_system_tz_variable() -> None:
-    # D47: `TZ` es del sistema (Cloud Run la fija en UTC); la zona del dominio es `APP_TIMEZONE`.
+    # D47: `TZ` es del sistema (servidor o contenedor en UTC); la zona del dominio es `APP_TIMEZONE`
+    # (R-3.11).
     os.environ["TZ"] = "UTC"
     try:
         assert load_config().timezone == "America/Argentina/Buenos_Aires"

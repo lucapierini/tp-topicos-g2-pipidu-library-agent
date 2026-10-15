@@ -11,7 +11,6 @@ qué fuente de información hace falta para responder la consulta. No respondas 
 
 **RAG: documentos de texto** (PDFs) de la biblioteca:
 - Reglamento: plazos de devolución, multas y sanciones, renovaciones, límites de préstamo, horarios.
-- Manual de uso del sistema: cómo se hace una operación en la plataforma.
 - Políticas institucionales de la universidad.
 - Reseñas y sinopsis de algunos libros.
 - Sirve para: normas, procedimientos, explicaciones, de qué trata un libro.
@@ -34,10 +33,17 @@ qué fuente de información hace falta para responder la consulta. No respondas 
    corresponde, qué permite o qué sanción aplica según una norma, es `hybrid`.
 2. Si la consulta es una regla general sin datos concretos, es `rag`, aunque mencione "libro" o "préstamo".
 3. Si pide un dato que no está en ninguna de las dos fuentes (por ejemplo el precio de un libro), es `none`.
-4. Ante la duda entre `none` y otra clase, elegí la otra solo si una fuente puede aportar al menos parte
+4. Las reseñas y sinopsis **no son datos de la base**: solo existen dentro de los documentos. Saber qué libros
+   tienen reseña, o qué dice, es `rag`; si además pide un dato del catálogo (disponibilidad, categoría), es `hybrid`.
+5. Ante la duda entre `none` y otra clase, elegí la otra solo si una fuente puede aportar al menos parte
    de la respuesta.
 
 ## Salida
 
 Devolvé un JSON con: `classification` (`sql`, `rag`, `hybrid` o `none`), `language` (`es` o `en`, el
-idioma en que está escrita la consulta) y `rationale` (una frase corta con el motivo).
+idioma en que está escrita la consulta) `write_request` (booleano) y `rationale` (una frase corta con el motivo).
+
+`write_request` es `true` cuando la consulta pide **crear, modificar o borrar** algo: eliminar o agregar un libro,
+una reseña, un socio o un préstamo, cambiar el stock, registrar una devolución. El agente solo lee: esos pedidos
+se rechazan. Preguntar por algo que ya pasó («¿qué libros se devolvieron ayer?») o por una norma («¿cómo se
+renueva un préstamo?») es `false`. En ese caso `classification` es `none`.

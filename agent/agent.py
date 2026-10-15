@@ -21,6 +21,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
+import threading
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
@@ -55,19 +57,62 @@ TOOLS_BY_CLASSIFICATION = {
 }
 SOURCES_BY_CLASSIFICATION = {"sql": {"sql"}, "rag": {"rag"}, "hybrid": {"sql", "rag"}}
 
-SOURCE_LABELS = {
-    "es": {"sql": "SQL", "rag": "RAG", "both": "SQL + RAG", "none": "ninguna", "prefix": "Fuente"},
-    "en": {"sql": "SQL", "rag": "RAG", "both": "SQL + RAG", "none": "none", "prefix": "Source"},
+# La fuente se declara en `AgentAnswer.sources` y no en el texto (R-5.2, D84). Si el modelo escribe de
+# todos modos una última línea "Fuente: …" / "Source: …", se retira del cuerpo.
+_TRAILING_SOURCE_LINE = re.compile(r"(?:\n+|^)[ \t]*(?:Fuentes?|Sources?)[ \t]*:[^\n]*\s*$", re.IGNORECASE)
+
+
+def _strip_source_line(text: str) -> str:
+    return _TRAILING_SOURCE_LINE.sub("", text).strip()
+
+
+# El sistema agrega sus propias notas (límite de filas, dato faltante). Si el modelo ya escribió una al
+# final ("(Nota: …)", "*Note: …*"), se retira para que quede una sola.
+_NOTE_PARAGRAPH = re.compile(r"^[\W_]*(?:nota|note)s?\b", re.IGNORECASE)
+
+
+def _strip_model_notes(text: str) -> str:
+    paragraphs = text.strip().split("\n\n")
+    while len(paragraphs) > 1 and _NOTE_PARAGRAPH.match(paragraphs[-1].strip()):
+        paragraphs.pop()
+    return "\n\n".join(paragraphs).strip()
+
+
+# Los mensajes fijos se dividen en `title` (la frase con referencia, R-5.9) y cuerpo (`answer`): la interfaz
+# muestra el título como encabezado de la tarjeta y el cuerpo adentro.
+TITLES = {
+    "es": {
+        "write_denied": "¡No pasarás! 🧙",
+        "no_coverage": "Houston, tenemos un problema",
+        "no_relevant": "Estos no son los documentos que buscás",
+        "sql_failed": "Houston, tenemos un problema",
+        "sql_not_called": "Houston, tenemos un problema",
+        "rag_failed": "Houston, tenemos un problema",
+        "run_failed": "Houston, tenemos un problema",
+        "classify_failed": "Ni Sherlock Holmes lo habría entendido",
+    },
+    "en": {
+        "write_denied": "You shall not pass! 🧙",
+        "no_coverage": "Houston, we have a problem",
+        "no_relevant": "These aren't the documents you're looking for",
+        "sql_failed": "Houston, we have a problem",
+        "sql_not_called": "Houston, we have a problem",
+        "rag_failed": "Houston, we have a problem",
+        "run_failed": "Houston, we have a problem",
+        "classify_failed": "Not even Sherlock Holmes could make sense of it",
+    },
 }
 
 MESSAGES = {
     "es": {
-        "no_coverage": "No dispongo de información suficiente para responder esta consulta con los "
-                       "datos de la biblioteca ni con sus documentos.",
-        "no_relevant": "No se encontró información relevante en los documentos de la biblioteca para "
-                       "esta consulta.",
+        "write_denied": "Soy bibliotecario de solo lectura: puedo consultar libros, socios, préstamos y "
+                        "reglamentos, pero crear, modificar o borrar datos no está entre mis poderes, así que "
+                        "no hice ningún cambio. Eso queda en manos de quien administra la biblioteca.",
+        "no_coverage": "Busqué en la base y en los documentos y no encontré nada sobre eso. Probá con otra "
+                       "pregunta o con el título exacto del libro.",
+        "no_relevant": "No encontré nada relevante en los documentos de la biblioteca para esta consulta.",
         "sql_failed": "No pude resolver la consulta con los datos de la base: {error}. {detail}",
-        "sql_not_called": "No pude resolver la consulta: no se llegó a consultar la base de datos.",
+        "sql_not_called": "No llegué a consultar la base de datos.",
         "rag_failed": "No pude consultar los documentos de la biblioteca: {error}.",
         "run_failed": "No pude completar la consulta: {detail}",
         "classify_failed": "No pude interpretar la consulta: {detail}",
@@ -76,11 +121,14 @@ MESSAGES = {
         "truncated": "Nota: el resultado se limitó a {n} filas; hay más datos que no se muestran.",
     },
     "en": {
-        "no_coverage": "I don't have enough information to answer this question with the library's data "
-                       "or its documents.",
-        "no_relevant": "No relevant information was found in the library's documents for this question.",
+        "write_denied": "I'm a read-only librarian: I can look up books, members, loans and regulations, but "
+                        "creating, changing or deleting data is beyond my powers, so I made no changes. That "
+                        "is up to whoever manages the library.",
+        "no_coverage": "I searched the database and the documents and found nothing about that. Try another "
+                       "question or the exact title of the book.",
+        "no_relevant": "I found nothing relevant in the library's documents for this question.",
         "sql_failed": "I couldn't resolve the question with the database: {error}. {detail}",
-        "sql_not_called": "I couldn't resolve the question: the database was never queried.",
+        "sql_not_called": "I never got to query the database.",
         "rag_failed": "I couldn't query the library's documents: {error}.",
         "run_failed": "I couldn't complete the question: {detail}",
         "classify_failed": "I couldn't interpret the question: {detail}",
@@ -95,6 +143,10 @@ class EmptyQuestionError(ValueError):
     """R-1.2: una consulta vacía se rechaza sin invocar al agente."""
 
 
+class AnswerCancelled(Exception):
+    """El cliente abandonó la consulta: se corta en el siguiente punto seguro y no se registra."""
+
+
 class SqlBackend(Protocol):
     def execute_sql(
         self, sql: str, *, attempts: int = 1, sql_original: str | None = None
@@ -106,7 +158,10 @@ class Retriever(Protocol):
 
 
 class AgentRunner(Protocol):
-    def run(self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int) -> str: ...
+    def run(
+        self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int,
+        on_event: EventSink | None = None, cancel: threading.Event | None = None,
+    ) -> str: ...
 
 
 # --------------------------------------------------------------------------- runner real
@@ -147,11 +202,31 @@ class SmolagentsRunner:
             )
         return self._model
 
-    def run(self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int) -> str:
-        from smolagents import ToolCallingAgent
+    def run(
+        self, *, question: str, system_prompt: str, tools: list[ToolSpec], max_steps: int,
+        on_event: EventSink | None = None, cancel: threading.Event | None = None,
+    ) -> str:
+        from smolagents import ActionStep, ToolCallingAgent
         from smolagents.monitoring import LogLevel
 
         from agent.tools.smol_tools import to_smolagents_tools
+
+        def after_step(step: ActionStep, agent: ToolCallingAgent) -> None:
+            # `step_callbacks` corre al terminar cada paso del agente (smolagents).
+            if on_event is not None:
+                usage = step.token_usage
+                on_event("step", {
+                    "step": step.step_number,
+                    # `or 0.0`: con la resolución de reloj de Windows un paso rápido dura exactamente 0.0
+                    # y `0.0 or 0` devolvería el entero 0 (tipo distinto en el evento).
+                    "duration_s": round(step.timing.duration or 0.0, 2),
+                    "input_tokens": usage.input_tokens if usage else None,
+                    "output_tokens": usage.output_tokens if usage else None,
+                    "tools": [call.name for call in step.tool_calls or []],
+                })
+            # `interrupt()` hace que el bucle se detenga antes del paso siguiente.
+            if cancel is not None and cancel.is_set():
+                agent.interrupt()
 
         agent = ToolCallingAgent(
             tools=to_smolagents_tools(tools),
@@ -159,11 +234,24 @@ class SmolagentsRunner:
             instructions=system_prompt,
             max_steps=max_steps,
             verbosity_level=LogLevel.OFF,
+            step_callbacks=[after_step],
         )
         return str(agent.run(question))
 
 
 # --------------------------------------------------------------------------- sesión de tools
+
+
+EventSink = Callable[[str, dict], None]
+
+
+def _check_cancelled(cancel: threading.Event | None) -> None:
+    if cancel is not None and cancel.is_set():
+        raise AnswerCancelled()
+
+
+def _no_event(event: str, data: dict) -> None:
+    return None
 
 
 @dataclass
@@ -173,6 +261,8 @@ class ToolSession:
     sql_results: list[SqlResult] = field(default_factory=list)
     rag_results: list[RagResult] = field(default_factory=list)
     trace: list[str] = field(default_factory=list)
+    # Progreso hacia afuera (stream de la API). No afecta a la respuesta ni a la evidencia.
+    emit: EventSink = _no_event
 
     @property
     def sql_failures(self) -> int:
@@ -217,6 +307,9 @@ class LibraryAgent:
         self._recorder = recorder
         # `recorder=None` explícito no significa "sin registro": significa "el de la configuración".
         self._recorder_resolved = recorder is not None
+        # Los backends guardan una sola conexión a la base: el servidor atiende cada sesión en su
+        # propio hilo y dos consultas simultáneas se pisarían (`rollback`, `SET LOCAL`). Se serializan.
+        self._lock = threading.Lock()
 
     # Los backends reales se crean al primer uso: construir el agente no abre conexiones.
     @property
@@ -261,6 +354,7 @@ class LibraryAgent:
 
         def execute(sql: str) -> str:
             session.trace.append(TOOL_EXECUTE_SQL)
+            session.emit("tool_call", {"tool": TOOL_EXECUTE_SQL, "sql": sql})
             if session.sql_failures >= max_attempts:
                 # D8: el límite lo aplica la herramienta, no el prompt.
                 return _json({
@@ -272,6 +366,10 @@ class LibraryAgent:
                 sql, attempts=session.sql_failures + 1, sql_original=sql
             )
             session.sql_results.append(result)
+            session.emit("tool_result", {
+                "tool": TOOL_EXECUTE_SQL, "ok": result.executed, "rows": len(result.rows),
+                "error": result.error, "detail": result.detail,
+            })
             if not result.executed:
                 return _json({"ok": False, "error": result.error, "detail": result.detail})
             payload: dict[str, Any] = {
@@ -300,8 +398,13 @@ class LibraryAgent:
     def _retrieve_tool(self, session: ToolSession) -> ToolSpec:
         def retrieve(query: str) -> str:
             session.trace.append(TOOL_RETRIEVE)
+            session.emit("tool_call", {"tool": TOOL_RETRIEVE, "query": query})
             result = self.retriever.retrieve(query)
             session.rag_results.append(result)
+            session.emit("tool_result", {
+                "tool": TOOL_RETRIEVE, "ok": not result.error, "chunks": len(result.chunks),
+                "error": result.error,
+            })
             if result.error:
                 return _json({
                     "ok": False,
@@ -325,7 +428,7 @@ class LibraryAgent:
         return ToolSpec(
             name=TOOL_RETRIEVE,
             description=(
-                "Busca en los documentos de la biblioteca (reglamento, manual de uso, políticas, reseñas) "
+                "Busca en los documentos de la biblioteca (reglamento, políticas, reseñas) "
                 "y devuelve los fragmentos más relevantes con su documento y ubicación."
             ),
             parameter="query",
@@ -342,15 +445,23 @@ class LibraryAgent:
 
     # ------------------------------------------------------------------ consulta
 
-    def answer(self, question: str) -> AgentAnswer:
+    def answer(
+        self, question: str, on_event: EventSink | None = None, cancel: threading.Event | None = None,
+    ) -> AgentAnswer:
+        """`on_event(nombre, datos)` recibe el progreso (clasificación, herramientas) a medida que ocurre.
+
+        Si `cancel` se activa, la consulta se corta antes del siguiente paso (no a mitad de una
+        llamada al modelo) y lanza `AnswerCancelled` sin registrar nada.
+        """
         text = (question or "").strip()
         if not text:
             # R-1.2: no se invoca nada ni se registra: no hay consulta que trazar.
             raise EmptyQuestionError("La consulta está vacía.")
 
-        started = time.perf_counter()
-        result = self._resolve(text)
-        return self._persist(result, int((time.perf_counter() - started) * 1000))
+        with self._lock:
+            started = time.perf_counter()
+            result = self._resolve(text, on_event or _no_event, cancel)
+            return self._persist(result, int((time.perf_counter() - started) * 1000))
 
     def _persist(self, answer: AgentAnswer, latency_ms: int) -> AgentAnswer:
         """Registra la consulta en `agent_runs` (R-6.2, R-6.3).
@@ -369,7 +480,10 @@ class LibraryAgent:
             return replace(answer, evidence=evidence)
         return replace(answer, run_id=run_id)
 
-    def _resolve(self, text: str) -> AgentAnswer:
+    def _resolve(
+        self, text: str, emit: EventSink = _no_event, cancel: threading.Event | None = None,
+    ) -> AgentAnswer:
+        _check_cancelled(cancel)
         try:
             classification = self.classifier.classify(text)
         except Exception as exc:  # noqa: BLE001 - R-5.7: el fallo se reporta, no se adivina
@@ -377,17 +491,26 @@ class LibraryAgent:
             return self._gap_answer(
                 text, "none", "es", ANSWER_KIND_ERROR, [],
                 MESSAGES["es"]["classify_failed"].format(detail=detail),
-                error=("CLASSIFICATION_ERROR", detail),
+                error=("CLASSIFICATION_ERROR", detail), key="classify_failed",
             )
 
+        _check_cancelled(cancel)
+        emit("classified", {"classification": classification.label, "language": classification.language})
         trace = [TRACE_CLASSIFICATION]
+        if classification.write_request:
+            # El agente es de solo lectura (Art. 3): ni se intenta SQL. Mensaje fijo, sin llamar al modelo.
+            return self._gap_answer(
+                text, "none", classification.language, ANSWER_KIND_NO_COVERAGE, trace,
+                MESSAGES[classification.language]["write_denied"],
+                evidence={"write_request": True}, key="write_denied",
+            )
         if classification.label == "none":
             return self._gap_answer(
                 text, "none", classification.language, ANSWER_KIND_NO_COVERAGE, trace,
-                MESSAGES[classification.language]["no_coverage"],
+                MESSAGES[classification.language]["no_coverage"], key="no_coverage",
             )
 
-        session = ToolSession()
+        session = ToolSession(emit=emit)
         tools = self._tools_for(classification.label, session)
         system_prompt = render_system_prompt(
             self.cfg, classification=classification.label, tools=[t.name for t in tools],
@@ -397,11 +520,14 @@ class LibraryAgent:
         model_text = ""
         try:
             model_text = self.runner.run(
-                question=text, system_prompt=system_prompt, tools=tools, max_steps=self.cfg.max_steps
+                question=text, system_prompt=system_prompt, tools=tools, max_steps=self.cfg.max_steps,
+                on_event=emit, cancel=cancel,
             )
         except Exception as exc:  # noqa: BLE001
             run_error = f"{type(exc).__name__}"
+        _check_cancelled(cancel)
 
+        emit("composing", {})
         return self._compose(text, classification, session, model_text, run_error, trace)
 
     # ------------------------------------------------------------------ composición
@@ -415,13 +541,12 @@ class LibraryAgent:
 
     def _gap_answer(
         self, question: str, label: str, language: str, kind: str, trace: list[str], message: str,
-        evidence: dict | None = None, error: tuple[str, str] | None = None,
+        evidence: dict | None = None, error: tuple[str, str] | None = None, key: str | None = None,
     ) -> AgentAnswer:
         """Respuesta que declara una ausencia o un error: plantilla fija, sin fuentes (R-5.2).
 
         `error` es (código, detalle): queda en la evidencia y de ahí en `agent_runs` (R-6.3).
         """
-        labels = SOURCE_LABELS[language]
         merged = {**(evidence or {}), "model": self._model_info(), "language": language}
         if error is not None:
             merged["error"] = {"code": error[0], "detail": error[1]}
@@ -429,10 +554,11 @@ class LibraryAgent:
             question=question,
             classification=label,
             sources=[],
-            answer=f"{message}\n\n{labels['prefix']}: {labels['none']}",
+            answer=message,
             evidence=merged,
             answer_kind=kind,
             trace=trace,
+            title=TITLES[language][key] if key else None,
         )
 
     def _compose(
@@ -498,21 +624,21 @@ class LibraryAgent:
             return self._gap_answer(
                 question, label, language, ANSWER_KIND_ERROR, full_trace,
                 msg["run_failed"].format(detail=run_error), evidence,
-                error=("RUN_ERROR", run_error),
+                error=("RUN_ERROR", run_error), key="run_failed",
             )
         if not sources:
-            kind, message = self._empty_outcome(label, session, msg)
+            kind, key, message = self._empty_outcome(label, session, msg)
             return self._gap_answer(
                 question, label, language, kind, full_trace, message, evidence,
-                error=self._empty_error(label, session),
+                error=self._empty_error(label, session), key=key,
             )
 
-        body = (model_text or "").strip()
+        body = _strip_source_line((model_text or "").strip())
         if not body:
             return self._gap_answer(
                 question, label, language, ANSWER_KIND_ERROR, full_trace,
                 msg["run_failed"].format(detail="el modelo no devolvió una respuesta"), evidence,
-                error=("EMPTY_MODEL_RESPONSE", "el modelo no devolvió una respuesta"),
+                error=("EMPTY_MODEL_RESPONSE", "el modelo no devolvió una respuesta"), key="run_failed",
             )
 
         notes = []
@@ -524,9 +650,9 @@ class LibraryAgent:
         if executed and executed[-1].truncated:
             notes.append(msg["truncated"].format(n=len(executed[-1].rows)))
 
-        labels = SOURCE_LABELS[language]
-        source_text = labels["both"] if len(sources) == 2 else labels[sources[0]]
-        answer = "\n\n".join([body, *notes, f"{labels['prefix']}: {source_text}"])
+        if notes:
+            body = _strip_model_notes(body)
+        answer = "\n\n".join([body, *notes])
         return AgentAnswer(
             question=question,
             classification=label,
@@ -551,33 +677,37 @@ class LibraryAgent:
             return error or "RETRIEVAL_ERROR", "falló la recuperación de documentos"
         return "TOOL_NOT_CALLED", "no se invocó ninguna herramienta"
 
-    def _empty_outcome(self, label: str, session: ToolSession, msg: dict) -> tuple[str, str]:
-        """(answer_kind, mensaje) cuando ninguna herramienta aportó evidencia utilizable."""
+    def _empty_outcome(self, label: str, session: ToolSession, msg: dict) -> tuple[str, str, str]:
+        """(answer_kind, clave del mensaje, mensaje) cuando ninguna herramienta aportó evidencia utilizable."""
         if "sql" in SOURCES_BY_CLASSIFICATION[label] and not session.sql_results:
-            return ANSWER_KIND_ERROR, msg["sql_not_called"]
+            return ANSWER_KIND_ERROR, "sql_not_called", msg["sql_not_called"]
         if session.sql_failures:
             last = session.sql_results[-1]
-            return ANSWER_KIND_ERROR, msg["sql_failed"].format(error=last.error, detail=last.detail or "")
+            return ANSWER_KIND_ERROR, "sql_failed", msg["sql_failed"].format(error=last.error, detail=last.detail or "")
         if session.rag_results:
             error = session.rag_results[-1].error
             if error == NO_RELEVANT_RESULTS:
-                return ANSWER_KIND_NO_COVERAGE, msg["no_relevant"]
-            return ANSWER_KIND_ERROR, msg["rag_failed"].format(error=error)
-        return ANSWER_KIND_ERROR, msg["sql_not_called"]
+                return ANSWER_KIND_NO_COVERAGE, "no_relevant", msg["no_relevant"]
+            return ANSWER_KIND_ERROR, "rag_failed", msg["rag_failed"].format(error=error)
+        return ANSWER_KIND_ERROR, "sql_not_called", msg["sql_not_called"]
 
 
 # --------------------------------------------------------------------------- atajo de módulo
 
 _default: LibraryAgent | None = None
+_default_lock = threading.Lock()
 
 
 def get_agent() -> LibraryAgent:
     global _default
-    if _default is None:
-        _default = LibraryAgent()
-    return _default
+    with _default_lock:
+        if _default is None:
+            _default = LibraryAgent()
+        return _default
 
 
-def answer(question: str) -> AgentAnswer:
-    """Punto de entrada de la UI y del golden set: `answer(question) -> AgentAnswer`."""
-    return get_agent().answer(question)
+def answer(
+    question: str, on_event: EventSink | None = None, cancel: threading.Event | None = None,
+) -> AgentAnswer:
+    """Punto de entrada de la API HTTP y del golden set: `answer(question) -> AgentAnswer`."""
+    return get_agent().answer(question, on_event, cancel)

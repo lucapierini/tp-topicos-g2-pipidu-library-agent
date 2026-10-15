@@ -21,7 +21,7 @@ def _instructions() -> list[str]:
 
 
 def test_every_copied_source_exists_in_the_repo() -> None:
-    # Un `ui/` vacío no existe en un clon limpio (git no versiona directorios vacíos): COPY fallaría.
+    # Un directorio vacío no existe en un clon limpio (git no versiona directorios vacíos): COPY fallaría.
     missing = []
     for line in _instructions():
         if not line.upper().startswith("COPY "):
@@ -53,6 +53,21 @@ def test_dependencies_come_from_the_pinned_runtime_file() -> None:
 def test_the_build_context_excludes_the_env_file_and_the_git_history() -> None:
     patterns = {ln.strip() for ln in DOCKERIGNORE.read_text(encoding="utf-8").splitlines()}
     assert {".env", ".git", ".venv"} <= patterns
+
+
+def test_the_runtime_stage_serves_the_http_api_and_no_ui() -> None:
+    # D80: el frontend es un cliente externo; la imagen desplegada es solo la API del agente.
+    stages = re.split(r"(?im)^FROM\s+", DOCKERFILE.read_text(encoding="utf-8"))[1:]
+    runtime = next(s for s in stages if re.search(r"\bAS\s+runtime\b", s.splitlines()[0], re.I))
+    assert re.search(r"^COPY\s+api/", runtime, re.M)
+    assert "uvicorn api.app:app" in runtime
+    assert "streamlit" not in runtime.lower() and not re.search(r"^COPY\s+ui/", runtime, re.M)
+
+
+def test_the_runtime_dependencies_do_not_include_a_ui_framework() -> None:
+    requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8").lower()
+    assert "streamlit" not in requirements
+    assert "fastapi" in requirements and "uvicorn" in requirements
 
 
 def test_the_production_stage_does_not_ship_the_tests() -> None:

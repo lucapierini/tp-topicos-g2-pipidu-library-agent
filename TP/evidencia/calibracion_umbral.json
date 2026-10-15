@@ -1,0 +1,286 @@
+{
+  "threshold": 0.67,
+  "top_k": 5,
+  "embedding_model": "gemini-embedding-001",
+  "cases": [
+    {
+      "id": "R1",
+      "query": "plazo de devolución y multas",
+      "expected": "rag",
+      "max_similarity": 0.802,
+      "scores": [
+        0.802,
+        0.754,
+        0.753,
+        0.734,
+        0.701
+      ]
+    },
+    {
+      "id": "R2",
+      "query": "sinopsis del libro Cien años de soledad",
+      "expected": "rag",
+      "max_similarity": 0.786,
+      "scores": [
+        0.786,
+        0.745,
+        0.708,
+        0.701,
+        0.571
+      ]
+    },
+    {
+      "id": "R3",
+      "query": "condiciones para renovar un préstamo",
+      "expected": "rag",
+      "max_similarity": 0.732,
+      "scores": [
+        0.732,
+        0.646,
+        0.637,
+        0.622,
+        0.62
+      ]
+    },
+    {
+      "id": "R4",
+      "query": "precio del libro Rayuela",
+      "expected": "none",
+      "max_similarity": 0.611,
+      "scores": [
+        0.611,
+        0.593,
+        0.591,
+        0.588,
+        0.586
+      ]
+    },
+    {
+      "id": "R5",
+      "query": "¿Hay wifi disponible en la sala de lectura?",
+      "expected": "none",
+      "max_similarity": 0.649,
+      "scores": [
+        0.649,
+        0.618,
+        0.618,
+        0.617,
+        0.604
+      ]
+    },
+    {
+      "id": "R6",
+      "query": "¿La biblioteca tiene cafetería o estacionamiento?",
+      "expected": "none",
+      "max_similarity": 0.644,
+      "scores": [
+        0.644,
+        0.627,
+        0.626,
+        0.618,
+        0.616
+      ]
+    },
+    {
+      "id": "R7",
+      "query": "¿Puedo reservar una sala de estudio grupal?",
+      "expected": "none",
+      "max_similarity": 0.597,
+      "scores": [
+        0.597,
+        0.586,
+        0.579,
+        0.576,
+        0.575
+      ]
+    },
+    {
+      "id": "R8",
+      "query": "¿Cuánto cuesta imprimir o sacar fotocopias?",
+      "expected": "none",
+      "max_similarity": 0.602,
+      "scores": [
+        0.602,
+        0.595,
+        0.571,
+        0.57,
+        0.564
+      ]
+    },
+    {
+      "id": "R9",
+      "query": "¿cuánto es la multa por día de atraso?",
+      "expected": "rag",
+      "max_similarity": 0.771,
+      "scores": [
+        0.771,
+        0.69,
+        0.668,
+        0.653,
+        0.624
+      ]
+    },
+    {
+      "id": "R10",
+      "query": "¿hasta qué hora está abierta la biblioteca?",
+      "expected": "rag",
+      "max_similarity": 0.735,
+      "scores": [
+        0.735,
+        0.666,
+        0.655,
+        0.652,
+        0.648
+      ]
+    },
+    {
+      "id": "R11",
+      "query": "¿cuántos libros puedo tener prestados a la vez?",
+      "expected": "rag",
+      "max_similarity": 0.765,
+      "scores": [
+        0.765,
+        0.691,
+        0.683,
+        0.679,
+        0.676
+      ]
+    },
+    {
+      "id": "R12",
+      "query": "¿De qué trata El Hobbit?",
+      "expected": "rag",
+      "max_similarity": 0.732,
+      "scores": [
+        0.732,
+        0.695,
+        0.666,
+        0.66,
+        0.643
+      ]
+    },
+    {
+      "id": "R13",
+      "query": "¿En qué orden conviene leer los libros de Tolkien?",
+      "expected": "rag",
+      "max_similarity": 0.737,
+      "scores": [
+        0.737,
+        0.696,
+        0.671,
+        0.667,
+        0.667
+      ]
+    },
+    {
+      "id": "R14",
+      "query": "¿De qué trata la saga Alas de hierro?",
+      "expected": "rag",
+      "max_similarity": 0.706,
+      "scores": [
+        0.706,
+        0.682,
+        0.679,
+        0.663,
+        0.644
+      ]
+    },
+    {
+      "id": "R15",
+      "query": "¿Quién es Violet Sorrengail y qué le pasa en la academia?",
+      "expected": "rag",
+      "max_similarity": 0.646,
+      "scores": [
+        0.646,
+        0.635,
+        0.614,
+        0.608,
+        0.57
+      ]
+    },
+    {
+      "id": "R16",
+      "query": "¿De qué trata la saga Canción de hielo y fuego?",
+      "expected": "none",
+      "max_similarity": 0.627,
+      "scores": [
+        0.627,
+        0.605,
+        0.591,
+        0.586,
+        0.583
+      ]
+    },
+    {
+      "id": "G6",
+      "query": "¿Cuántos días tengo para devolver un libro antes de que me multen?",
+      "expected": "rag",
+      "max_similarity": 0.755,
+      "scores": [
+        0.755,
+        0.734,
+        0.717,
+        0.707,
+        0.693
+      ]
+    },
+    {
+      "id": "G7",
+      "query": "¿De qué trata el libro \"Cien años de soledad\"?",
+      "expected": "rag",
+      "max_similarity": 0.762,
+      "scores": [
+        0.762,
+        0.742,
+        0.7,
+        0.693,
+        0.55
+      ]
+    },
+    {
+      "id": "G8",
+      "query": "¿Cómo renuevo un préstamo desde el sistema?",
+      "expected": "rag",
+      "max_similarity": 0.703,
+      "scores": [
+        0.703,
+        0.63,
+        0.604,
+        0.602,
+        0.594
+      ]
+    },
+    {
+      "id": "G9",
+      "query": "¿Cuál es el horario de la biblioteca?",
+      "expected": "rag",
+      "max_similarity": 0.758,
+      "scores": [
+        0.758,
+        0.668,
+        0.668,
+        0.664,
+        0.652
+      ]
+    },
+    {
+      "id": "B2",
+      "query": "How many days do I have to return a book before I get fined?",
+      "expected": "rag",
+      "max_similarity": 0.686,
+      "scores": [
+        0.686,
+        0.676,
+        0.655,
+        0.655,
+        0.631
+      ]
+    }
+  ],
+  "verdict": {
+    "separable": false,
+    "worst_positive": 0.646,
+    "best_negative": 0.649,
+    "reason": "las similitudes de los casos con y sin cobertura se solapan"
+  }
+}
