@@ -33,7 +33,9 @@ qué fuente de información hace falta para responder la consulta. No respondas 
    corresponde, qué permite o qué sanción aplica según una norma, es `hybrid`.
 2. Si la consulta es una regla general sin datos concretos, es `rag`, aunque mencione "libro" o "préstamo".
 3. Si pide un dato que no está en ninguna de las dos fuentes (por ejemplo el precio de un libro), es `none`.
-4. Ante la duda entre `none` y otra clase, elegí la otra solo si una fuente puede aportar al menos parte
+4. Las reseñas y sinopsis **no son datos de la base**: solo existen dentro de los documentos. Saber qué libros
+   tienen reseña, o qué dice, es `rag`; si además pide un dato del catálogo (disponibilidad, categoría), es `hybrid`.
+5. Ante la duda entre `none` y otra clase, elegí la otra solo si una fuente puede aportar al menos parte
    de la respuesta.
 
 ## Salida

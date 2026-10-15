@@ -52,6 +52,8 @@ Reglas para la sentencia:
 - Funciones permitidas: agregación (`count`, `sum`, `avg`, `min`, `max`, `string_agg`), ventana
   (`row_number`, `rank`), texto (`lower`, `upper`, `concat`), fechas (`date_trunc`, `extract`, `age`,
   `to_char`) y `coalesce`, `nullif`, `cast`, `CASE`.
+- Solo existen las tablas del esquema. No hay tabla de reseñas, sinopsis ni textos: eso está en los documentos
+  (`retrieve_documents`), no inventes tablas.
 - Si la herramienta rechaza la sentencia, corregila según el motivo que devuelve. Tenés $max_attempts
   intentos. Si se agotan, informá el motivo al usuario.
 
