@@ -56,11 +56,8 @@ export function App() {
   return (
     <main className="flex h-svh w-full flex-col">
       <header className="shrink-0 border-b">
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-0.5 px-4 py-3">
+        <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-center px-4">
           <h1 className="text-base font-medium">Agente de biblioteca</h1>
-          <p className="text-sm text-muted-foreground">
-            Consultá en castellano o inglés; el agente indica de dónde sale cada respuesta.
-          </p>
         </div>
       </header>
       <div className="min-h-0 flex-1">
