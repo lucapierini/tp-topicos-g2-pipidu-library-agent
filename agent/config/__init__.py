@@ -81,6 +81,8 @@ class Config:
     db_name: str
     db_host: str
     db_port: int
+    # `require` para Neon (TLS obligatorio); vacío = el valor por defecto de libpq (base local).
+    db_sslmode: str
 
 
 def load_config() -> Config:
@@ -115,4 +117,5 @@ def load_config() -> Config:
         # ~2 s (medido); Docker publica el puerto solo en IPv4 loopback.
         db_host=_env("POSTGRES_HOST", "127.0.0.1"),
         db_port=_env_int("POSTGRES_PORT", "5432"),
+        db_sslmode=os.environ.get("POSTGRES_SSLMODE", ""),
     )

@@ -156,6 +156,7 @@ class PgRunRecorder:
                     host=self.cfg.db_host,
                     port=self.cfg.db_port,
                     password=os.environ.get("POSTGRES_LOG_PASSWORD"),  # Art. 9
+                    sslmode=self.cfg.db_sslmode or None,
                     connect_timeout=self.CONNECT_TIMEOUT_S,
                 )
             except Exception:

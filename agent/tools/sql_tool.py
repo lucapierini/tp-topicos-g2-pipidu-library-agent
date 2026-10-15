@@ -76,6 +76,7 @@ class SqlExecutor:
             port=self.cfg.db_port,
             password=os.environ.get("POSTGRES_PASSWORD"),  # Art. 9: nunca un literal en el repo
             options=connection_options(self.cfg),
+            sslmode=self.cfg.db_sslmode or None,
             connect_timeout=self.cfg.api_timeout_s,
         )
         conn.set_session(readonly=True)  # defensa en profundidad además del rol (Art. 3)
