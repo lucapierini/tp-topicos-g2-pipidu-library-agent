@@ -190,13 +190,3 @@ npm run build    # tsc + vite build
 ```
 
 Para agregar componentes de shadcn/ui: `npx shadcn@latest add <componente>` dentro de `web/`.
-
-## Criterios de promoción
-
-El enunciado pide al menos dos de cinco. Estado real:
-
-- [x] Framework agéntico (Smolagents): implementado
-- [x] SDD (artefactos en `TP/` y `openspec/`): implementados
-- [ ] Interfaz gráfica: SPA en `web/` (Vite + shadcn/ui) que consume la API (D80, D93); implementada, falta cerrar la verificación de punta a punta del change `frontend-web-vite` para tildarla
-- [ ] Despliegue en la nube (GCP): **descartado por D81** (decisión del equipo, 2026-10-13): el sistema se prepara para correr en entorno local. Queda cubierto solo con `framework agéntico` y `SDD`; hay que confirmarlo con la cátedra (T9.13, riesgo D83). La imagen `runtime` sigue siendo válida para correr local con `uvicorn`
-- [ ] Observabilidad (LangSmith): excluida explícitamente
