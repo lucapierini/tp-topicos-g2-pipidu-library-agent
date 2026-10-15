@@ -10,7 +10,8 @@ con el resto del sistema en el entorno local (D81).
 
 ### Requirement: R-8.1 — Envío de una consulta
 La interfaz SHALL permitir escribir una consulta en lenguaje natural y enviarla a `POST /ask` de la API.
-SHALL NO enviar una consulta vacía o de solo espacios, y SHALL NO enviar una nueva mientras otra esté en curso.
+SHALL NO enviar una consulta vacía o de solo espacios, y SHALL NO enviar una nueva mientras otra esté en curso,
+pero SHALL permitir escribir la siguiente mientras se espera la respuesta.
 
 #### Scenario: consulta válida
 - **GIVEN** texto escrito en el campo de consulta
@@ -27,6 +28,12 @@ SHALL NO enviar una consulta vacía o de solo espacios, y SHALL NO enviar una nu
 - **GIVEN** una consulta en curso
 - **WHEN** la persona intenta enviar otra
 - **THEN** el envío está deshabilitado hasta que la primera termine o se cancele
+
+#### Scenario: escribir mientras responde
+- **GIVEN** una consulta en curso
+- **WHEN** la persona escribe en el campo de consulta
+- **THEN** el campo acepta el texto y lo conserva
+- **AND** Enter no lo envía; queda listo para enviarse cuando la respuesta termine
 
 ### Requirement: R-8.2 — Progreso en vivo
 Mientras la consulta está en curso, la interfaz SHALL mostrar el progreso real a medida que llegan los

@@ -46,7 +46,6 @@ export function AskForm({
               value={text}
               onChange={(event) => setText(event.target.value)}
               onKeyDown={onKeyDown}
-              readOnly={running}
               className="min-h-16"
             />
             <InputGroupAddon align="block-end">
