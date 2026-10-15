@@ -1,0 +1,221 @@
+{
+  "threshold": 0.35,
+  "top_k": 5,
+  "embedding_model": "gemini-embedding-001",
+  "cases": [
+    {
+      "id": "R1",
+      "query": "plazo de devolución y multas",
+      "expected": "rag",
+      "max_similarity": 0.802,
+      "scores": [
+        0.802,
+        0.754,
+        0.753,
+        0.734,
+        0.719
+      ]
+    },
+    {
+      "id": "R2",
+      "query": "sinopsis del libro Cien años de soledad",
+      "expected": "rag",
+      "max_similarity": 0.786,
+      "scores": [
+        0.786,
+        0.745,
+        0.708,
+        0.701,
+        0.571
+      ]
+    },
+    {
+      "id": "R3",
+      "query": "pasos para renovar un préstamo",
+      "expected": "rag",
+      "max_similarity": 0.746,
+      "scores": [
+        0.746,
+        0.692,
+        0.671,
+        0.652,
+        0.648
+      ]
+    },
+    {
+      "id": "R4",
+      "query": "precio del libro Rayuela",
+      "expected": "none",
+      "max_similarity": 0.611,
+      "scores": [
+        0.611,
+        0.599,
+        0.593,
+        0.591,
+        0.59
+      ]
+    },
+    {
+      "id": "R5",
+      "query": "¿Hay wifi disponible en la sala de lectura?",
+      "expected": "none",
+      "max_similarity": 0.649,
+      "scores": [
+        0.649,
+        0.631,
+        0.626,
+        0.618,
+        0.618
+      ]
+    },
+    {
+      "id": "R6",
+      "query": "¿La biblioteca tiene cafetería o estacionamiento?",
+      "expected": "none",
+      "max_similarity": 0.644,
+      "scores": [
+        0.644,
+        0.627,
+        0.626,
+        0.625,
+        0.623
+      ]
+    },
+    {
+      "id": "R7",
+      "query": "¿Puedo reservar una sala de estudio grupal?",
+      "expected": "none",
+      "max_similarity": 0.597,
+      "scores": [
+        0.597,
+        0.589,
+        0.586,
+        0.579,
+        0.578
+      ]
+    },
+    {
+      "id": "R8",
+      "query": "¿Cuánto cuesta imprimir o sacar fotocopias?",
+      "expected": "none",
+      "max_similarity": 0.602,
+      "scores": [
+        0.602,
+        0.595,
+        0.571,
+        0.57,
+        0.564
+      ]
+    },
+    {
+      "id": "R9",
+      "query": "¿cuánto es la multa por día de atraso?",
+      "expected": "rag",
+      "max_similarity": 0.771,
+      "scores": [
+        0.771,
+        0.69,
+        0.668,
+        0.661,
+        0.653
+      ]
+    },
+    {
+      "id": "R10",
+      "query": "¿hasta qué hora está abierta la biblioteca?",
+      "expected": "rag",
+      "max_similarity": 0.735,
+      "scores": [
+        0.735,
+        0.666,
+        0.655,
+        0.652,
+        0.648
+      ]
+    },
+    {
+      "id": "R11",
+      "query": "¿cómo hago para pagar una multa?",
+      "expected": "rag",
+      "max_similarity": 0.725,
+      "scores": [
+        0.725,
+        0.651,
+        0.613,
+        0.601,
+        0.601
+      ]
+    },
+    {
+      "id": "G6",
+      "query": "¿Cuántos días tengo para devolver un libro antes de que me multen?",
+      "expected": "rag",
+      "max_similarity": 0.755,
+      "scores": [
+        0.755,
+        0.734,
+        0.717,
+        0.707,
+        0.693
+      ]
+    },
+    {
+      "id": "G7",
+      "query": "¿De qué trata el libro \"Cien años de soledad\"?",
+      "expected": "rag",
+      "max_similarity": 0.762,
+      "scores": [
+        0.762,
+        0.742,
+        0.7,
+        0.693,
+        0.543
+      ]
+    },
+    {
+      "id": "G8",
+      "query": "¿Cómo renuevo un préstamo desde el sistema?",
+      "expected": "rag",
+      "max_similarity": 0.774,
+      "scores": [
+        0.774,
+        0.703,
+        0.694,
+        0.687,
+        0.686
+      ]
+    },
+    {
+      "id": "G9",
+      "query": "¿Cuál es el horario de la biblioteca?",
+      "expected": "rag",
+      "max_similarity": 0.758,
+      "scores": [
+        0.758,
+        0.668,
+        0.668,
+        0.664,
+        0.658
+      ]
+    },
+    {
+      "id": "B2",
+      "query": "How many days do I have to return a book before I get fined?",
+      "expected": "rag",
+      "max_similarity": 0.686,
+      "scores": [
+        0.686,
+        0.676,
+        0.655,
+        0.655,
+        0.631
+      ]
+    }
+  ],
+  "verdict": {
+    "separable": true,
+    "worst_positive": 0.686,
+    "best_negative": 0.649,
+    "proposed": 0.667
+  }
+}

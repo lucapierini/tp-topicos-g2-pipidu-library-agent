@@ -156,5 +156,20 @@ RETRIEVAL_TESTS: list[GoldenCase] = [
                lambda out: not out.get("chunks"), "similitud máxima < umbral → reporte de no-relevancia"),
 ]
 
+# Casos adicionales SOLO para calibrar el umbral con la base real (scripts/calibrate_threshold.py, D12, R-4.8).
+# Con un único negativo (R4) el punto medio no es fiable. No van en RETRIEVAL_TESTS: esa lista también la ejecutan
+# los tests contra el corpus simulado, que es léxico y no representa a los documentos reales. Los negativos son
+# preguntas del dominio que los documentos NO cubren (los más difíciles: comparten vocabulario con el corpus) y los
+# positivos están redactados como los haría un socio.
+CALIBRATION_EXTRA: list[GoldenCase] = [
+    GoldenCase("R5", "¿Hay wifi disponible en la sala de lectura?", "none", lambda out: not out.get("chunks")),
+    GoldenCase("R6", "¿La biblioteca tiene cafetería o estacionamiento?", "none", lambda out: not out.get("chunks")),
+    GoldenCase("R7", "¿Puedo reservar una sala de estudio grupal?", "none", lambda out: not out.get("chunks")),
+    GoldenCase("R8", "¿Cuánto cuesta imprimir o sacar fotocopias?", "none", lambda out: not out.get("chunks")),
+    GoldenCase("R9", "¿cuánto es la multa por día de atraso?", "rag", _document("reglamento_biblioteca")),
+    GoldenCase("R10", "¿hasta qué hora está abierta la biblioteca?", "rag", _document("reglamento_biblioteca")),
+    GoldenCase("R11", "¿cómo hago para pagar una multa?", "rag", _document("manual_uso_sistema")),
+]
+
 ACCEPTANCE_MIN = 11  # ≥ 11/13 (R-2.1)
 ACCENT = ACCEPTANCE_MIN  # alias del nombre anterior

@@ -95,8 +95,8 @@ una cláusula arruina el retrieval (R2 del set de retrieval).
 ### D11 — Idempotencia por `sha256(contenido)` como unique del chunk
 **Traza:** R-4.5.
 
-### D12 — top-k = 5, umbral de similitud = 0.35, calibrado contra los PDFs reales
-El valor definitivo se registra aquí cuando se complete la calibración (T3.6).
+### D12 — top-k = 5, umbral de similitud calibrado contra los PDFs reales
+Valor inicial 0.35; la calibración (T3.6) lo fijó en **0.67**: ver D75.
 **Motivo:** el umbral sin calibración convierte R-4.6 en un número arbitrario.
 **Traza:** R-4.4, R-4.8, R4 del set de retrieval.
 
@@ -197,7 +197,7 @@ a `production` → seed validado en `test-seed` → aplicado → PDFs generados 
 
 | Qué | Valor inicial | Cierre |
 |---|---|---|
-| Umbral de similitud definitivo | 0.35 | T3.6, con la curva de similitud sobre los PDFs reales |
+| Umbral de similitud definitivo | 0.35 | **Cerrada (D75): 0.67**, con 16 consultas sobre los PDFs reales |
 | Cantidad real de chunks por documento | — | T3.2, con el chunking ejecutado |
 | Fuente de los PDFs | generados por el integrante de RAG/BD | **Cerrada (D19)**; queda pendiente el contenido concreto |
 | Mecanismo exacto de despliegue en Cloud Run | — | T10, primera prueba de `docker run` local |
@@ -262,5 +262,6 @@ a `production` → seed validado en `test-seed` → aplicado → PDFs generados 
 | D72 | 2026-10-11 | T9.1 | El `check` de los híbridos (`_both_sources`) exige una sentencia SQL ejecutada y un fragmento citado, **no** filas no vacías. Un resultado vacío es válido | G11 daba contenido fallido con la respuesta correcta: el agente resolvió el socio con más préstamos y después verificó si tenía vencidos (0 filas) y `as_outcome()` toma las filas de la última sentencia. Exigir filas contradecía R-3.8 (sin resultados es una respuesta válida). Se cambió el criterio, no el agente, con test; se regeneró la corrida y el 12/13 original queda en el historial de git (D16) |
 | D73 | 2026-10-11 | T7.6 | El idioma de la respuesta se **instruye** en el prompt con la clasificación (`LANGUAGE_RULES`: "Answer in English" / "Respondé en castellano"), se consigna en `evidence["language"]` y se verifica en el golden set con casos aparte (`B1`, `B2`, fuera de los 13 de R-2.1) y una heurística de palabras funcionales sobre la prosa | La corrida con casos en inglés dio idioma declarado `en` 2/2 pero **contenido 0/2**: el modelo respondía en castellano y solo la etiqueta fija salía "Source:". El prompt, las herramientas y los documentos están en castellano y la regla genérica "en el idioma de la consulta" no alcanzaba. La heurística es una excepción acotada a D16 (prosa solo con rúbrica): el idioma sí es verificable; la calidad de la prosa sigue siendo manual (R-5.1) |
 | D74 | 2026-10-11 | T9.2 | Un solo Dockerfile con tres etapas: `base` (Python 3.12 + `requirements.txt` + `agent/`, usuario no root), `measure` (+ `scripts/` y `tests/`) y `runtime` (destino por defecto, sin tests). Secretos solo por entorno; `.env` fuera del contexto | `measure_golden.py` importa los dobles y el golden set de `tests/`: sin una etapa aparte habría que llevar los tests a la imagen que se despliega o no poder medir dentro del contenedor. Los tests estáticos (`tests/test_dockerfile.py`) atrapan rutas inexistentes, secretos y root sin necesitar el daemon, y el build real se verificó con Docker: las dos etapas construyen, `runtime` corre como uid 10001 sin `tests/` ni `.env`, y `measure` ejecutó G1, G6 y G13 contra la base del host y la API (3/3) (Art. 8, Art. 9) |
+| D75 | 2026-10-15 | T3.6 | Umbral de similitud = **0.67** (antes 0.35). Calibrado con 16 consultas sobre los 36 fragmentos reales: positivos entre 0.686 y 0.802, negativos del dominio entre 0.597 y 0.649; el punto medio es 0.667. Evidencia: `TP/evidencia/calibracion_umbral.json`. Reemplaza el valor inicial de D12 | Con 0.35 pasaba cualquier consulta: hasta una pregunta del dominio sin cobertura ("¿hay wifi?") puntúa 0.65. **Margen angosto (~0.02 a cada lado):** el peor positivo es una pregunta en inglés (B2, 0.686) y el mejor negativo "wifi" (0.649). El umbral solo es un filtro grueso: la segunda barrera es el clasificador y que el modelo, con los fragmentos a la vista, declare que no hay información (R-4.6). Conviene recalibrar si cambian los documentos, el chunking o el modelo de embeddings |
 | — | T3 | — | — | — |
 | — | T5 | — | — | — |
