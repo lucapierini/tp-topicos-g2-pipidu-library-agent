@@ -117,7 +117,7 @@ GOLDEN_SET: list[GoldenCase] = [
     GoldenCase("G6", "¿Cuántos días tengo para devolver un libro antes de que me multen?", "rag",
                _document("reglamento_biblioteca"), "plazo exacto citado"),
     GoldenCase("G7", f'¿De qué trata el libro "{SEED_ENTITIES["libro_con_resena"]}"?', "rag",
-               _document("resenas_libro_"), "sinopsis citada"),
+               _document("resenas_"), "sinopsis citada"),
     GoldenCase("G8", "¿Cómo renuevo un préstamo desde el sistema?", "rag",
                _document("reglamento_biblioteca"), "renovación citada (Art. 4)"),
     GoldenCase("G9", "¿Cuál es el horario de la biblioteca?", "rag",
@@ -150,7 +150,7 @@ BILINGUAL_SET: list[GoldenCase] = [
 # Pruebas de retrieval (R-4.4, R-4.6)
 RETRIEVAL_TESTS: list[GoldenCase] = [
     GoldenCase("R1", "plazo de devolución y multas", "rag", _document("reglamento_biblioteca")),
-    GoldenCase("R2", f"sinopsis del libro {SEED_ENTITIES['libro_con_resena']}", "rag", _document("resenas_libro_")),
+    GoldenCase("R2", f"sinopsis del libro {SEED_ENTITIES['libro_con_resena']}", "rag", _document("resenas_")),
     GoldenCase("R3", "condiciones para renovar un préstamo", "rag", _document("reglamento_biblioteca")),
     GoldenCase("R4", f"precio del libro {SEED_ENTITIES['libro_sin_precio']}", "none",
                lambda out: not out.get("chunks"), "similitud máxima < umbral → reporte de no-relevancia"),
@@ -169,6 +169,11 @@ CALIBRATION_EXTRA: list[GoldenCase] = [
     GoldenCase("R9", "¿cuánto es la multa por día de atraso?", "rag", _document("reglamento_biblioteca")),
     GoldenCase("R10", "¿hasta qué hora está abierta la biblioteca?", "rag", _document("reglamento_biblioteca")),
     GoldenCase("R11", "¿cuántos libros puedo tener prestados a la vez?", "rag", _document("reglamento_biblioteca")),
+    GoldenCase("R12", "¿De qué trata El Hobbit?", "rag", _document("resenas_tolkien")),
+    GoldenCase("R13", "¿En qué orden conviene leer los libros de Tolkien?", "rag", _document("resenas_tolkien")),
+    GoldenCase("R14", "¿De qué trata la saga Alas de hierro?", "rag", _document("resenas_empyrean")),
+    GoldenCase("R15", "¿Quién es Violet Sorrengail y qué le pasa en la academia?", "rag", _document("resenas_empyrean")),
+    GoldenCase("R16", "¿De qué trata la saga Canción de hielo y fuego?", "none", lambda out: not out.get("chunks")),
 ]
 
 ACCEPTANCE_MIN = 11  # ≥ 11/13 (R-2.1)

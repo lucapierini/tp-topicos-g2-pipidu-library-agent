@@ -147,6 +147,71 @@
       ]
     },
     {
+      "id": "R12",
+      "query": "¿De qué trata El Hobbit?",
+      "expected": "rag",
+      "max_similarity": 0.732,
+      "scores": [
+        0.732,
+        0.695,
+        0.666,
+        0.66,
+        0.643
+      ]
+    },
+    {
+      "id": "R13",
+      "query": "¿En qué orden conviene leer los libros de Tolkien?",
+      "expected": "rag",
+      "max_similarity": 0.737,
+      "scores": [
+        0.737,
+        0.696,
+        0.671,
+        0.667,
+        0.667
+      ]
+    },
+    {
+      "id": "R14",
+      "query": "¿De qué trata la saga Alas de hierro?",
+      "expected": "rag",
+      "max_similarity": 0.706,
+      "scores": [
+        0.706,
+        0.682,
+        0.679,
+        0.663,
+        0.644
+      ]
+    },
+    {
+      "id": "R15",
+      "query": "¿Quién es Violet Sorrengail y qué le pasa en la academia?",
+      "expected": "rag",
+      "max_similarity": 0.646,
+      "scores": [
+        0.646,
+        0.635,
+        0.614,
+        0.608,
+        0.57
+      ]
+    },
+    {
+      "id": "R16",
+      "query": "¿De qué trata la saga Canción de hielo y fuego?",
+      "expected": "none",
+      "max_similarity": 0.627,
+      "scores": [
+        0.627,
+        0.605,
+        0.591,
+        0.586,
+        0.583
+      ]
+    },
+    {
       "id": "G6",
       "query": "¿Cuántos días tengo para devolver un libro antes de que me multen?",
       "expected": "rag",
@@ -169,7 +234,7 @@
         0.742,
         0.7,
         0.693,
-        0.543
+        0.55
       ]
     },
     {
@@ -213,9 +278,9 @@
     }
   ],
   "verdict": {
-    "separable": true,
-    "worst_positive": 0.686,
+    "separable": false,
+    "worst_positive": 0.646,
     "best_negative": 0.649,
-    "proposed": 0.667
+    "reason": "las similitudes de los casos con y sin cobertura se solapan"
   }
 }

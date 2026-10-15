@@ -10,6 +10,8 @@ Escribe, así que usa el dueño de la base. Destino, en este orden (Art. 9: nunc
 (así lo usa docker compose contra la base local). El agente en ejecución NO usa esta conexión: lee con `agent_ro`.
 
 Es idempotente: si el `sha256` del PDF no cambió y ya tiene fragmentos, se saltea (`--force` lo rehace).
+La carpeta `rag/documents/` es la fuente de verdad: los documentos que ya no están se borran de la base
+(`--keep-orphans` lo evita).
 
     python rag/ingest.py --dry-run     # muestra los fragmentos; sin red ni base
     python rag/ingest.py               # ingesta
@@ -113,6 +115,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--dry-run", action="store_true", help="muestra los fragmentos sin embeber ni escribir")
     parser.add_argument("--force", action="store_true", help="rehace los documentos aunque no hayan cambiado")
+    parser.add_argument("--keep-orphans", action="store_true",
+                        help="no borra de la base los documentos que ya no están en rag/documents/")
     args = parser.parse_args()
     load_env()
 
@@ -186,6 +190,17 @@ def main() -> int:
                     )
             conn.commit()
             print(f"+ {pdf.name}: {len(frags)} fragmentos")
+
+        if not args.keep_orphans:
+            # La carpeta es la fuente de verdad: lo que ya no está se borra (los fragmentos caen en cascada).
+            with conn.cursor() as cur:
+                cur.execute(
+                    "DELETE FROM documentos WHERE nombre_archivo <> ALL(%s) RETURNING nombre_archivo",
+                    ([pdf.name for _, pdf, _ in plan],),
+                )
+                for (name,) in cur.fetchall():
+                    print(f"- {name}: eliminado (ya no está en rag/documents/)")
+            conn.commit()
 
         with conn.cursor() as cur:
             cur.execute("SELECT count(*) FROM documentos")

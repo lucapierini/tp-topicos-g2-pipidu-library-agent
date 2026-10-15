@@ -57,3 +57,20 @@ El seed SHALL abortar sin modificar la base si ya existen libros o socios.
 - **WHEN** se vuelve a aplicar el seed
 - **THEN** falla con un mensaje explícito
 - **AND** no cambia ninguna fila
+
+### Requirement: R-8.7 — Ampliación aditiva del catálogo
+`db/seed_ampliacion.sql` SHALL agregar al catálogo cómics, fantasía y manga con ISBN verificables, SHALL NOT modificar socios ni préstamos y SHALL ser idempotente.
+
+#### Scenario: aplicación repetida
+- **GIVEN** `db/schema.sql` y `db/seed.sql` aplicados
+- **WHEN** se aplica `db/seed_ampliacion.sql` dos veces
+- **THEN** la segunda aplicación no cambia el número de filas de ninguna tabla
+
+#### Scenario: volumen y unicidad
+- **WHEN** se aplica la ampliación
+- **THEN** se agregan 51 libros con ISBN-13 únicos y de dígito verificador válido, cada uno con al menos un autor
+
+#### Scenario: libros reseñados
+- **WHEN** se buscan en `libros` los títulos reseñados en `resenas_tolkien` y `resenas_empyrean`
+- **THEN** existen los 8: El Silmarillion, El Hobbit, los 3 tomos de El Señor de los Anillos, Alas de sangre, Alas de hierro y Alas de ónix
+

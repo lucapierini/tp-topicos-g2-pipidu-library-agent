@@ -13,7 +13,7 @@
 - [ ] 2.1 Aplicar `db/schema.sql` y `db/seed.sql` en una base local limpia y verificar que el seed termina sin errores y que `SELECT count(*)` da ≥ 15 en las 7 tablas de dominio (R-8.1, R-8.5)
 - [ ] 2.2 Verificar que `v_prestamos_estado` devuelve al menos un préstamo `vencido` tras cargar el seed (R-8.2, R-7.5)
 - [ ] 2.3 Verificar que una segunda aplicación del seed aborta sin cambiar filas (R-8.6)
-- [ ] 2.4 Verificar que los 3 títulos reseñados existen en `libros` (R-8.3)
+- [ ] 2.4 Verificar que los títulos reseñados existen en `libros` (R-8.3)
 - [ ] 2.5 Verificar con `pytest -m integration` los CHECK de R-7.4 y R-7.6, la dimensión de R-7.8 y los permisos de R-7.9 (hoy cubiertos por `tests/test_runs_integration.py` y los tests de integración existentes; agregar los que falten)
 
 ## 3. Verificación de documentos y bucket
@@ -28,6 +28,13 @@
 - [ ] 4.1 Actualizar `agente-y-tools/tasks.md` marcando 2.5, 2.7 y 3.1 si 2.1 y 3.1 de este change pasan, y 9.6 con la decisión D-DB1
 - [x] 4.2 Correr `openspec validate --strict` y corregir lo que reporte
 - [ ] 4.3 Archivar con `openspec archive base-de-datos-neon` cuando 2.x y 3.x estén completas
+
+## 5. Ampliación del catálogo y de las reseñas (D77)
+
+- [x] 5.1 Generar `db/seed_ampliacion.sql` (51 libros: cómics DC y Marvel, Empyrean, Tolkien, Narnia, Harry Potter, Berserk y Dragon Ball) con ISBN verificados en Open Library (R-8.7)
+- [x] 5.2 Aplicarlo dos veces en la base local y verificar que la segunda no cambia filas (R-8.7)
+- [x] 5.3 Reemplazar la reseña de IA por `resenas_tolkien` y `resenas_empyrean`, y agregar la poda a `rag/ingest.py` (R-9.1, R-9.7)
+- [ ] 5.4 Aplicar la ampliación y la ingesta en Neon, y reflejar los cambios en el bucket `rag`
 
 ## Workflow follow-up
 

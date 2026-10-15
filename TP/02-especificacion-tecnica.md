@@ -186,7 +186,7 @@ fechas relativas a `CURRENT_DATE`). `scripts/replicate_neon.sh` trae el esquema 
 |---|---|
 | `reglamento_biblioteca.pdf` | Normas de préstamo, sanciones, plazos, horarios |
 | `politicas_universidad.pdf` | Políticas institucionales generales |
-| `resenas_libro_1.pdf` … `resenas_libro_3.pdf` | Sinopsis/reseñas de 1 a 3 libros del catálogo |
+| `resenas_cien_anios_de_soledad.pdf`, `resenas_clean_code.pdf`, `resenas_tolkien.pdf`, `resenas_empyrean.pdf` | Reseñas de libros y sagas del catálogo |
 
 Total: entre 4 y 6 PDFs (mínimo exigido: 2).
 

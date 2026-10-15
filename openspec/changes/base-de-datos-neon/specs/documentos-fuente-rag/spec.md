@@ -12,7 +12,7 @@ El repositorio SHALL contener entre 4 y 6 documentos fuente en Markdown en `rag/
 
 #### Scenario: inventario
 - **WHEN** se listan los `.md` de `rag/documents/`
-- **THEN** hay 5: `reglamento_biblioteca`, `politicas_universidad`, `resenas_cien_anios_de_soledad`, `resenas_clean_code`, `resenas_ia_enfoque_moderno`
+- **THEN** hay 6: `reglamento_biblioteca`, `politicas_universidad`, `resenas_cien_anios_de_soledad`, `resenas_clean_code`, `resenas_tolkien`, `resenas_empyrean`
 
 ### Requirement: R-9.2 — El reglamento es la fuente de las reglas de negocio
 `reglamento_biblioteca.md` SHALL declarar plazo de préstamo, máximo de libros simultáneos, renovaciones y multa por atraso, y SHALL ser la única fuente de esas reglas.
@@ -58,7 +58,7 @@ Los PDFs SHALL almacenarse en el bucket privado `rag` de Neon bajo el prefijo `d
 - **THEN** las credenciales S3 solo existen en `.env.local`, que está en `.gitignore`
 
 ### Requirement: R-9.7 — Los casos del golden set tienen respaldo documental
-Los documentos SHALL cubrir plazo de devolución, sinopsis de los tres libros reseñados, pasos del sistema y horarios.
+Los documentos SHALL cubrir plazo de devolución, horarios y la sinopsis de las obras reseñadas (Cien años de soledad, Clean Code, la obra de Tolkien y la saga Empyrean).
 
 #### Scenario: cobertura
 - **WHEN** se contrastan los casos RAG e híbridos del golden set con los documentos
