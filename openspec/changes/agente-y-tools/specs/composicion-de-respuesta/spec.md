@@ -87,3 +87,24 @@ responder sin datos.
 - **WHEN** el agente compone la respuesta
 - **THEN** la respuesta informa el motivo del rechazo
 - **AND** no contiene afirmaciones sobre datos del dominio
+
+### Requirement: R-5.8 — Una sola nota del sistema
+Cuando el sistema agrega una nota a la respuesta (resultado limitado a N filas, dato o norma no obtenidos), la respuesta SHALL contener esa única nota: si el modelo escribió una nota propia al final del texto, el sistema SHALL retirarla antes de agregar la suya.
+
+#### Scenario: resultado truncado con nota del modelo
+- **GIVEN** un resultado de SQL limitado al máximo de filas
+- **AND** un texto del modelo que termina con "(Nota: la lista muestra los primeros 50 resultados)"
+- **WHEN** el agente compone la respuesta
+- **THEN** la respuesta contiene una sola nota, la del sistema
+
+#### Scenario: nota del modelo sin nota del sistema
+- **GIVEN** una respuesta sin truncado ni datos faltantes
+- **WHEN** el agente compone la respuesta
+- **THEN** la nota que escribió el modelo se conserva
+
+### Requirement: R-5.9 — Tono de los mensajes fijos
+Los mensajes fijos del sistema (falta de cobertura, ausencia en documentos, errores de herramienta, pedidos de escritura) SHALL tener un tono cercano y semiserio con una referencia reconocible, SHALL conservar el motivo técnico cuando existe (código y detalle del error) y SHALL estar en el idioma de la consulta.
+
+#### Scenario: consulta sin cobertura
+- **WHEN** el agente declara que no hay información
+- **THEN** el mensaje sugiere cómo reformular la pregunta

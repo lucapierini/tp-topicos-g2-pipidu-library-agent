@@ -66,30 +66,49 @@ def _strip_source_line(text: str) -> str:
     return _TRAILING_SOURCE_LINE.sub("", text).strip()
 
 
+# El sistema agrega sus propias notas (límite de filas, dato faltante). Si el modelo ya escribió una al
+# final ("(Nota: …)", "*Note: …*"), se retira para que quede una sola.
+_NOTE_PARAGRAPH = re.compile(r"^[\W_]*(?:nota|note)s?\b", re.IGNORECASE)
+
+
+def _strip_model_notes(text: str) -> str:
+    paragraphs = text.strip().split("\n\n")
+    while len(paragraphs) > 1 and _NOTE_PARAGRAPH.match(paragraphs[-1].strip()):
+        paragraphs.pop()
+    return "\n\n".join(paragraphs).strip()
+
+
 MESSAGES = {
     "es": {
-        "no_coverage": "No dispongo de información suficiente para responder esta consulta con los "
-                       "datos de la biblioteca ni con sus documentos.",
-        "no_relevant": "No se encontró información relevante en los documentos de la biblioteca para "
-                       "esta consulta.",
-        "sql_failed": "No pude resolver la consulta con los datos de la base: {error}. {detail}",
-        "sql_not_called": "No pude resolver la consulta: no se llegó a consultar la base de datos.",
-        "rag_failed": "No pude consultar los documentos de la biblioteca: {error}.",
-        "run_failed": "No pude completar la consulta: {detail}",
-        "classify_failed": "No pude interpretar la consulta: {detail}",
+        "write_denied": "¡No pasarás! 🧙 Soy bibliotecario de solo lectura: puedo consultar libros, socios, "
+                        "préstamos y reglamentos, pero crear, modificar o borrar datos no está entre mis "
+                        "poderes, así que no hice ningún cambio. Eso queda en manos de quien administra la biblioteca.",
+        "no_coverage": "Houston, tenemos un problema: busqué en la base y en los documentos y no encontré nada "
+                       "sobre eso. Probá con otra pregunta o con el título exacto del libro.",
+        "no_relevant": "Estos no son los documentos que buscás: no encontré nada relevante en los documentos "
+                       "de la biblioteca para esta consulta.",
+        "sql_failed": "Houston, tenemos un problema con la base de datos: {error}. {detail}",
+        "sql_not_called": "Houston, tenemos un problema: no llegué a consultar la base de datos.",
+        "rag_failed": "Houston, tenemos un problema con los documentos de la biblioteca: {error}.",
+        "run_failed": "Houston, tenemos un problema: {detail}",
+        "classify_failed": "Ni Sherlock Holmes habría entendido esta consulta: {detail}",
         "partial_sql": "Nota: no se pudo obtener el dato de la base ({error}), por lo que no es posible concluir.",
         "partial_rag": "Nota: no se encontró la norma en los documentos ({error}), por lo que no es posible concluir.",
         "truncated": "Nota: el resultado se limitó a {n} filas; hay más datos que no se muestran.",
     },
     "en": {
-        "no_coverage": "I don't have enough information to answer this question with the library's data "
-                       "or its documents.",
-        "no_relevant": "No relevant information was found in the library's documents for this question.",
-        "sql_failed": "I couldn't resolve the question with the database: {error}. {detail}",
-        "sql_not_called": "I couldn't resolve the question: the database was never queried.",
-        "rag_failed": "I couldn't query the library's documents: {error}.",
-        "run_failed": "I couldn't complete the question: {detail}",
-        "classify_failed": "I couldn't interpret the question: {detail}",
+        "write_denied": "You shall not pass! 🧙 I'm a read-only librarian: I can look up books, members, loans "
+                        "and regulations, but creating, changing or deleting data is beyond my powers. That "
+                        "is up to whoever manages the library, so I made no changes.",
+        "no_coverage": "Houston, we have a problem: I searched the database and the documents and found nothing "
+                       "about that. Try another question or the exact title of the book.",
+        "no_relevant": "These aren't the documents you're looking for: I found nothing relevant in the "
+                       "library's documents for this question.",
+        "sql_failed": "Houston, we have a problem with the database: {error}. {detail}",
+        "sql_not_called": "Houston, we have a problem: I never got to query the database.",
+        "rag_failed": "Houston, we have a problem with the library's documents: {error}.",
+        "run_failed": "Houston, we have a problem: {detail}",
+        "classify_failed": "Not even Sherlock Holmes could make sense of this question: {detail}",
         "partial_sql": "Note: the database value could not be obtained ({error}), so no conclusion is possible.",
         "partial_rag": "Note: the rule was not found in the documents ({error}), so no conclusion is possible.",
         "truncated": "Note: the result was limited to {n} rows; there is more data not shown.",
@@ -455,6 +474,13 @@ class LibraryAgent:
         _check_cancelled(cancel)
         emit("classified", {"classification": classification.label, "language": classification.language})
         trace = [TRACE_CLASSIFICATION]
+        if classification.write_request:
+            # El agente es de solo lectura (Art. 3): ni se intenta SQL. Mensaje fijo, sin llamar al modelo.
+            return self._gap_answer(
+                text, "none", classification.language, ANSWER_KIND_NO_COVERAGE, trace,
+                MESSAGES[classification.language]["write_denied"],
+                evidence={"write_request": True},
+            )
         if classification.label == "none":
             return self._gap_answer(
                 text, "none", classification.language, ANSWER_KIND_NO_COVERAGE, trace,
@@ -600,6 +626,8 @@ class LibraryAgent:
         if executed and executed[-1].truncated:
             notes.append(msg["truncated"].format(n=len(executed[-1].rows)))
 
+        if notes:
+            body = _strip_model_notes(body)
         answer = "\n\n".join([body, *notes])
         return AgentAnswer(
             question=question,

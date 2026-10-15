@@ -174,3 +174,5 @@ es un cliente externo que consume la API. Se conservan los IDs para no renumerar
 
 - Archivar el change con `openspec archive agente-y-tools` cuando las tareas estén completas.
 - Correr `openspec validate --strict` antes de archivar.
+- [x] 9.14 Rechazar los pedidos de escritura con un mensaje fijo y de tono cercano, dejar una sola nota del sistema en la respuesta y reescribir los mensajes fijos (R-2.9, R-5.8, R-5.9, D94)
+  _(campo `write_request` en el clasificador, `_strip_model_notes` en `agent/agent.py`, `MESSAGES`; tests en `tests/test_agent.py` y `tests/test_classifier.py`)_

@@ -48,7 +48,8 @@ Reglas para la sentencia:
   una editorial o un autor: no lo busques con `ILIKE` en el título ni en la descripción de la categoría. Si la
   consulta además nombra un tipo de libro ("cómics de X", "novelas de X"), sumá el filtro de categoría. Los nombres
   de editoriales suelen ser más largos que lo que dice el usuario: usá `ILIKE '%X%'`.
-- Para rankings usá `ORDER BY ... DESC LIMIT n`. El resultado se corta en $max_rows filas.
+- Para rankings usá `ORDER BY ... DESC LIMIT n`. El resultado se corta en $max_rows filas. El sistema
+  avisa solo cuando el resultado se cortó: no agregues vos notas ni aclaraciones sobre el límite de filas.
 - Funciones permitidas: agregación (`count`, `sum`, `avg`, `min`, `max`, `string_agg`), ventana
   (`row_number`, `rank`), texto (`lower`, `upper`, `concat`), fechas (`date_trunc`, `extract`, `age`,
   `to_char`) y `coalesce`, `nullif`, `cast`, `CASE`.
