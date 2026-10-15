@@ -33,7 +33,7 @@ instalados `Table` y `Separator`, y los íconos son de `hugeicons`. `web/` usa R
    la tabla haga scroll horizontal dentro de `Table` en vez de desbordar. Si sigue la regla de chat del skill, la burbuja no se reimplementa.
 4. **Solo `answer_kind: answer`.** `no_coverage` y `error` quedan en `Alert` como texto, y la evidencia no se toca (R-8.4).
 5. **Spec como delta de `interfaz-web`.** No hay spec principal todavía (los changes no están archivados): se agrega R-8.11 y se
-   archiva `frontend-web-vite` primero. Se registra en `TP/CHANGELOG.md` como D94 (D93 ya es la SPA).
+   archiva `frontend-web-vite` primero. Se registra en `TP/CHANGELOG.md` como D95 (D93 ya es la SPA).
 
 ## Risks / Trade-offs
 

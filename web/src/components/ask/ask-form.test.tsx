@@ -33,4 +33,14 @@ describe("AskForm", () => {
     expect(onCancel).toHaveBeenCalled()
     expect(onSubmit).not.toHaveBeenCalled()
   })
+
+  it("mientras corre deja escribir la consulta siguiente pero no enviarla (R-8.1)", async () => {
+    const onSubmit = vi.fn()
+    render(<AskForm running onSubmit={onSubmit} onCancel={() => {}} />)
+    const box = screen.getByRole("textbox")
+    expect(box).not.toHaveAttribute("readonly")
+    await userEvent.type(box, "otra consulta{Enter}")
+    expect(box).toHaveValue("otra consulta")
+    expect(onSubmit).not.toHaveBeenCalled()
+  })
 })
