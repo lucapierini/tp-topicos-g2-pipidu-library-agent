@@ -39,6 +39,22 @@ El registro SHALL consignar la cantidad de intentos de generación de sentencia 
 - **WHEN** se consulta el registro
 - **THEN** se observan los dos intentos con su resultado individual
 
+### Requirement: R-6.5 — Identificación del modelo usado
+El registro SHALL consignar el identificador del modelo y el endpoint (local o API externa) que resolvieron
+la consulta, porque la validez de una medición depende del modelo que la produjo.
+
+#### Scenario: consulta resuelta con un modelo local
+- **GIVEN** una consulta ejecutada con `LLM_API_BASE` apuntando a un servidor local
+- **WHEN** se consulta el registro
+- **THEN** figura el identificador del modelo local y que el endpoint es local
+- **AND** la corrida no puede confundirse con evidencia de aceptación
+
+#### Scenario: consulta resuelta con Gemini
+- **GIVEN** una consulta ejecutada con el modelo definitivo
+- **WHEN** se consulta el registro
+- **THEN** figura el identificador del modelo de Gemini
+- **AND** la clave de API no aparece en el registro
+
 ### Requirement: R-6.6 — El registro no condiciona la respuesta ni expone la historia
 El sistema SHALL contestar la consulta aunque el registro falle y declarar el fallo, y SHALL escribir
 el registro con un rol que solo puede insertar. La herramienta SQL SHALL NO poder leer `agent_runs`.
@@ -65,18 +81,18 @@ el registro con un rol que solo puede insertar. La herramienta SQL SHALL NO pode
 - **WHEN** el sistema la rechaza (R-1.2)
 - **THEN** no se registra ninguna fila, porque no hubo consulta procesada
 
-### Requirement: R-6.5 — Identificación del modelo usado
-El registro SHALL consignar el identificador del modelo y el endpoint (local o API externa) que resolvieron
-la consulta, porque la validez de una medición depende del modelo que la produjo.
+### Requirement: R-6.7 — Una consulta cancelada no se registra
+El sistema SHALL NO registrar en `agent_runs` una consulta que el cliente abandonó antes de recibir
+la respuesta, porque no hubo una respuesta entregada que trazar.
 
-#### Scenario: consulta resuelta con un modelo local
-- **GIVEN** una consulta ejecutada con `LLM_API_BASE` apuntando a un servidor local
-- **WHEN** se consulta el registro
-- **THEN** figura el identificador del modelo local y que el endpoint es local
-- **AND** la corrida no puede confundirse con evidencia de aceptación
+#### Scenario: el cliente corta la conexión
+- **GIVEN** una consulta en curso
+- **WHEN** el cliente la cancela antes del resultado
+- **THEN** el agente se detiene antes del siguiente paso
+- **AND** no se inserta ninguna fila en `agent_runs`
 
-#### Scenario: consulta resuelta con Gemini
-- **GIVEN** una consulta ejecutada con el modelo definitivo
-- **WHEN** se consulta el registro
-- **THEN** figura el identificador del modelo de Gemini
-- **AND** la clave de API no aparece en el registro
+#### Scenario: la cancelación llega durante la ejecución
+- **GIVEN** una consulta que ya invocó al modelo
+- **WHEN** se cancela mientras corre
+- **THEN** la respuesta se descarta
+- **AND** no se inserta ninguna fila en `agent_runs`

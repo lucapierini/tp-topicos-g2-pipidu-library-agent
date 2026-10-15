@@ -5,13 +5,14 @@
 > requiere acuerdo del grupo y queda registrado en `CHANGELOG.md`.
 >
 > **Versión:** 1.0 · **Fecha:** 2026-10-08
+> Art. 8 y 9 alineados con la ejecución local (D81, 2026-10-13).
 
 ---
 
 ## Art. 1 — Spec antes de código
 
 Ningún componente del agente se implementa sin un requisito escrito y trazable. Cada archivo de
-código debe poder vincularse a un requisito (`R-x.y`) de `03-especificaciones-por-capacidad.md`.
+código debe poder vincularse a un requisito (`R-x.y`) de `openspec/changes/agente-y-tools/specs/<capacidad>/spec.md`.
 
 **Regla:** si una línea de código no satisface un requisito existente, o el requisito no existe,
 primero se escribe el requisito.
@@ -58,12 +59,12 @@ parámetro de configuración debe revalidarse contra el golden set.
 ## Art. 8 — Reproducibilidad
 
 Cualquier evaluador debe poder: `git clone` → `docker compose up` → `python -m rag.ingest` →
-`streamlit run ui/app.py`. Si algo requiere una acción manual no documentada en el README, el
+`uvicorn api.app:app` (la API del agente; el frontend se levanta aparte). Si algo requiere una acción manual no documentada en el README, el
 criterio de aprobación está en riesgo.
 
 ## Art. 9 — Sin secretos en el repositorio
 
-API keys y credenciales vía variables de entorno (`.env` en `.gitignore`) o GCP Secret Manager.
+Las API keys y las credenciales se pasan por variables de entorno (`.env` en `.gitignore`) y se inyectan con `docker run --env-file`; no hay gestor de secretos en la nube (D81).
 `.env.example` sin valores reales.
 
 ## Art. 10 — Disciplina de alcance
@@ -87,11 +88,11 @@ privacidad. Si la consigna introdujera un requisito de privacidad, se trata como
 
 | Tema | Convención |
 |---|---|
-| Python | 3.11+, type hints en toda función pública, `ruff` para lint |
+| Python | 3.12+, type hints en toda función pública, `ruff` para lint |
 | IDs de requisito | `R-<capacidad>.<n>` (ej. `R-3.2`) |
-| IDs de tarea | `T<n>` en `04-tareas.md` |
+| IDs de tarea | `T<n>` en `openspec/changes/agente-y-tools/tasks.md` |
 | Formato de aceptación | GIVEN / WHEN / THEN |
-| Commits | `T<n>: <resumen>` (ej. `T3: sql_query_tool + validación estática`) |
+| Commits | `<tipo>(<ámbito>): <resumen> (IDs)`, con los IDs de la decisión y el requisito que motivan el cambio (ej. `feat(api): CORS para el frontend externo (R-7.8, D82)`) |
 | Estructura de specs | Sintaxis OpenSpec-compatible (`### Requirement:` + `#### Scenario:`), para poder correr `openspec validate` |
 
 ---

@@ -1,11 +1,11 @@
-# Imagen del agente (T9.2, D18). Se construye desde la raíz del repo:
+# Imagen del agente (T9.2, D74, D81). Se construye desde la raíz del repo:
 #
 #   docker build -f docker/Dockerfile -t pipidu-agent .                   # runtime (por defecto)
 #   docker build -f docker/Dockerfile --target measure -t pipidu-measure . # + scripts de medición
 #   docker build -f docker/Dockerfile --target local -t pipidu-local .     # + ingesta del RAG (docker compose)
 #
-# No lleva secretos: GEMINI_API_KEY y POSTGRES_* se inyectan en tiempo de ejecución (Art. 9; en
-# Cloud Run, desde Secret Manager). El `.env` queda fuera del contexto (`.dockerignore`).
+# No lleva secretos: GEMINI_API_KEY y POSTGRES_* se inyectan en tiempo de ejecución con variables de
+# entorno o `docker run --env-file .env` (Art. 9). El `.env` queda fuera del contexto (`.dockerignore`).
 
 # --- base: Python 3.12 (el código usa sintaxis de 3.12) + dependencias de ejecución -----------------
 FROM python:3.12-slim AS base
@@ -29,7 +29,7 @@ USER agent
 
 # --- measure: agrega los scripts de medición y lo que importan (dobles y golden set) ----------------
 # `scripts/measure_golden.py` y `scripts/export_runs.py` no son parte del servicio: esta etapa existe
-# para correr la validación dentro de la imagen, no para desplegarla.
+# para correr la validación dentro de la imagen, no para correr el servicio.
 FROM base AS measure
 USER root
 COPY scripts/ scripts/
@@ -50,9 +50,10 @@ USER agent
 ENTRYPOINT ["python"]
 CMD ["scripts/ask.py"]
 
-# --- runtime: lo que se despliega (última etapa = destino por defecto) ------------------------------
-# Todavía no hay UI (tarea 8.1): hasta entonces la imagen solo verifica que el agente importa. Cuando
-# exista `ui/app.py`, agregar `COPY ui/ ui/` y reemplazar el CMD por:
-#   CMD ["sh", "-c", "streamlit run ui/app.py --server.port=${PORT:-8080} --server.address=0.0.0.0"]
+# --- runtime: lo que se ejecuta (última etapa = destino por defecto) ------------------------------
+# Un solo servicio: la API HTTP del agente (D80). El frontend (`web/`, D84) es un cliente de la API con
+# su propia imagen (`docker/Dockerfile.web`); esta imagen no sirve ninguna interfaz gráfica.
 FROM base AS runtime
-CMD ["python", "-c", "import agent.agent; print('agent importable')"]
+COPY api/ api/
+ENV PORT=8080
+CMD ["sh", "-c", "uvicorn api.app:app --host 0.0.0.0 --port ${PORT}"]

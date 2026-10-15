@@ -33,6 +33,7 @@ edita una copia en paralelo.
 4. `rag-retrieval-tool`
 5. `composicion-de-respuesta`
 6. `trazabilidad-de-ejecucion`
+7. `consulta-por-api`
 
 Change `base-de-datos-neon` (justificación del esquema, seed y documentos fuente del RAG):
 

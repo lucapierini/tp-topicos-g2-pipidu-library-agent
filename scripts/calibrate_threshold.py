@@ -1,6 +1,6 @@
 """Calibra el umbral de similitud con los documentos reales (T3.6, R-4.8, D12).
 
-El 0.35 inicial era una **hipótesis**; la calibración lo fijó en 0.67 (D75). Este script mide, contra los PDFs ya
+El 0.35 inicial era una **hipótesis**; la calibración lo fijó en 0.67 (D85). Este script mide, contra los PDFs ya
 indexados en `documentos_embeddings`, la similitud máxima de cada prueba de retrieval:
 
 - R1–R3 (consultas con cobertura): la similitud máxima debe quedar **por encima** del umbral.

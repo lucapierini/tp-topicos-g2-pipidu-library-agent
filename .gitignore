@@ -28,3 +28,7 @@ CLAUDE.md
 
 # Volcados de la base compartida (scripts/replicate_neon.sh): datos, no código
 db/dumps/
+
+# Frontend (web/)
+web/node_modules/
+web/dist/

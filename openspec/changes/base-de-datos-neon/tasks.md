@@ -29,7 +29,7 @@
 - [x] 4.2 Correr `openspec validate --strict` y corregir lo que reporte
 - [ ] 4.3 Archivar con `openspec archive base-de-datos-neon` cuando 2.x y 3.x estén completas
 
-## 5. Ampliación del catálogo y de las reseñas (D77)
+## 5. Ampliación del catálogo y de las reseñas (D87)
 
 - [x] 5.1 Ampliar `db/seed.sql` (51 libros más: cómics DC y Marvel, Empyrean, Tolkien, Narnia, Harry Potter, Berserk y Dragon Ball) con ISBN verificados en Open Library (R-8.7)
 - [x] 5.2 Aplicarlo dos veces en la base local y verificar que la segunda no cambia filas (R-8.7)

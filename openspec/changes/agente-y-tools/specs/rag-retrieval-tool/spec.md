@@ -29,7 +29,7 @@ El sistema SHALL dividir los documentos por cláusula o párrafo, con un tope de
 solapamiento de 150 tokens, sin cortar una cláusula entre fragmentos.
 
 #### Scenario: reproducibilidad del chunking
-- **GIVEN** la configuración de chunking declarada en el README
+- **GIVEN** los parámetros de chunking fijados por el propio requisito (tope 800, solapamiento 150, D10)
 - **WHEN** se reejecuta la ingesta sobre el mismo documento
 - **THEN** la cantidad de fragmentos coincide con lo esperado por esa configuración
 

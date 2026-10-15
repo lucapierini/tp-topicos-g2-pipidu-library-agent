@@ -13,24 +13,25 @@ Entrega: 16/10/2026 23:59 (GMT-03). Coloquio: 23/10 o 30/10/2026.
 
 | Componente | Tecnología |
 |---|---|
-| Lenguaje | Python 3.11+ |
+| Lenguaje | Python 3.12+ (el código usa sintaxis de 3.12) |
 | Base de datos | PostgreSQL + pgvector |
-| LLM | Google Gemini (aceptación y despliegue). En desarrollo puede apuntarse a un servidor local compatible con la API de OpenAI vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`): valida el flujo, no reemplaza la medición de aceptación (R-2.8) |
+| LLM | Google Gemini (aceptación y ejecución del sistema, D81). En desarrollo puede apuntarse a un servidor local compatible con la API de OpenAI vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`): valida el flujo, no reemplaza la medición de aceptación (R-2.8) |
 | Embeddings | Gemini Embeddings API |
 | Framework agéntico | Smolagents |
-| UI | Streamlit |
-| Despliegue | GCP (Cloud Run + Cloud SQL + Secret Manager) |
+| Acceso al agente | API HTTP con FastAPI + uvicorn (streaming SSE); el frontend (`web/`, Vite + shadcn/ui) es un cliente de la API (D80, D84) |
+| Despliegue | Entorno local: Docker Compose (Postgres + pgvector, API, web) (D81, D84); la API también corre con `uvicorn api.app:app` |
 
 ## Estructura del repositorio
 
 ```
-db/            schema.sql, seed_data.py, dump.sql
+db/            schema.sql, dev_seed.sql, migrations/, init/, post_restore.sql (seed_data.py y dump.sql: pendientes)
 rag/           documents/ (PDFs), ingest.py, chunking.py
 agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
-scripts/       measure_golden.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
-ui/            app.py
-tests/         test_sql_tool.py, test_rag_tool.py, test_golden_set.py
+scripts/       measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
+web/           SPA Vite + React + shadcn/ui: cliente de la API (D84)
+tests/         ver el detalle en `TP/02` §8
 docker/        Dockerfile
 TP/            artefactos SDD adjuntables al informe
 openspec/      raíz operativa de SDD (esta carpeta)
@@ -42,7 +43,8 @@ openspec/      raíz operativa de SDD (esta carpeta)
 - IDs de requisito: `R-<capacidad>.<n>`, declarados en cada `specs/<capacidad>/spec.md` del change y
   replicados en el nombre de cada `### Requirement:` para mantener trazabilidad.
 - Criterios de aceptación en formato GIVEN / WHEN / THEN.
-- Commits: `T<n>: <resumen>`.
+- Commits: `<tipo>(<ámbito>): <resumen> (IDs)`, con los IDs de la decisión y el requisito que motivan el
+  cambio (ej. `feat(api): CORS para el frontend externo (R-7.8, D82)`).
 - Cada tarea de `tasks.md` debe trazar a un requisito.
 
 ## Restricciones permanentes

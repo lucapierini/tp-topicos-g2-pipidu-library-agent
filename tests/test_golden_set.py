@@ -2,8 +2,8 @@
 
 Dos niveles:
 1. Forma del set y de sus `check`: se verifica hoy, sin agente.
-2. Exactitud de clasificación: requiere el agente (T6.3) y una API key. Se marca
-   `llm` y se salta hasta que exista.
+2. Exactitud de clasificación: corre con `pytest -m llm` contra el agente real sobre backends
+   falsos, con `GEMINI_API_KEY` o un servidor local (`LLM_API_BASE`). En la suite offline se salta.
 
 Contrato del orquestador (D52): `agent.agent.answer(question) -> AgentAnswer`. Los `check` del
 golden set se evalúan sobre `AgentAnswer.as_outcome()`: clasificación, SQL, filas y chunks.

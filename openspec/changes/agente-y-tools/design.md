@@ -2,10 +2,12 @@
 
 ## Context
 
-Proyecto greenfield. No existe código todavía. La motivación está en `proposal.md`. Las
+El change cubre el agente, sus tools y la API HTTP. El estado de lo implementado se sigue en
+`tasks.md`, que es el lugar canónico. La motivación está en `proposal.md`. Las
 restricciones que condicionan el diseño son las de `TP/00-constitucion.md` (read-only por diseño,
-proveniencia obligatoria, trazabilidad de ejecución) y los criterios de promoción elegidos:
-despliegue en GCP, UI Streamlit, framework agéntico y SDD.
+proveniencia obligatoria, trazabilidad de ejecución) y los criterios de promoción elegidos: el de
+despliegue en la nube queda descartado por D81; siguen cubiertos framework agéntico y SDD, y el de interfaz
+gráfica la provee la SPA de `web/`, un cliente de la API (D80, D84).
 
 Condición de contorno: tres integrantes trabajando en paralelo, lo que exige contratos de interfaz
 definidos antes de implementar, para que las tools se puedan desarrollar y testear de forma aislada.
@@ -23,7 +25,8 @@ definidos antes de implementar, para que las tools se puedan desarrollar y teste
 - Observabilidad con LangSmith ni evaluación automática de calidad de respuestas.
 - Fine-tuning.
 - Escritura sobre la base de datos.
-- Autenticación de usuarios, streaming de respuestas y reintentos ante fallo de API.
+- Autenticación de usuarios y streaming de **tokens** del modelo. Sí hay streaming de **progreso** de la
+  consulta (D75) y reintentos ante límite de cuota (D57).
 
 ## Decisions
 
@@ -49,8 +52,8 @@ del mismo contenido.
 | D14 | Usuario dedicado `agent_ro` + timeout + `search_path` | R-3.5 |
 | D15 | `max_steps = 6`, temperatura 0, timeout de API 30 s | Art. 7, R-6.2 |
 | D16 | Aserción sobre clasificación, SQL y filas; prosa con rúbrica manual | Art. 6, Art. 7 |
-| D17 | Historial de UI solo visual | T8.3 |
-| D18 | Cloud Run + Cloud SQL + Secret Manager | criterio de promoción 1 |
+| D17 | El historial no alimenta al agente (lo conserva el frontend; v1 es de un solo turno) | R-7.0 |
+| D18 | ~~Cloud Run + Cloud SQL + Secret Manager~~ — reemplazado por D81 (entorno local) | criterio de promoción 1 |
 | D19 | PDFs generados por el integrante de RAG y base de datos | G6–G9, R1–R3 |
 | D20 | Un artefacto, un solo lugar | `TP/README.md` |
 | D21 | Whitelist excluye `agent_runs`, `documentos` y `documentos_chunks` | R-3.4 |
@@ -106,14 +109,25 @@ del mismo contenido.
 | D71 | Modelo definitivo y por defecto: `gemini-3.1-flash-lite` (reemplaza D36) | R-2.1, R-2.8 |
 | D72 | El check de los híbridos exige SQL ejecutado y fragmento citado, no filas no vacías | R-3.8, D16 |
 | D73 | Idioma de la respuesta instruido en el prompt, declarado en la evidencia y verificado con casos en inglés aparte | R-5.1, D16 |
-| D74 | Dockerfile multi-etapa (`base`, `measure`, `runtime`), sin secretos y sin tests en la imagen desplegada | D18, Art. 8, Art. 9 |
+| D74 | Dockerfile multi-etapa (`base`, `measure`, `runtime`), sin secretos y sin tests en la imagen que se ejecuta (D81) | D18, Art. 8, Art. 9 |
+| D75 | `POST /ask` con streaming de progreso real y el `AgentAnswer` completo al final; sin tokens | R-7.1, R-7.2, D58 |
+| D76 | Cancelación cooperativa por desconexión del cliente; la consulta cancelada no se registra | R-7.5, R-6.7 |
+| D77 | `LibraryAgent.answer()` serializa las consultas con un lock | R-1.3 |
+| D78 | ~~UI Streamlit en proceso; imagen `runtime` arranca Streamlit~~ — reemplazado por D80 | D18 |
+| D79 | Correcciones al streaming: marcador de fin de agente y `duration_s` siempre numérico | R-7.3, R-7.2 |
+| D80 | Sin UI propia: el agente es accesible solo por la API HTTP y el frontend es un cliente externo; la imagen `runtime` sirve la API | R-7.0, D18 |
+| D81 | No se despliega en la nube: el sistema se prepara para correr en entorno local (Docker + `uvicorn`) | D18, criterio de promoción 1 |
+| D82 | CORS con allowlist `API_ALLOWED_ORIGINS`, sin wildcard y sin autenticación | R-7.8, D81 |
+| D84 | La interfaz gráfica vuelve como cliente de la API (`web/`, change `frontend-web-vite`); la API sigue siendo el único acceso al agente y la imagen `runtime` no sirve interfaz | R-7.0, D80 |
+| D83 | Riesgo de promoción aceptado explícitamente: margen 2/5, desviación del requisito de nube y confirmación con la cátedra abierta | criterios de promoción 1 y 3, D18, D80, D81 |
 
 ## Risks / Trade-offs
 
 - **[Text-to-SQL poco preciso]** → mitigación: few-shot de 8 ejemplos en el prompt + golden set de 5 casos SQL que se ejecuta en CI local con `pytest`.
 - **[Clasificación de fuente inestable por no determinismo]** → mitigación: temperatura 0, golden set de 13 casos, umbral de aceptación ≥11/13 documentado en `TP/05-validacion.md`.
 - **[Retrieval devuelve fragmentos irrelevantes y el agente alucina]** → mitigación: umbral de similitud mínimo (R-4.6) obliga a declarar "no se encontró información relevante".
-- **[Cloud SQL sin pgvector disponible en la región/cuota]** → mitigación: spike de despliegue en la semana 1, antes de dependencias de mayor tamaño.
+- ~~**[Cloud SQL sin pgvector disponible en la región/cuota]**~~ — descartado por D81 (entorno local).
+- **[Margen mínimo de promoción: 2 de 5 sin nube]** → mitigación: el tercer criterio es la interfaz gráfica, la SPA de `web/` sobre la API (D80, D84); confirmar con la cátedra; registrado en D83.
 - **[Un modelo local valida el flujo pero no es el modelo definitivo]** → mitigación: R-2.8 separa
   "validación del flujo" de "aceptación"; la evidencia consigna el modelo (R-6.5) y el golden set se repite
   con Gemini antes de dar por cumplido R-2.1. Un modelo local más débil genera SQL peor (medido: inventó una
@@ -137,11 +151,13 @@ del mismo contenido.
 6. **Medición de aceptación con Gemini** (`GEMINI_API_KEY`, sin cambios de código): se repite el golden set
    completo y la evidencia se versiona en `TP/evidencia/` con el modelo usado. Los resultados del modelo
    local no cuentan como aceptación (D59).
-7. Despliegue: imagen Docker → Cloud Run; Cloud SQL con pgvector; Secret Manager para `GEMINI_API_KEY`.
-8. Rollback: el despliegue no muta datos; basta con redeployear la imagen anterior.
+7. Despliegue local (D81): `docker compose` para Postgres + pgvector; imagen `runtime` o
+   `uvicorn api.app:app`; `GEMINI_API_KEY` vía `.env` y `docker run --env-file`.
+8. Rollback: la ejecución local no muta datos; basta con volver a levantar la imagen o el commit anterior.
 
 ## Open Questions
 
-Ninguna abierta. Las tres que había se cerraron: evaluación del golden set (D16), semántica temporal
-(D6) y origen de los PDFs (D19). Lo único pendiente es numérico, no conceptual: el umbral de similitud
-definitivo (D12) se cierra con la medición de T3.6.
+Las tres preguntas que había se cerraron: evaluación del golden set (D16), semántica temporal
+(D6) y origen de los PDFs (D19). Lo que queda abierto son decisiones y mediciones, y vive en `tasks.md`
+por su ID: 9.11, 9.13 y 2.9. Lo único numérico es el umbral de similitud definitivo (D12), que se cierra
+con la medición de T3.6.

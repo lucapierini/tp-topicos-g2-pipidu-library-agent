@@ -141,9 +141,10 @@ poblaciones:
 de embeddings. Se registra en `CHANGELOG.md` y se ajusta antes de fijar el número.
 5. Reejecutar R1–R4 con el umbral elegido y dejar la tabla de similitudes como evidencia del informe.
 
-Con `gemini-embedding-001` las similitudes relevantes suelen ubicarse entre 0.55 y 0.70 y las
-irrelevantes entre 0.25 y 0.40, por lo que 0.35 puede resultar demasiado permisivo: queda sujeto a la
-medición, no a la discusión.
+Con `gemini-embedding-001` se espera que las similitudes relevantes queden entre 0.55 y 0.70 y las
+irrelevantes entre 0.25 y 0.40, por lo que 0.35 puede resultar demasiado permisivo. Esos rangos son una
+expectativa, no un resultado medido: se confirman con la calibración T3.6 sobre los PDFs reales. 0.35 es
+el punto de partida, sujeto a esa medición.
 
 ---
 
@@ -163,7 +164,7 @@ La misma prueba se corre en dos entornos con **propósitos distintos**:
 | Entorno | Modelo | Qué valida | ¿Cuenta como aceptación? |
 |---|---|---|---|
 | Local | Servidor OpenAI-compatible en `127.0.0.1` (`LLM_MODEL=openai/<id>`, `LLM_API_BASE`) | El flujo: clasificación previa a las tools, tools por fuente, límites de intentos y pasos, composición, SQL aceptado por el validador. Sin cuota ni costo | **No** |
-| Definitivo | Gemini con `GEMINI_API_KEY` (`LLM_MODEL=gemini/<modelo>`) | Los criterios de §4 con el modelo que se despliega | **Sí** |
+| Definitivo | Gemini con `GEMINI_API_KEY` (`LLM_MODEL=gemini/<modelo>`) | Los criterios de §4 con el modelo definitivo | **Sí** |
 
 Reglas:
 
@@ -264,7 +265,7 @@ local no representa la del modelo definitivo.
 
 ## 5. Definition of Done (por tarea)
 
-Una tarea de `04-tareas.md` está terminada solo si:
+Una tarea de `openspec/changes/agente-y-tools/tasks.md` está terminada solo si:
 
 - [ ] Traza a un requisito con ID (`R-x.y`).
 - [ ] Su validación específica está aprobada.
@@ -276,7 +277,116 @@ Una tarea de `04-tareas.md` está terminada solo si:
 
 ## 6. Evidencias para el informe
 
-- Captura de la UI por cada tipo de consulta (SQL, RAG, híbrida, no-cobertura).
+- Salida de la API (`curl -N` sobre `POST /ask`) por cada tipo de consulta (SQL, RAG, híbrida, no-cobertura), o capturas del frontend que la consume.
 - Export de `agent_runs` con las 13 consultas del golden set.
-- Output de `pytest` con los 10 casos de sanitización.
+- Output de `pytest` con los casos de sanitización (S1–S35: 33 adversos más S11 y S12 de regeneración).
 - Conteo por tabla (`SELECT count(*)`) mostrando ≥15 registros.
+
+## 7. Pruebas de la API (R-1.3, R-6.7, R-7.0 a R-7.8)
+
+Corren sin modelo ni base (`pytest -q`): la API contra un doble de `answer()`. Verifican el **contrato**
+(qué eventos salen, en qué orden, qué se rechaza), no la calidad de las respuestas, que se mide con el
+golden set (§1 y §4). La API es el único acceso al agente (R-7.0, D80): la presentación de la respuesta
+y la evidencia (R-5.3, R-5.4) corresponden al frontend (`web/`, D84; sus pruebas, en el change `frontend-web-vite`), que consume el evento `result`.
+
+| ID | Requisito | Caso | Test |
+|---|---|---|---|
+| A1 | R-7.7 | `GET /health` responde `ok` sin invocar al agente | `test_api.py::test_health_answers_without_invoking_the_agent` |
+| A2 | R-7.4, R-1.2 | Consulta vacía o de espacios: 422 y el agente no se invoca | `test_api.py::test_an_empty_question_is_rejected_before_opening_the_stream` |
+| A3 | R-7.1, R-7.2 | Orden `start, classified, tool_call, tool_result, composing, result` | `test_api.py::test_the_stream_reports_progress_in_order_and_ends_with_the_full_answer` |
+| A4 | R-7.1 | `result` trae `answer`, `answer_kind`, `sources`, `evidence`, `run_id` | `test_api.py::test_the_result_event_carries_the_complete_agent_answer` |
+| A5 | R-7.2, Art. 4 | Solo `result` declara `sources` | `test_api.py::test_only_the_result_event_declares_sources` |
+| A6 | R-7.1 | Fechas y decimales de las filas se serializan | `test_api.py::test_dates_and_decimals_in_the_rows_are_serialized` |
+| A7 | R-7.6 | Excepción inesperada: `start` y `error`, sin `result` | `test_api.py::test_an_unexpected_exception_is_reported_as_an_error_event` |
+| A8 | R-7.3 | Latidos mientras el agente está en silencio | `test_api.py::test_heartbeats_are_sent_while_the_agent_is_silent` |
+| A9 | R-7.3 | `result` no espera al intervalo de latido (regresión, D79: 5,01 s medidos) | `test_api.py::test_the_result_is_not_delayed_by_the_heartbeat_interval` |
+| A10 | R-7.5 | Al cerrar el flujo, el agente recibe la señal de cancelación | `test_api.py::test_closing_the_stream_cancels_the_agent` |
+| A11 | R-7.5 | Una consulta cancelada no emite `result` ni `error` | `test_api.py::test_a_cancelled_answer_does_not_emit_a_result` |
+| C1 | R-1.3 | Dos consultas simultáneas se serializan | `test_agent.py::test_concurrent_answers_are_serialized` |
+| C2 | R-6.7 | Consulta cancelada: lanza `AnswerCancelled` y no registra | `test_agent.py::test_a_cancelled_question_raises_and_records_nothing` |
+| C3 | R-6.7 | Cancelada durante la ejecución: se descarta la respuesta | `test_agent.py::test_cancelling_during_the_run_discards_the_answer` |
+| C4 | R-7.2 | Los eventos de progreso siguen el flujo y reportan una sentencia rechazada | `test_agent.py::test_progress_events_follow_the_flow_in_order`, `::test_a_rejected_statement_is_reported_as_a_failed_tool_result` |
+| C5 | R-7.2 | Los eventos `step` salen de los callbacks del framework; `cancel` interrumpe antes del siguiente paso | `test_agent_smolagents.py::test_step_events_come_from_the_framework_callbacks`, `::test_cancel_interrupts_the_framework_before_the_next_step` |
+| E1 | R-5.3, R-5.4 | La evidencia trae la sentencia y cada fragmento con documento, ubicación y texto | `test_agent.py::test_rag_answer_cites_document_and_location`, `test_agent.py::test_sql_answer_declares_source_and_shows_the_executed_statement` |
+| I1 | R-7.0 | La imagen `runtime` sirve la API y no una interfaz; no hay Streamlit en las dependencias | `test_dockerfile.py::test_the_runtime_stage_serves_the_http_api_and_no_ui`, `::test_the_runtime_dependencies_do_not_include_a_ui_framework` |
+| O1 | R-7.8 (origen permitido) | Preflight `OPTIONS` a `POST /ask`: 200 con `Access-Control-Allow-Origin` del origen declarado | `test_api_cors.py::test_allowed_origin_gets_the_cors_header` |
+| O2 | R-7.8 (origen permitido) | Llamada simple, sin preflight, lleva el header | `test_api_cors.py::test_a_simple_request_from_an_allowed_origin_carries_the_header` |
+| O3 | R-7.8 (origen no declarado) | Preflight rechazado y sin `Access-Control-Allow-Origin` | `test_api_cors.py::test_a_disallowed_origin_is_rejected_without_the_cors_header` |
+| O4 | R-7.8 (sin orígenes configurados) | Con `API_ALLOWED_ORIGINS` vacío no hay wildcard `*` ni header | `test_api_cors.py::test_no_wildcard_when_no_origins_are_configured` |
+| O5 | R-7.8 (origen permitido, streaming) | El stream SSE conserva el header y termina con `result` | `test_api_cors.py::test_the_stream_from_an_allowed_origin_carries_the_header` |
+| O6 | R-7.8 (configuración por entorno) | Los orígenes se leen de `API_ALLOWED_ORIGINS` y la app los usa | `test_api_cors.py::test_origins_are_read_from_api_allowed_origins`, `::test_the_app_uses_the_configured_origins` |
+| O7 | R-7.8 (sin credenciales) | La consulta se procesa sin credenciales y la respuesta no las refleja | `test_api_cors.py::test_no_credentials_are_required_from_an_allowed_origin` |
+
+**Qué no cubren:** el streaming real sobre `uvicorn` y un proxy (los tests usan `TestClient`). Del CORS se
+cubren el preflight y el comportamiento de los headers con `TestClient` (O1–O7); lo que no se cubre es la
+llamada real desde un navegador con el frontend, que es la tarea 9.12. La presentación de la respuesta y la
+evidencia es del frontend.
+
+**Hallazgos al escribirlas (2026-10-13):** (1) A9 falló con 5,01 s: el `result` se retrasaba hasta el
+intervalo de latido en cada consulta; (2) `test_step_events_come_from_the_framework_callbacks` fallaba en
+Windows porque un paso rápido da `duration_s == 0.0` y `0.0 or 0` devolvía un entero. Ambos se
+corrigieron (D79).
+
+### 7.1 Costo de atender en serie (R-1.3, D77, T9.11)
+
+Medición, no test: afirma tiempos y un test de tiempos sería flaky en CI. Corre sin base, sin
+credenciales y sin modelo (`scripts/measure_queue.py`): la app real sobre `uvicorn` en un puerto efímero
+con el `answer()` real de `LibraryAgent` (su `_lock` real, D77) sobre dobles de `tests/fakes.py` — base
+falsa, clasificador doble, registro apagado — y un runner doble donde lo único que tarda es la llamada
+al modelo, que duerme un tiempo de servicio S. S es simulado, no latencia de modelo. El evento `start`
+sale al abrir el stream, antes de tomar el lock, así que la espera se lee en el primer evento del agente
+(`classified`).
+
+| S (s) | N | Espera antes de trabajar, por orden de entrada (s) | `result` (s) | Latidos recibidos |
+|---|---|---|---|---|
+| 1.0 | 1 | 0.0 | 1.0 | 0 |
+| 1.0 | 2 | 0.0, 1.0 | 1.0, 2.0 | 0 |
+| 1.0 | 3 | 0.0, 1.0, 2.0 | 1.0, 2.0, 3.0 | 0 |
+| 1.0 | 5 | 0.0, 1.0, 2.0, 3.0, 4.0 | 1.0, 2.0, 3.0, 4.0, 5.0 | 0 |
+| 6.0 | 3 | 0.0, 6.0, 12.0 | 6.0, 12.0, 18.0 | 1, 2, 3 |
+
+La espera de la k-ésima consulta es `(k-1)·S`: el script ejerce el lock real del agente, así que esa
+espera es la serialización de R-1.3 medida, no una predicción; lo simulado sigue siendo solo S. En las
+corridas del 2026-10-13 el `result` llega en `k·S + 15–32 ms` (transporte y arranque del hilo del
+agente); la espera de cola, medida desde que la consulta entra al agente, es `(k-1)·S` sin ese agregado.
+Que dos consultas no se solapan en la llamada al modelo está probado por el test determinista
+`test_agent.py::test_two_concurrent_answers_do_not_overlap_in_the_model_call` (eventos de `threading`,
+sin reloj de pared); la serialización del agente la cubre el caso C1
+`test_agent.py::test_concurrent_answers_are_serialized`. Con `HEARTBEAT_S = 5` el cliente que
+espera recibe latidos (fila S=6), así que su conexión no se corta por inactividad mientras está en la
+cola (R-7.3). El cliente cancelado no se interrumpe mientras espera: `answer()` toma el lock antes de
+`_check_cancelled`, así que la señal se atiende al recibir el turno (R-7.5, D76).
+
+Reproducir: `python scripts/measure_queue.py --service-time 1.0 --counts 1 2 3 5` y
+`python scripts/measure_queue.py --evidence`. No necesita base, API key ni modelo.
+
+Latencias reales ya medidas en `TP/evidencia/` (no se volvió a llamar al modelo; las mayores están
+infladas por esperas de cuota, D70):
+
+| Archivo | n | min | mediana | max |
+|---|---|---|---|---|
+| `agent_runs_2026-10-11.json` | 15 | 2,8 s | 8,9 s | 169,1 s |
+| `golden_gemini-3.1-flash-lite_2026-10-10.json` | 13 | 3,0 s | 11,8 s | 73,8 s |
+| `golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json` | 15 | 2,8 s | 8,9 s | 169,1 s |
+| `golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` | 13 | 4,9 s | 40,7 s | 253,8 s |
+| `golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-11_db-mock.json` | 13 | 5,3 s | 22,8 s | 91,6 s |
+
+Espera del último concurrente con la mediana de `agent_runs_2026-10-11.json` (8,9 s): 17,8 s para 3
+personas y 35,6 s para 5. Peor caso con las latencias mayores ya medidas: 192,5 s (suma de las 2
+mayores, 3 personas) y 219,1 s (suma de las 4 mayores, 5 personas).
+
+**Dos opciones (análisis, no implementado).** Verificado en código: cada backend guarda una sola
+conexión (`sql_backend`, `retriever`, `recorder`: tres por agente), el agente es un singleton de módulo
+(`get_agent()`) con backends compartidos, y el estado por consulta no se comparte porque `ToolSession` y
+`ToolCallingAgent` se crean en cada consulta.
+
+| Opción | Impacto | Riesgo | Compatible con R-1.3, R-6.7, D76 |
+|---|---|---|---|
+| Un agente por sesión | Cada sesión abre sus tres conexiones; la serialización queda dentro de la sesión | El número de conexiones crece con las sesiones y choca con `max_connections` de la base; hace falta un registro de agentes en lugar del singleton | R-1.3 se cumple por sesión; R-6.7 y D76 no cambian |
+| Pool de conexiones con agente compartido | Una conexión prestada por consulta; varias consultas avanzan a la vez | Requiere ciclo de vida del pool y que `SET LOCAL` / sesión solo lectura se aplique por conexión prestada; el estado de espera del recorder sigue siendo compartido. Seguridad de la instancia compartida del cliente de modelo: no verificado | R-1.3 deja de ser serial global: hay que reescribirlo |
+
+**Recomendación:** para una demostración de 3 a 5 personas mantener la serialización (D77) — la espera
+típica es de 17,8 a 35,6 s y los latidos mantienen viva la conexión. Cambiar solo si la consigna exige
+consultas realmente simultáneas; en ese caso conviene la opción por sesión, que no exige reescribir el
+requisito de serialización. Como propuesta, no aplicada: un R-1.4 nuevo que fije el ámbito de la
+serialización (por sesión o por pool) y el máximo de conexiones.
