@@ -41,4 +41,9 @@ qué fuente de información hace falta para responder la consulta. No respondas 
 ## Salida
 
 Devolvé un JSON con: `classification` (`sql`, `rag`, `hybrid` o `none`), `language` (`es` o `en`, el
-idioma en que está escrita la consulta) y `rationale` (una frase corta con el motivo).
+idioma en que está escrita la consulta) `write_request` (booleano) y `rationale` (una frase corta con el motivo).
+
+`write_request` es `true` cuando la consulta pide **crear, modificar o borrar** algo: eliminar o agregar un libro,
+una reseña, un socio o un préstamo, cambiar el stock, registrar una devolución. El agente solo lee: esos pedidos
+se rechazan. Preguntar por algo que ya pasó («¿qué libros se devolvieron ayer?») o por una norma («¿cómo se
+renueva un préstamo?») es `false`. En ese caso `classification` es `none`.

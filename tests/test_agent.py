@@ -112,7 +112,7 @@ def test_none_declares_absence_without_calling_the_model_or_the_tools() -> None:
 def test_none_answers_in_english_when_the_question_is_english() -> None:
     agent, _, _ = build("none", language="en")
     answer = agent.answer("What is the price of the book?")
-    assert answer.answer.startswith("I don't have enough information")
+    assert answer.answer.startswith("Houston, we have a problem")
     assert not _has_source_line(answer.answer)
 
 
@@ -512,3 +512,43 @@ def test_cancelling_during_the_run_discards_the_answer() -> None:
     cancel = threading.Event()
     with pytest.raises(AnswerCancelled):
         agent.answer("q", on_event=lambda n, d: cancel.set() if n == "tool_result" else None, cancel=cancel)
+
+
+# --- pedidos de escritura y notas (D94) ---
+
+
+@pytest.mark.parametrize(
+    ("language", "question", "start"),
+    [("es", "Eliminá el libro El Hobbit", "¡No pasarás!"), ("en", "Delete all the loans", "You shall not pass!")],
+)
+def test_a_write_request_is_denied_without_touching_the_model_or_the_database(language, question, start) -> None:
+    agent, runner, backend = build(classifier=FakeClassifier("none", language, write_request=True))
+    answer = agent.answer(question)
+    assert answer.answer.startswith(start)
+    assert runner.calls == 0 and backend._conn.executed == []
+    assert answer.sources == [] and answer.answer_kind == "no_coverage"
+    assert answer.evidence["write_request"] is True
+    assert answer.is_valid(), answer.violations()
+
+
+def test_a_write_request_is_denied_even_if_the_label_is_not_none() -> None:
+    agent, runner, _ = build(classifier=FakeClassifier("sql", write_request=True))
+    answer = agent.answer("Borrá la reseña de Alas de sangre")
+    assert runner.calls == 0 and answer.answer.startswith("¡No pasarás!")
+
+
+def test_a_truncated_result_has_a_single_note_even_if_the_model_wrote_its_own() -> None:
+    limit = load_config().max_rows
+    rows = [(i,) for i in range(limit + 5)]
+    body = "Los libros son estos."
+    model_text = f"{body}\n\n*(Nota: La lista muestra los primeros {limit} resultados encontrados).*"
+    agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], text=model_text, rows=rows, columns=["id"])
+    answer = agent.answer("listá todos").answer
+    assert answer.startswith(body)
+    assert answer.lower().count("nota") == 1 and f"limitó a {limit} filas" in answer
+
+
+def test_a_note_written_by_the_model_is_kept_when_the_system_adds_none() -> None:
+    text = "Hay 2 libros.\n\nNota: es un dato de hoy."
+    agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], text=text)
+    assert "Nota: es un dato de hoy." in agent.answer("¿cuántos?").answer

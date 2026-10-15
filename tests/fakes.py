@@ -102,15 +102,15 @@ class FakeEmbedder:
 
 
 class FakeClassifier:
-    def __init__(self, label="sql", language="es", error: Exception | None = None):
-        self.label, self.language, self.error = label, language, error
+    def __init__(self, label="sql", language="es", error: Exception | None = None, write_request=False):
+        self.label, self.language, self.error, self.write_request = label, language, error, write_request
         self.questions: list[str] = []
 
     def classify(self, question: str) -> Classification:
         self.questions.append(question)
         if self.error:
             raise self.error
-        return Classification(label=self.label, language=self.language, rationale="fake")
+        return Classification(label=self.label, language=self.language, rationale="fake", write_request=self.write_request)
 
 
 class FakeGenaiClient:
