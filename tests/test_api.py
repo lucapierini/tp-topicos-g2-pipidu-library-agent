@@ -25,7 +25,7 @@ from agent.contracts import AgentAnswer  # noqa: E402
 def _answer(question: str = "¿Qué libros tiene Juan?") -> AgentAnswer:
     return AgentAnswer(
         question=question, classification="sql", sources=["sql"],
-        answer="Juan tiene prestado Rayuela.\n\nFuente: SQL",
+        answer="Juan tiene prestado Rayuela.",
         evidence={"sql": "SELECT titulo FROM libros", "rows": [{"titulo": "Rayuela"}], "language": "es"},
         run_id=3, answer_kind="answer", trace=["classification", "execute_sql"],
     )
@@ -91,7 +91,7 @@ def test_the_result_event_carries_the_complete_agent_answer(client, monkeypatch)
     name, payload = events[-1]
     assert name == "result"
     assert payload["answer_kind"] == "answer" and payload["sources"] == ["sql"]
-    assert payload["answer"].endswith("Fuente: SQL")
+    assert "Fuente" not in payload["answer"]  # R-5.2: la fuente va en `sources`, no en el texto
     assert payload["evidence"]["sql"] == "SELECT titulo FROM libros"
     assert payload["run_id"] == 3
 

@@ -33,7 +33,7 @@ Desarrollar un **SQL AI Agent** capaz de:
 
 | Actor | Descripción |
 |---|---|
-| Usuario final | Persona que interactúa con el agente a través de la interfaz web del repositorio (`web/`, D84), que lo consulta por la API HTTP (D80) haciendo preguntas en lenguaje natural |
+| Usuario final | Persona que interactúa con el agente a través de la interfaz web del repositorio (`web/`, D93), que lo consulta por la API HTTP (D80) haciendo preguntas en lenguaje natural |
 | Agente IA | Componente que interpreta la consulta, decide la estrategia (SQL / RAG / mixta) y genera la respuesta |
 | Administrador/Desarrollador | Responsable de poblar la base, cargar los PDFs e indexar embeddings |
 
@@ -93,8 +93,8 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 - Formatos documentales distintos de PDF.
 
 ### 5.6 Acceso al agente e interfaz de usuario
-- El agente se consulta **únicamente por la API HTTP** (`POST /ask`, respuesta en streaming de progreso; capacidad `consulta-por-api`, D75, D80). El servidor del agente no incluye interfaz gráfica: la interfaz es un cliente de la API (D84).
-- La interfaz gráfica es la **SPA de `web/`** (capacidad `interfaz-web`, D84), un cliente que consume la API: el usuario escribe su consulta en un campo de texto y el frontend muestra la respuesta del agente con indicación de la(s) fuente(s) utilizada(s) (SQL / RAG / ambas) y la evidencia que entrega el evento `result`.
+- El agente se consulta **únicamente por la API HTTP** (`POST /ask`, respuesta en streaming de progreso; capacidad `consulta-por-api`, D75, D80). El servidor del agente no incluye interfaz gráfica: la interfaz es un cliente de la API (D93).
+- La interfaz gráfica es la **SPA de `web/`** (capacidad `interfaz-web`, D93), un cliente que consume la API: el usuario escribe su consulta en un campo de texto y el frontend muestra la respuesta del agente con indicación de la(s) fuente(s) utilizada(s) (SQL / RAG / ambas) y la evidencia que entrega el evento `result`.
 
 ## 6. Requisitos no funcionales
 
@@ -118,7 +118,7 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 ## 8. Criterios de promoción directa (2+ de 5, elegidos 4)
 
 - [ ] Despliegue en la nube (GCP): **descartado por D81** (2026-10-13): el sistema se prepara para correr en entorno local. Quedan cubiertos `framework agéntico` y `SDD`; hay que confirmarlo con la cátedra (T9.13, riesgo D83)
-- [ ] Interfaz gráfica: SPA en `web/` que consume la API (D80, D84); queda tildada al verificar el change `frontend-web-vite`
+- [ ] Interfaz gráfica: SPA en `web/` que consume la API (D80, D93); queda tildada al verificar el change `frontend-web-vite`
 - [x] Framework agéntico (Smolagents)
 - [x] SDD (artefactos de esta carpeta `TP/`)
 - [ ] Observabilidad (LangSmith) — no incluido

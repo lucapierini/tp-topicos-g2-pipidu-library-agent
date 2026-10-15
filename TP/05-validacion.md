@@ -287,7 +287,7 @@ Una tarea de `openspec/changes/agente-y-tools/tasks.md` está terminada solo si:
 Corren sin modelo ni base (`pytest -q`): la API contra un doble de `answer()`. Verifican el **contrato**
 (qué eventos salen, en qué orden, qué se rechaza), no la calidad de las respuestas, que se mide con el
 golden set (§1 y §4). La API es el único acceso al agente (R-7.0, D80): la presentación de la respuesta
-y la evidencia (R-5.3, R-5.4) corresponden al frontend (`web/`, D84; sus pruebas, en el change `frontend-web-vite`), que consume el evento `result`.
+y la evidencia (R-5.3, R-5.4) corresponden al frontend (`web/`, D93; sus pruebas, en el change `frontend-web-vite`), que consume el evento `result`.
 
 | ID | Requisito | Caso | Test |
 |---|---|---|---|
@@ -307,6 +307,7 @@ y la evidencia (R-5.3, R-5.4) corresponden al frontend (`web/`, D84; sus pruebas
 | C3 | R-6.7 | Cancelada durante la ejecución: se descarta la respuesta | `test_agent.py::test_cancelling_during_the_run_discards_the_answer` |
 | C4 | R-7.2 | Los eventos de progreso siguen el flujo y reportan una sentencia rechazada | `test_agent.py::test_progress_events_follow_the_flow_in_order`, `::test_a_rejected_statement_is_reported_as_a_failed_tool_result` |
 | C5 | R-7.2 | Los eventos `step` salen de los callbacks del framework; `cancel` interrumpe antes del siguiente paso | `test_agent_smolagents.py::test_step_events_come_from_the_framework_callbacks`, `::test_cancel_interrupts_the_framework_before_the_next_step` |
+| C6 | R-5.2 | El texto de `answer` no lleva línea de fuente (`sql`, `rag`, `hybrid`, `none`); la que escriba el modelo se retira y `sources` sigue siendo la de las herramientas | `test_agent.py::test_sql_answer_declares_source_and_shows_the_executed_statement`, `::test_the_answer_declares_the_language_of_the_question`, `::test_a_source_line_written_by_the_model_is_removed_from_the_answer` |
 | E1 | R-5.3, R-5.4 | La evidencia trae la sentencia y cada fragmento con documento, ubicación y texto | `test_agent.py::test_rag_answer_cites_document_and_location`, `test_agent.py::test_sql_answer_declares_source_and_shows_the_executed_statement` |
 | I1 | R-7.0 | La imagen `runtime` sirve la API y no una interfaz; no hay Streamlit en las dependencias | `test_dockerfile.py::test_the_runtime_stage_serves_the_http_api_and_no_ui`, `::test_the_runtime_dependencies_do_not_include_a_ui_framework` |
 | O1 | R-7.8 (origen permitido) | Preflight `OPTIONS` a `POST /ask`: 200 con `Access-Control-Allow-Origin` del origen declarado | `test_api_cors.py::test_allowed_origin_gets_the_cors_header` |

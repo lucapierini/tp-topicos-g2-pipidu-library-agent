@@ -25,18 +25,28 @@ La respuesta SHALL estar en el idioma de la consulta entrante.
 - **AND** la evidencia consigna el idioma con el que se compuso
 
 ### Requirement: R-5.2 — Proveniencia obligatoria
-La respuesta SHALL declarar la fuente o fuentes utilizadas.
+El resultado de la respuesta SHALL declarar la fuente o fuentes utilizadas en un campo estructurado
+(`sources`). El texto de la respuesta SHALL NO repetir la fuente: la presentación de la fuente
+corresponde al cliente, que la lee del campo estructurado.
 
 #### Scenario: respuesta con fuente SQL
 - **GIVEN** una consulta clasificada como `sql`
 - **WHEN** el agente compone la respuesta
-- **THEN** la respuesta declara `fuente: SQL`
+- **THEN** el resultado declara `sources` con `sql`
+- **AND** el texto de la respuesta no contiene una línea de fuente
 
 #### Scenario: respuesta sin fuente
 - **GIVEN** una consulta clasificada como `none`
 - **WHEN** el agente compone la respuesta
-- **THEN** la respuesta declara `fuente: ninguna`
+- **THEN** el resultado declara `sources` vacío y `answer_kind` `no_coverage`
+- **AND** el texto de la respuesta no contiene una línea de fuente
 - **AND** no contiene afirmaciones sobre datos del dominio
+
+#### Scenario: el modelo escribe una línea de fuente
+- **GIVEN** una respuesta del modelo que termina con una línea de fuente
+- **WHEN** el agente compone la respuesta
+- **THEN** esa línea se retira del texto
+- **AND** la fuente declarada sigue siendo la de las herramientas efectivamente invocadas
 
 ### Requirement: R-5.3 — Evidencia de fuente SQL
 Cuando la fuente sea SQL, la respuesta SHALL exhibir la sentencia ejecutada.

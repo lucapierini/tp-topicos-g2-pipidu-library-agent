@@ -7,7 +7,7 @@ El change cubre el agente, sus tools y la API HTTP. El estado de lo implementado
 restricciones que condicionan el diseño son las de `TP/00-constitucion.md` (read-only por diseño,
 proveniencia obligatoria, trazabilidad de ejecución) y los criterios de promoción elegidos: el de
 despliegue en la nube queda descartado por D81; siguen cubiertos framework agéntico y SDD, y el de interfaz
-gráfica la provee la SPA de `web/`, un cliente de la API (D80, D84).
+gráfica la provee la SPA de `web/`, un cliente de la API (D80, D93).
 
 Condición de contorno: tres integrantes trabajando en paralelo, lo que exige contratos de interfaz
 definidos antes de implementar, para que las tools se puedan desarrollar y testear de forma aislada.
@@ -118,8 +118,9 @@ del mismo contenido.
 | D80 | Sin UI propia: el agente es accesible solo por la API HTTP y el frontend es un cliente externo; la imagen `runtime` sirve la API | R-7.0, D18 |
 | D81 | No se despliega en la nube: el sistema se prepara para correr en entorno local (Docker + `uvicorn`) | D18, criterio de promoción 1 |
 | D82 | CORS con allowlist `API_ALLOWED_ORIGINS`, sin wildcard y sin autenticación | R-7.8, D81 |
-| D84 | La interfaz gráfica vuelve como cliente de la API (`web/`, change `frontend-web-vite`); la API sigue siendo el único acceso al agente y la imagen `runtime` no sirve interfaz | R-7.0, D80 |
+| D93 | La interfaz gráfica vuelve como cliente de la API (`web/`, change `frontend-web-vite`); la API sigue siendo el único acceso al agente y la imagen `runtime` no sirve interfaz | R-7.0, D80 |
 | D83 | Riesgo de promoción aceptado explícitamente: margen 2/5, desviación del requisito de nube y confirmación con la cátedra abierta | criterios de promoción 1 y 3, D18, D80, D81 |
+| D84 | La fuente se declara solo en `sources`; el texto de `answer` no lleva línea de fuente | R-5.2, R-2.6, D58 |
 
 ## Risks / Trade-offs
 
@@ -127,7 +128,7 @@ del mismo contenido.
 - **[Clasificación de fuente inestable por no determinismo]** → mitigación: temperatura 0, golden set de 13 casos, umbral de aceptación ≥11/13 documentado en `TP/05-validacion.md`.
 - **[Retrieval devuelve fragmentos irrelevantes y el agente alucina]** → mitigación: umbral de similitud mínimo (R-4.6) obliga a declarar "no se encontró información relevante".
 - ~~**[Cloud SQL sin pgvector disponible en la región/cuota]**~~ — descartado por D81 (entorno local).
-- **[Margen mínimo de promoción: 2 de 5 sin nube]** → mitigación: el tercer criterio es la interfaz gráfica, la SPA de `web/` sobre la API (D80, D84); confirmar con la cátedra; registrado en D83.
+- **[Margen mínimo de promoción: 2 de 5 sin nube]** → mitigación: el tercer criterio es la interfaz gráfica, la SPA de `web/` sobre la API (D80, D93); confirmar con la cátedra; registrado en D83.
 - **[Un modelo local valida el flujo pero no es el modelo definitivo]** → mitigación: R-2.8 separa
   "validación del flujo" de "aceptación"; la evidencia consigna el modelo (R-6.5) y el golden set se repite
   con Gemini antes de dar por cumplido R-2.1. Un modelo local más débil genera SQL peor (medido: inventó una

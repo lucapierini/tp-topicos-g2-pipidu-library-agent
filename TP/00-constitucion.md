@@ -35,7 +35,8 @@ Si una de las tres capas se elimina, el Art. 3 se considera violado.
 
 ## Art. 4 — Provenencia obligatoria de la respuesta
 
-Toda respuesta del agente declara la fuente utilizada (`SQL`, `RAG`, `SQL+RAG` o `ninguna`).
+Toda respuesta del agente declara la fuente utilizada (`SQL`, `RAG`, `SQL+RAG` o `ninguna`) en el campo
+estructurado `sources` del resultado, no en el texto de la respuesta (R-5.2, D84).
 El agente **no afirma nada que no esté soportado por una fuente consultada**. Si ninguna fuente
 responde, declara explícitamente que no tiene información suficiente.
 

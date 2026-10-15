@@ -33,7 +33,7 @@
 
 ## 5. Documentación y specs
 
-- [x] 5.1 Reformular R-7.0 en `consulta-por-api` y actualizar las docs que excluían la interfaz, registrando D84 en `TP/CHANGELOG.md`; verificado con `openspec validate --strict` en ambos changes
+- [x] 5.1 Reformular R-7.0 en `consulta-por-api` y actualizar las docs que excluían la interfaz, registrando D93 en `TP/CHANGELOG.md`; verificado con `openspec validate --strict` en ambos changes
 - [ ] 5.2 Actualizar `README.md` (arranque con `docker compose up -d --wait`, puertos, `npm run dev`, criterio "Interfaz gráfica") y `.env.example` (`WEB_PORT`, `API_PORT`, `API_ALLOWED_ORIGINS` para desarrollo); verificar siguiendo el README desde un checkout limpio
 - [x] 5.3 Ejecutar `python -m pytest -q`, `python -m ruff check .`, `npm test` y `npm run build` en `web/`; verificar que todo pasa
 

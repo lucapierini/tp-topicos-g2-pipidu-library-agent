@@ -21,7 +21,7 @@ cliente que lo consuma. Además, el sistema solo corre en local (D81) y hoy `doc
 - Se agrega `docker/Dockerfile.web` (build multi-etapa de Node a estáticos servidos por nginx, que además
   hace de proxy hacia la API para que el navegador use un único origen).
 - Se reformula R-7.0 en `consulta-por-api` (change `agente-y-tools`) y se actualizan las specs y docs que
-  decían "sin interfaz gráfica" (`TP/01`, `TP/02`, `TP/05`, `TP/CHANGELOG.md` con D84, `README.md`,
+  decían "sin interfaz gráfica" (`TP/01`, `TP/02`, `TP/05`, `TP/CHANGELOG.md` con D93, `README.md`,
   `openspec/project.md`): la API sigue siendo el único acceso *al agente*; la interfaz es un cliente.
 - Se actualizan `README.md`, `.env.example` y `.dockerignore` (arranque único, `API_ALLOWED_ORIGINS`).
 
