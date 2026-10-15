@@ -2,6 +2,7 @@
 #
 #   docker build -f docker/Dockerfile -t pipidu-agent .                   # runtime (por defecto)
 #   docker build -f docker/Dockerfile --target measure -t pipidu-measure . # + scripts de medición
+#   docker build -f docker/Dockerfile --target local -t pipidu-local .     # + ingesta del RAG (docker compose)
 #
 # No lleva secretos: GEMINI_API_KEY y POSTGRES_* se inyectan en tiempo de ejecución (Art. 9; en
 # Cloud Run, desde Secret Manager). El `.env` queda fuera del contexto (`.dockerignore`).
@@ -36,6 +37,18 @@ COPY tests/ tests/
 RUN chown -R agent:agent /app
 USER agent
 CMD ["python", "scripts/measure_golden.py", "--help"]
+
+# --- local: todo lo necesario para correr la infraestructura con `docker compose` ---------------------
+# Agrega la ingesta del RAG y sus documentos a la etapa `measure` (que ya trae scripts/ask.py y tests/).
+# Es la imagen de los servicios `agent` e `ingest` de docker-compose.yml: no se despliega.
+FROM measure AS local
+USER root
+COPY rag/ingest.py rag/ingest.py
+COPY rag/documents/ rag/documents/
+RUN chown -R agent:agent /app
+USER agent
+ENTRYPOINT ["python"]
+CMD ["scripts/ask.py"]
 
 # --- runtime: lo que se despliega (última etapa = destino por defecto) ------------------------------
 # Todavía no hay UI (tarea 8.1): hasta entonces la imagen solo verifica que el agente importa. Cuando
