@@ -94,7 +94,7 @@ def load_config() -> Config:
         # en UTC) y el cuatrimestre se razona en hora argentina (D6, D47).
         timezone=_env("APP_TIMEZONE", "America/Argentina/Buenos_Aires"),
         top_k=_env_int("RAG_TOP_K", "5"),
-        similarity_threshold=_env_float("RAG_SIMILARITY_THRESHOLD", "0.67"),
+        similarity_threshold=_env_float("RAG_SIMILARITY_THRESHOLD", "0.64"),
         max_rows=_env_int("SQL_MAX_ROWS", "50"),
         statement_timeout_ms=_env_int("SQL_STATEMENT_TIMEOUT_MS", "10000"),
         max_sql_attempts=_env_int("SQL_MAX_ATTEMPTS", "2"),
