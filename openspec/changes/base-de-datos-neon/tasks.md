@@ -31,7 +31,7 @@
 
 ## 5. Ampliación del catálogo y de las reseñas (D77)
 
-- [x] 5.1 Generar `db/seed_ampliacion.sql` (51 libros: cómics DC y Marvel, Empyrean, Tolkien, Narnia, Harry Potter, Berserk y Dragon Ball) con ISBN verificados en Open Library (R-8.7)
+- [x] 5.1 Ampliar `db/seed.sql` (51 libros más: cómics DC y Marvel, Empyrean, Tolkien, Narnia, Harry Potter, Berserk y Dragon Ball) con ISBN verificados en Open Library (R-8.7)
 - [x] 5.2 Aplicarlo dos veces en la base local y verificar que la segunda no cambia filas (R-8.7)
 - [x] 5.3 Reemplazar la reseña de IA por `resenas_tolkien` y `resenas_empyrean`, y agregar la poda a `rag/ingest.py` (R-9.1, R-9.7)
 - [ ] 5.4 Aplicar la ampliación y la ingesta en Neon, y reflejar los cambios en el bucket `rag`

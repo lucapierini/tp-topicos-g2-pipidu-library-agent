@@ -17,8 +17,8 @@ _DIR = Path(__file__).resolve().parent
 # Descripción corta por tabla. Las columnas salen de la whitelist, no de acá.
 TABLE_NOTES = {
     "autores": "autores de los libros",
-    "editoriales": "casas editoriales (p. ej. Planeta, Marvel Comics, DC Comics); 'libros de Marvel' o 'de Planeta' se "
-                   "filtra por `editoriales.nombre` con JOIN desde `libros.editorial_id`, no por título",
+    "editoriales": "casas editoriales que publican los libros; el nombre de la editorial de un libro está acá "
+                   "(JOIN desde `libros.editorial_id`) y NO en su título ni en su categoría",
     "categorias": "categorías temáticas de los libros",
     "libros": "catálogo; `ejemplares_disponibles` es el stock prestable ahora; NO tiene autor: los autores "
               "están en `libros_autores`",
