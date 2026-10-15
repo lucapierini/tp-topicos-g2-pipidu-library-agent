@@ -104,3 +104,11 @@ def test_the_classifier_prompt_defines_every_label(label: str) -> None:
 def test_the_classifier_prompt_asks_for_the_structured_fields() -> None:
     prompt = render_classifier_prompt()
     assert "classification" in prompt and "language" in prompt
+
+
+def test_reviews_are_steered_to_the_documents_not_to_sql() -> None:
+    # Caso real (D90): "libros con reseña" se clasificó `sql` y el modelo inventó la tabla `reseñas`.
+    assert "reseñas" not in {t.lower() for t in ALLOWED_TABLES}
+    classifier = render_classifier_prompt()
+    assert "no son datos de la base" in classifier and "`rag`" in classifier
+    assert "no hay tabla de reseñas" in system_prompt("sql", ("execute_sql",)).lower()
