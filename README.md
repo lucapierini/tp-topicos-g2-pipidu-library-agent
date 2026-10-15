@@ -9,7 +9,7 @@ vía RAG, decidiendo autónomamente qué fuente consultar en cada caso.
 
 ## Stack
 
-Python 3.12+ · PostgreSQL + pgvector · Gemini · Smolagents · FastAPI · ejecución local (D81)
+Python 3.12+ · PostgreSQL + pgvector · Gemini · Smolagents · FastAPI · React 19 + Vite + shadcn/ui (Tailwind v4) · ejecución local (D81)
 
 ## Estructura
 
@@ -21,8 +21,9 @@ rag/           documentos fuente (.md y pdf/), ingest.py (ingesta a pgvector) y 
 agent/         orquestador, clasificador, validador de SQL, configuración, prompts y tools
 scripts/       scripts de medición y de exportación de evidencia
 api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
+web/           SPA de consulta (Vite + React + shadcn/ui): cliente de la API, ver «Interfaz web»
 tests/         suite offline, golden set y casos de integración
-docker/        Dockerfile (etapas base, measure y runtime, D74; verificado en T9.2 y T9.10)
+docker/        Dockerfile (etapas base, measure y runtime, D74), Dockerfile.web y nginx.conf de la interfaz
 docker-compose.yml   Postgres + pgvector local
 ```
 
@@ -33,7 +34,9 @@ El detalle de cada archivo está en `TP/02` §8 (D20): acá solo van los directo
 Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`). El agente y sus tools están
 implementados (validador y executor de SQL, tool de RAG, clasificador, orquestador, `agent_runs`), junto
 con la API HTTP con streaming de progreso y cancelación, que es el **único acceso** al agente (D80). La
-interfaz gráfica (`web/`, Vite + shadcn/ui) es un cliente de esa API y se levanta junto con ella (D93). La
+interfaz gráfica está implementada en `web/` (SPA con Vite, React y shadcn/ui): consulta con progreso en vivo, respuesta
+formateada en Markdown con su fuente, evidencia consultable, cancelación e historial de la sesión; es un cliente de la
+API y se levanta junto con ella (D93, change [`frontend-web-vite`](openspec/changes/frontend-web-vite/)). La
 aceptación con el modelo definitivo está medida (T6.7, `gemini-3.1-flash-lite`, 13/13).
 Pendiente: el informe. El sistema se ejecuta en entorno local
 (D81). El detalle está en [`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
@@ -134,29 +137,59 @@ python -m ruff check .                   # lint
 
 ## Interfaz web (D93)
 
+SPA de una sola pantalla en `web/` (Vite + React 19 + TypeScript + shadcn/ui, preset `base-luma`, íconos Hugeicons). Es un
+cliente de la API: llama a `POST /ask` y no tiene acceso directo al agente ni a la base (R-7.0). Cada consulta viaja sola, sin
+el historial (D17).
+
+**Qué hace**
+
+- **Consulta** (R-8.1): campo de texto con Enter para enviar (Shift+Enter, salto de línea). No envía consultas vacías ni una nueva
+  mientras otra está en curso, pero deja escribir la siguiente mientras el agente responde.
+- **Progreso en vivo** (R-8.2): clasificación, herramienta invocada y pasos a medida que llegan los eventos SSE, con indicador
+  *shimmer* y segundos de espera por `heartbeat`. No muestra ninguna fuente antes del evento `result`.
+- **Respuesta con proveniencia** (R-8.3, R-8.11): `answer` como Markdown (listas, énfasis, tablas, código; el HTML no se interpreta)
+  con las fuentes declaradas como `Badge`. `no_coverage` y `error` se muestran aparte, como `Alert`.
+- **Evidencia** (R-8.4): botón «Ver evidencia» con la sentencia SQL, las filas en una tabla y los fragmentos citados, tal como llegan.
+- **Cancelación y fallas** (R-8.5, R-8.6): corta la conexión para cancelar al agente; distingue «API no disponible», consulta
+  rechazada y corte antes del resultado, con reintento.
+- **Historial de la sesión** (R-8.10): conserva las consultas y respuestas anteriores en pantalla; vive en el navegador y se pierde al recargar.
+
+**Estructura de `web/src`**
+
+```
+App.tsx                  pantalla: encabezado, lista de turnos (MessageScroller) y formulario
+components/ask/          ask-form, progress-panel, answer-view, markdown, evidence-view, failure-alert
+components/ui/           componentes de shadcn/ui (alert, table, bubble, message-scroller, input-group, ...)
+hooks/use-ask.ts         estado de la consulta (idle/running/done/failed), cancelación e historial
+lib/ask-stream.ts        cliente SSE de POST /ask y tipos de los eventos y del resultado
+lib/progress.ts          eventos de progreso -> pasos visibles
+```
+
+**Con Docker**
+
 `docker compose up -d --wait` levanta la base, la API y la interfaz, en ese orden (cada servicio espera a que el
 anterior esté sano). Requiere el `.env` completo (`GEMINI_API_KEY` y las contraseñas de la base).
 
 | Servicio | URL (solo loopback) | Qué es |
 |---|---|---|
-| `web` | http://localhost:3000 | SPA de `web/` (Vite + React + shadcn/ui) servida por nginx; reenvía `/api/` a la API |
+| `web` | http://localhost:3000 | SPA de `web/` servida por nginx (`docker/Dockerfile.web`); reenvía `/api/` a la API sin buffering |
 | `api` | http://localhost:8080 | API del agente (`POST /ask` SSE, `GET /health`); es el único acceso al agente |
 | `db` | `127.0.0.1:5432` | Postgres + pgvector |
-
-La respuesta del agente se muestra como Markdown (listas, énfasis, tablas; HTML sin interpretar) con `react-markdown` + `remark-gfm` y
-los componentes de shadcn/ui (D95, R-8.11).
 
 Puertos configurables con `WEB_PORT` y `API_PORT` en `.env`. La web no lleva secretos y, al llamar a la API por
 el mismo origen, no necesita `API_ALLOWED_ORIGINS`.
 
-Desarrollo de la SPA con recarga en caliente, usando la API local (`uvicorn api.app:app --port 8000`):
+**Desarrollo de la SPA** con recarga en caliente, usando la API local (`uvicorn api.app:app --port 8000`):
 
 ```bash
 cd web && npm install
 npm run dev      # http://localhost:5173; /api se reenvía a http://127.0.0.1:8000 (VITE_API_TARGET lo cambia)
-npm test         # vitest
+npm test         # vitest + Testing Library
+npm run lint     # eslint
 npm run build    # tsc + vite build
 ```
+
+Para agregar componentes de shadcn/ui: `npx shadcn@latest add <componente>` dentro de `web/`.
 
 ## Criterios de promoción
 
@@ -164,6 +197,6 @@ El enunciado pide al menos dos de cinco. Estado real:
 
 - [x] Framework agéntico (Smolagents): implementado
 - [x] SDD (artefactos en `TP/` y `openspec/`): implementados
-- [ ] Interfaz gráfica: SPA en `web/` (Vite + shadcn/ui) que consume la API (D80, D93); en curso (change `frontend-web-vite`)
+- [ ] Interfaz gráfica: SPA en `web/` (Vite + shadcn/ui) que consume la API (D80, D93); implementada, falta cerrar la verificación de punta a punta del change `frontend-web-vite` para tildarla
 - [ ] Despliegue en la nube (GCP): **descartado por D81** (decisión del equipo, 2026-10-13): el sistema se prepara para correr en entorno local. Queda cubierto solo con `framework agéntico` y `SDD`; hay que confirmarlo con la cátedra (T9.13, riesgo D83). La imagen `runtime` sigue siendo válida para correr local con `uvicorn`
 - [ ] Observabilidad (LangSmith): excluida explícitamente

@@ -1,21 +1,28 @@
-# React + TypeScript + Vite + shadcn/ui
+# web — interfaz del agente de biblioteca
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+SPA de consulta (Vite + React 19 + TypeScript + shadcn/ui, preset `base-luma`). Es un cliente de la API del agente
+(`POST /ask`, SSE); no accede al agente ni a la base. La descripción funcional, la estructura y el arranque con Docker están
+en el [README de la raíz](../README.md#interfaz-web-d93). Requisitos y criterios: capability `interfaz-web` en
+[`openspec/changes/frontend-web-vite`](../openspec/changes/frontend-web-vite/) y
+[`frontend-markdown-answer`](../openspec/changes/frontend-markdown-answer/).
 
-## Adding components
+## Desarrollo
 
-To add components to your app, run the following command:
+Con la API local en `http://127.0.0.1:8000` (`uvicorn api.app:app --port 8000`):
 
 ```bash
-npx shadcn@latest add button
+npm install
+npm run dev      # http://localhost:5173; /api se reenvía a la API (VITE_API_TARGET lo cambia)
+npm test         # vitest
+npm run lint
+npm run build
 ```
 
-This will place the ui components in the `src/components` directory.
+## Componentes de shadcn/ui
 
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button"
+```bash
+npx shadcn@latest add <componente>   # se agregan en src/components/ui
 ```
+
+Convenciones: tokens semánticos (`text-muted-foreground`), `gap-*` en lugar de `space-*`, íconos de Hugeicons y composición de
+las primitivas de chat (`MessageScroller`, `Message`, `Bubble`).
