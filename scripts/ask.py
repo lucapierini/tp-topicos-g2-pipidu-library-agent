@@ -29,6 +29,8 @@ def main() -> int:
         print(f"sql: {sql}")
     for chunk in result.evidence.get("chunks", []):
         print(f"fragmento: {json.dumps(chunk, ensure_ascii=False, default=str)[:200]}")
+    if result.title:
+        print(f"\n{result.title}")
     print("\n" + result.answer)
     return 0
 

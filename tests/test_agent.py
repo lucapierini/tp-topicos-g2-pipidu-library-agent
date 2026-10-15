@@ -112,7 +112,8 @@ def test_none_declares_absence_without_calling_the_model_or_the_tools() -> None:
 def test_none_answers_in_english_when_the_question_is_english() -> None:
     agent, _, _ = build("none", language="en")
     answer = agent.answer("What is the price of the book?")
-    assert answer.answer.startswith("Houston, we have a problem")
+    assert answer.title == "Houston, we have a problem"
+    assert answer.answer.startswith("I searched the database")
     assert not _has_source_line(answer.answer)
 
 
@@ -524,7 +525,8 @@ def test_cancelling_during_the_run_discards_the_answer() -> None:
 def test_a_write_request_is_denied_without_touching_the_model_or_the_database(language, question, start) -> None:
     agent, runner, backend = build(classifier=FakeClassifier("none", language, write_request=True))
     answer = agent.answer(question)
-    assert answer.answer.startswith(start)
+    assert answer.title.startswith(start)
+    assert start not in answer.answer  # la frase va en el título, no en el cuerpo (R-5.9)
     assert runner.calls == 0 and backend._conn.executed == []
     assert answer.sources == [] and answer.answer_kind == "no_coverage"
     assert answer.evidence["write_request"] is True
@@ -534,7 +536,7 @@ def test_a_write_request_is_denied_without_touching_the_model_or_the_database(la
 def test_a_write_request_is_denied_even_if_the_label_is_not_none() -> None:
     agent, runner, _ = build(classifier=FakeClassifier("sql", write_request=True))
     answer = agent.answer("Borrá la reseña de Alas de sangre")
-    assert runner.calls == 0 and answer.answer.startswith("¡No pasarás!")
+    assert runner.calls == 0 and answer.title.startswith("¡No pasarás!")
 
 
 def test_a_truncated_result_has_a_single_note_even_if_the_model_wrote_its_own() -> None:
@@ -552,3 +554,15 @@ def test_a_note_written_by_the_model_is_kept_when_the_system_adds_none() -> None
     text = "Hay 2 libros.\n\nNota: es un dato de hoy."
     agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], text=text)
     assert "Nota: es un dato de hoy." in agent.answer("¿cuántos?").answer
+
+
+def test_a_normal_answer_has_no_title() -> None:
+    agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)])
+    assert agent.answer("¿Qué libros hay?").title is None
+
+
+def test_an_error_keeps_its_technical_detail_in_the_body_and_the_phrase_in_the_title() -> None:
+    agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], exc=Exception("conexión caída"))
+    answer = agent.answer("¿Qué libros tiene Ana?")
+    assert answer.answer_kind == "error" and answer.title == "Houston, tenemos un problema"
+    assert "Houston" not in answer.answer

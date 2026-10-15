@@ -50,7 +50,8 @@ ninguna fuente como respuesta antes del evento `result` (R-7.2, Art. 4).
 ### Requirement: R-8.3 — Respuesta con proveniencia
 Al recibir `result`, la interfaz SHALL mostrar `answer`, las `sources` declaradas y el `answer_kind`.
 Una respuesta con `answer_kind` `no_coverage` o `error` SHALL distinguirse visualmente de una `answer`
-y SHALL NO presentarse como una respuesta con fuente.
+y SHALL NO presentarse como una respuesta con fuente. Si el resultado trae `title`, la interfaz SHALL
+mostrarlo como encabezado de la tarjeta y dejar `answer` como cuerpo.
 
 #### Scenario: respuesta con fuente
 - **GIVEN** un `result` con `answer_kind` `answer` y `sources` no vacío

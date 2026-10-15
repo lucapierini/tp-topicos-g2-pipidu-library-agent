@@ -35,6 +35,17 @@ describe("AnswerView", () => {
     expect(screen.queryByText("Fuente:")).not.toBeInTheDocument()
   })
 
+  it("usa el título del resultado como encabezado y deja el cuerpo adentro (R-5.9)", () => {
+    render(
+      <AnswerView
+        result={{ ...base, answer_kind: "no_coverage", sources: [], title: "¡No pasarás! 🧙", answer: "Solo lectura." }}
+      />,
+    )
+    expect(screen.getByText("¡No pasarás! 🧙")).toBeInTheDocument()
+    expect(screen.getByText("Solo lectura.")).toBeInTheDocument()
+    expect(screen.queryByText("Sin información suficiente")).not.toBeInTheDocument()
+  })
+
   it("sin evidencia no ofrece la sección (R-8.4)", () => {
     render(<AnswerView result={{ ...base, evidence: {} }} />)
     expect(screen.queryByText("Ver evidencia")).not.toBeInTheDocument()

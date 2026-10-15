@@ -17,6 +17,7 @@ export interface AgentResult {
   evidence: SqlEvidence
   run_id: number | null
   answer_kind: AnswerKind
+  title?: string | null
   trace?: string[]
 }
 

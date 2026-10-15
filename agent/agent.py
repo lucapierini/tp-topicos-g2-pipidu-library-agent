@@ -78,37 +78,60 @@ def _strip_model_notes(text: str) -> str:
     return "\n\n".join(paragraphs).strip()
 
 
+# Los mensajes fijos se dividen en `title` (la frase con referencia, R-5.9) y cuerpo (`answer`): la interfaz
+# muestra el título como encabezado de la tarjeta y el cuerpo adentro.
+TITLES = {
+    "es": {
+        "write_denied": "¡No pasarás! 🧙",
+        "no_coverage": "Houston, tenemos un problema",
+        "no_relevant": "Estos no son los documentos que buscás",
+        "sql_failed": "Houston, tenemos un problema",
+        "sql_not_called": "Houston, tenemos un problema",
+        "rag_failed": "Houston, tenemos un problema",
+        "run_failed": "Houston, tenemos un problema",
+        "classify_failed": "Ni Sherlock Holmes lo habría entendido",
+    },
+    "en": {
+        "write_denied": "You shall not pass! 🧙",
+        "no_coverage": "Houston, we have a problem",
+        "no_relevant": "These aren't the documents you're looking for",
+        "sql_failed": "Houston, we have a problem",
+        "sql_not_called": "Houston, we have a problem",
+        "rag_failed": "Houston, we have a problem",
+        "run_failed": "Houston, we have a problem",
+        "classify_failed": "Not even Sherlock Holmes could make sense of it",
+    },
+}
+
 MESSAGES = {
     "es": {
-        "write_denied": "¡No pasarás! 🧙 Soy bibliotecario de solo lectura: puedo consultar libros, socios, "
-                        "préstamos y reglamentos, pero crear, modificar o borrar datos no está entre mis "
-                        "poderes, así que no hice ningún cambio. Eso queda en manos de quien administra la biblioteca.",
-        "no_coverage": "Houston, tenemos un problema: busqué en la base y en los documentos y no encontré nada "
-                       "sobre eso. Probá con otra pregunta o con el título exacto del libro.",
-        "no_relevant": "Estos no son los documentos que buscás: no encontré nada relevante en los documentos "
-                       "de la biblioteca para esta consulta.",
-        "sql_failed": "Houston, tenemos un problema con la base de datos: {error}. {detail}",
-        "sql_not_called": "Houston, tenemos un problema: no llegué a consultar la base de datos.",
-        "rag_failed": "Houston, tenemos un problema con los documentos de la biblioteca: {error}.",
-        "run_failed": "Houston, tenemos un problema: {detail}",
-        "classify_failed": "Ni Sherlock Holmes habría entendido esta consulta: {detail}",
+        "write_denied": "Soy bibliotecario de solo lectura: puedo consultar libros, socios, préstamos y "
+                        "reglamentos, pero crear, modificar o borrar datos no está entre mis poderes, así que "
+                        "no hice ningún cambio. Eso queda en manos de quien administra la biblioteca.",
+        "no_coverage": "Busqué en la base y en los documentos y no encontré nada sobre eso. Probá con otra "
+                       "pregunta o con el título exacto del libro.",
+        "no_relevant": "No encontré nada relevante en los documentos de la biblioteca para esta consulta.",
+        "sql_failed": "No pude resolver la consulta con los datos de la base: {error}. {detail}",
+        "sql_not_called": "No llegué a consultar la base de datos.",
+        "rag_failed": "No pude consultar los documentos de la biblioteca: {error}.",
+        "run_failed": "No pude completar la consulta: {detail}",
+        "classify_failed": "No pude interpretar la consulta: {detail}",
         "partial_sql": "Nota: no se pudo obtener el dato de la base ({error}), por lo que no es posible concluir.",
         "partial_rag": "Nota: no se encontró la norma en los documentos ({error}), por lo que no es posible concluir.",
         "truncated": "Nota: el resultado se limitó a {n} filas; hay más datos que no se muestran.",
     },
     "en": {
-        "write_denied": "You shall not pass! 🧙 I'm a read-only librarian: I can look up books, members, loans "
-                        "and regulations, but creating, changing or deleting data is beyond my powers. That "
-                        "is up to whoever manages the library, so I made no changes.",
-        "no_coverage": "Houston, we have a problem: I searched the database and the documents and found nothing "
-                       "about that. Try another question or the exact title of the book.",
-        "no_relevant": "These aren't the documents you're looking for: I found nothing relevant in the "
-                       "library's documents for this question.",
-        "sql_failed": "Houston, we have a problem with the database: {error}. {detail}",
-        "sql_not_called": "Houston, we have a problem: I never got to query the database.",
-        "rag_failed": "Houston, we have a problem with the library's documents: {error}.",
-        "run_failed": "Houston, we have a problem: {detail}",
-        "classify_failed": "Not even Sherlock Holmes could make sense of this question: {detail}",
+        "write_denied": "I'm a read-only librarian: I can look up books, members, loans and regulations, but "
+                        "creating, changing or deleting data is beyond my powers, so I made no changes. That "
+                        "is up to whoever manages the library.",
+        "no_coverage": "I searched the database and the documents and found nothing about that. Try another "
+                       "question or the exact title of the book.",
+        "no_relevant": "I found nothing relevant in the library's documents for this question.",
+        "sql_failed": "I couldn't resolve the question with the database: {error}. {detail}",
+        "sql_not_called": "I never got to query the database.",
+        "rag_failed": "I couldn't query the library's documents: {error}.",
+        "run_failed": "I couldn't complete the question: {detail}",
+        "classify_failed": "I couldn't interpret the question: {detail}",
         "partial_sql": "Note: the database value could not be obtained ({error}), so no conclusion is possible.",
         "partial_rag": "Note: the rule was not found in the documents ({error}), so no conclusion is possible.",
         "truncated": "Note: the result was limited to {n} rows; there is more data not shown.",
@@ -468,7 +491,7 @@ class LibraryAgent:
             return self._gap_answer(
                 text, "none", "es", ANSWER_KIND_ERROR, [],
                 MESSAGES["es"]["classify_failed"].format(detail=detail),
-                error=("CLASSIFICATION_ERROR", detail),
+                error=("CLASSIFICATION_ERROR", detail), key="classify_failed",
             )
 
         _check_cancelled(cancel)
@@ -479,12 +502,12 @@ class LibraryAgent:
             return self._gap_answer(
                 text, "none", classification.language, ANSWER_KIND_NO_COVERAGE, trace,
                 MESSAGES[classification.language]["write_denied"],
-                evidence={"write_request": True},
+                evidence={"write_request": True}, key="write_denied",
             )
         if classification.label == "none":
             return self._gap_answer(
                 text, "none", classification.language, ANSWER_KIND_NO_COVERAGE, trace,
-                MESSAGES[classification.language]["no_coverage"],
+                MESSAGES[classification.language]["no_coverage"], key="no_coverage",
             )
 
         session = ToolSession(emit=emit)
@@ -518,7 +541,7 @@ class LibraryAgent:
 
     def _gap_answer(
         self, question: str, label: str, language: str, kind: str, trace: list[str], message: str,
-        evidence: dict | None = None, error: tuple[str, str] | None = None,
+        evidence: dict | None = None, error: tuple[str, str] | None = None, key: str | None = None,
     ) -> AgentAnswer:
         """Respuesta que declara una ausencia o un error: plantilla fija, sin fuentes (R-5.2).
 
@@ -535,6 +558,7 @@ class LibraryAgent:
             evidence=merged,
             answer_kind=kind,
             trace=trace,
+            title=TITLES[language][key] if key else None,
         )
 
     def _compose(
@@ -600,13 +624,13 @@ class LibraryAgent:
             return self._gap_answer(
                 question, label, language, ANSWER_KIND_ERROR, full_trace,
                 msg["run_failed"].format(detail=run_error), evidence,
-                error=("RUN_ERROR", run_error),
+                error=("RUN_ERROR", run_error), key="run_failed",
             )
         if not sources:
-            kind, message = self._empty_outcome(label, session, msg)
+            kind, key, message = self._empty_outcome(label, session, msg)
             return self._gap_answer(
                 question, label, language, kind, full_trace, message, evidence,
-                error=self._empty_error(label, session),
+                error=self._empty_error(label, session), key=key,
             )
 
         body = _strip_source_line((model_text or "").strip())
@@ -614,7 +638,7 @@ class LibraryAgent:
             return self._gap_answer(
                 question, label, language, ANSWER_KIND_ERROR, full_trace,
                 msg["run_failed"].format(detail="el modelo no devolvió una respuesta"), evidence,
-                error=("EMPTY_MODEL_RESPONSE", "el modelo no devolvió una respuesta"),
+                error=("EMPTY_MODEL_RESPONSE", "el modelo no devolvió una respuesta"), key="run_failed",
             )
 
         notes = []
@@ -653,19 +677,19 @@ class LibraryAgent:
             return error or "RETRIEVAL_ERROR", "falló la recuperación de documentos"
         return "TOOL_NOT_CALLED", "no se invocó ninguna herramienta"
 
-    def _empty_outcome(self, label: str, session: ToolSession, msg: dict) -> tuple[str, str]:
-        """(answer_kind, mensaje) cuando ninguna herramienta aportó evidencia utilizable."""
+    def _empty_outcome(self, label: str, session: ToolSession, msg: dict) -> tuple[str, str, str]:
+        """(answer_kind, clave del mensaje, mensaje) cuando ninguna herramienta aportó evidencia utilizable."""
         if "sql" in SOURCES_BY_CLASSIFICATION[label] and not session.sql_results:
-            return ANSWER_KIND_ERROR, msg["sql_not_called"]
+            return ANSWER_KIND_ERROR, "sql_not_called", msg["sql_not_called"]
         if session.sql_failures:
             last = session.sql_results[-1]
-            return ANSWER_KIND_ERROR, msg["sql_failed"].format(error=last.error, detail=last.detail or "")
+            return ANSWER_KIND_ERROR, "sql_failed", msg["sql_failed"].format(error=last.error, detail=last.detail or "")
         if session.rag_results:
             error = session.rag_results[-1].error
             if error == NO_RELEVANT_RESULTS:
-                return ANSWER_KIND_NO_COVERAGE, msg["no_relevant"]
-            return ANSWER_KIND_ERROR, msg["rag_failed"].format(error=error)
-        return ANSWER_KIND_ERROR, msg["sql_not_called"]
+                return ANSWER_KIND_NO_COVERAGE, "no_relevant", msg["no_relevant"]
+            return ANSWER_KIND_ERROR, "rag_failed", msg["rag_failed"].format(error=error)
+        return ANSWER_KIND_ERROR, "sql_not_called", msg["sql_not_called"]
 
 
 # --------------------------------------------------------------------------- atajo de módulo

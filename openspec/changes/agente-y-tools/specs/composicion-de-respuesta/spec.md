@@ -108,3 +108,9 @@ Los mensajes fijos del sistema (falta de cobertura, ausencia en documentos, erro
 #### Scenario: consulta sin cobertura
 - **WHEN** el agente declara que no hay información
 - **THEN** el mensaje sugiere cómo reformular la pregunta
+
+#### Scenario: la frase va en el título
+- **WHEN** el agente entrega un mensaje fijo
+- **THEN** la frase con la referencia viaja en el campo `title` del resultado
+- **AND** `answer` contiene solo el cuerpo, con el motivo técnico si existe
+- **AND** una respuesta normal no lleva `title`

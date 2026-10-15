@@ -96,6 +96,8 @@ class AgentAnswer:
     evidence: dict = field(default_factory=dict)
     run_id: int | None = None
     answer_kind: str = ANSWER_KIND_ANSWER
+    # Frase corta que encabeza un mensaje fijo de ausencia o error (R-5.9); `None` en una respuesta normal.
+    title: str | None = None
     # Eventos en orden: la clasificación estructurada y luego cada invocación de herramienta.
     # Permite afirmar "clasificó antes de invocar tools" sin depender de la prosa (D3, D16).
     trace: list[str] = field(default_factory=list)

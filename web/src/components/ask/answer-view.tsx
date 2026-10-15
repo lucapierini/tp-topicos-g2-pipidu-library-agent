@@ -14,7 +14,7 @@ export function AnswerView({ result }: { result: AgentResult }) {
       <div className="flex flex-col gap-3">
         <Alert>
           <HugeiconsIcon icon={InformationCircleIcon} />
-          <AlertTitle>Sin información suficiente</AlertTitle>
+          <AlertTitle>{result.title ?? "Sin información suficiente"}</AlertTitle>
           <AlertDescription>{result.answer}</AlertDescription>
         </Alert>
       </div>
@@ -24,7 +24,7 @@ export function AnswerView({ result }: { result: AgentResult }) {
     return (
       <Alert variant="destructive">
         <HugeiconsIcon icon={Alert02Icon} />
-        <AlertTitle>El agente no pudo responder</AlertTitle>
+        <AlertTitle>{result.title ?? "El agente no pudo responder"}</AlertTitle>
         <AlertDescription>{result.answer}</AlertDescription>
       </Alert>
     )
