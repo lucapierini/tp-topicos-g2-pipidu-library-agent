@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import threading
 import time
 from collections.abc import Callable
@@ -56,10 +57,14 @@ TOOLS_BY_CLASSIFICATION = {
 }
 SOURCES_BY_CLASSIFICATION = {"sql": {"sql"}, "rag": {"rag"}, "hybrid": {"sql", "rag"}}
 
-SOURCE_LABELS = {
-    "es": {"sql": "SQL", "rag": "RAG", "both": "SQL + RAG", "none": "ninguna", "prefix": "Fuente"},
-    "en": {"sql": "SQL", "rag": "RAG", "both": "SQL + RAG", "none": "none", "prefix": "Source"},
-}
+# La fuente se declara en `AgentAnswer.sources` y no en el texto (R-5.2, D84). Si el modelo escribe de
+# todos modos una última línea "Fuente: …" / "Source: …", se retira del cuerpo.
+_TRAILING_SOURCE_LINE = re.compile(r"(?:\n+|^)[ \t]*(?:Fuentes?|Sources?)[ \t]*:[^\n]*\s*$", re.IGNORECASE)
+
+
+def _strip_source_line(text: str) -> str:
+    return _TRAILING_SOURCE_LINE.sub("", text).strip()
+
 
 MESSAGES = {
     "es": {
@@ -493,7 +498,6 @@ class LibraryAgent:
 
         `error` es (código, detalle): queda en la evidencia y de ahí en `agent_runs` (R-6.3).
         """
-        labels = SOURCE_LABELS[language]
         merged = {**(evidence or {}), "model": self._model_info(), "language": language}
         if error is not None:
             merged["error"] = {"code": error[0], "detail": error[1]}
@@ -501,7 +505,7 @@ class LibraryAgent:
             question=question,
             classification=label,
             sources=[],
-            answer=f"{message}\n\n{labels['prefix']}: {labels['none']}",
+            answer=message,
             evidence=merged,
             answer_kind=kind,
             trace=trace,
@@ -579,7 +583,7 @@ class LibraryAgent:
                 error=self._empty_error(label, session),
             )
 
-        body = (model_text or "").strip()
+        body = _strip_source_line((model_text or "").strip())
         if not body:
             return self._gap_answer(
                 question, label, language, ANSWER_KIND_ERROR, full_trace,
@@ -596,9 +600,7 @@ class LibraryAgent:
         if executed and executed[-1].truncated:
             notes.append(msg["truncated"].format(n=len(executed[-1].rows)))
 
-        labels = SOURCE_LABELS[language]
-        source_text = labels["both"] if len(sources) == 2 else labels[sources[0]]
-        answer = "\n\n".join([body, *notes, f"{labels['prefix']}: {source_text}"])
+        answer = "\n\n".join([body, *notes])
         return AgentAnswer(
             question=question,
             classification=label,

@@ -23,7 +23,7 @@ OTHER = "http://127.0.0.1:9999"
 def _answer(question: str) -> AgentAnswer:
     return AgentAnswer(
         question=question, classification="sql", sources=["sql"],
-        answer="Respuesta.\n\nFuente: SQL",
+        answer="Respuesta.",
         evidence={"sql": "SELECT titulo FROM libros", "rows": [], "language": "es"},
         run_id=1, answer_kind="answer", trace=["classification", "execute_sql"],
     )

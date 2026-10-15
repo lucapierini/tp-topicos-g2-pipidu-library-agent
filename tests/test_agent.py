@@ -6,6 +6,7 @@ conexión falsa, validador incluido) y recuperación son dobles de `tests/fakes.
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from dataclasses import replace
@@ -28,6 +29,11 @@ from tests.fakes import (
 
 GOOD_SQL = "SELECT l.titulo FROM prestamos p JOIN libros l ON l.id = p.libro_id"
 BAD_SQL = "DELETE FROM prestamos"
+
+
+def _has_source_line(text: str) -> bool:
+    """¿El texto trae una línea "Fuente: …" / "Source: …"? La fuente va en `sources` (R-5.2, D84)."""
+    return bool(re.search(r"(?mi)^[ \t]*(?:Fuentes?|Sources?)[ \t]*:", text))
 
 
 def build(label="sql", *, steps=(), text="Tiene 2 libros.", language="es", rows=None, columns=None,
@@ -98,7 +104,7 @@ def test_none_declares_absence_without_calling_the_model_or_the_tools() -> None:
     assert runner.calls == 0 and backend._conn.executed == []
     assert answer.classification == "none" and answer.sources == []
     assert answer.answer_kind == "no_coverage"
-    assert answer.answer.endswith("Fuente: ninguna")
+    assert not _has_source_line(answer.answer)  # R-5.2: la ausencia se declara en `sources` y `answer_kind`
     assert answer.is_valid(), answer.violations()
     assert answer.trace == ["classification"]
 
@@ -107,7 +113,7 @@ def test_none_answers_in_english_when_the_question_is_english() -> None:
     agent, _, _ = build("none", language="en")
     answer = agent.answer("What is the price of the book?")
     assert answer.answer.startswith("I don't have enough information")
-    assert answer.answer.endswith("Source: none")
+    assert not _has_source_line(answer.answer)
 
 
 # --- sql (R-3.x, R-5.2, R-5.3) ---
@@ -118,7 +124,7 @@ def test_sql_answer_declares_source_and_shows_the_executed_statement() -> None:
     answer = agent.answer("¿Qué libros tiene Ana?")
 
     assert answer.sources == ["sql"]
-    assert answer.answer.endswith("Fuente: SQL")
+    assert not _has_source_line(answer.answer)  # R-5.2: la fuente va en `sources`, no en el texto
     assert answer.evidence["rows"] == [{"titulo": "Rayuela"}, {"titulo": "Ficciones"}]
     # R-3.9: lo exhibido es la sentencia efectivamente ejecutada (normalizada), no la del modelo.
     assert answer.evidence["sql"] == backend._conn.executed[0]
@@ -201,22 +207,33 @@ def test_rag_answer_cites_document_and_location() -> None:
     # R-5.4: el fragmento citado viaja con su texto para que el cliente lo exhiba.
     assert answer.evidence["chunks"][0]["text"]
     assert json.loads(runner.observations[0])["chunks"][0]["location"] == "Art. 12"
-    assert answer.answer.endswith("Fuente: RAG")
+    assert not _has_source_line(answer.answer)
     assert answer.is_valid(), answer.violations()
 
 
-@pytest.mark.parametrize(
-    ("language", "closing"), [("es", "Fuente: SQL"), ("en", "Source: SQL")], ids=["es", "en"],
-)
-def test_the_answer_declares_and_uses_the_language_of_the_question(language, closing) -> None:
+@pytest.mark.parametrize("language", ["es", "en"])
+def test_the_answer_declares_the_language_of_the_question(language) -> None:
     # R-5.1: la evidencia registra el idioma con el que se compuso la respuesta (el enunciado pide
-    # castellano o inglés); la plantilla fija sale en ese idioma aunque la prosa la haya escrito el modelo.
+    # castellano o inglés). La fuente ya no viaja en el texto (R-5.2, D84): solo en `sources`.
     agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], language=language)
 
     answer = agent.answer("Which books are on loan?" if language == "en" else "¿Qué libros hay prestados?")
 
     assert answer.evidence["language"] == language
-    assert answer.answer.endswith(closing)
+    assert answer.sources == ["sql"]
+    assert not _has_source_line(answer.answer)
+
+
+@pytest.mark.parametrize("model_line", ["Fuente: SQL", "Source: SQL", "fuentes: SQL + RAG"])
+def test_a_source_line_written_by_the_model_is_removed_from_the_answer(model_line) -> None:
+    # R-5.2: el texto no repite la fuente aunque el modelo la escriba; la declarada sigue siendo la de
+    # las herramientas invocadas.
+    agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], text=f"Tiene 2 libros.\n\n{model_line}")
+
+    answer = agent.answer("¿Qué libros tiene Ana?")
+
+    assert answer.answer == "Tiene 2 libros."
+    assert answer.sources == ["sql"]
 
 
 def test_the_detected_language_reaches_the_model_prompt() -> None:
@@ -236,7 +253,7 @@ def test_a_gap_answer_in_english_declares_the_language_too() -> None:
     answer = agent.answer("What is the price of this book?")
 
     assert answer.evidence["language"] == "en"
-    assert answer.answer.endswith("Source: none")
+    assert answer.sources == [] and not _has_source_line(answer.answer)
 
 
 def test_rag_without_relevant_results_declares_no_coverage() -> None:
@@ -268,7 +285,7 @@ def test_hybrid_invokes_both_tools_and_declares_both_sources() -> None:
     answer = agent.answer("¿Le corresponde multa?")
     assert answer.sources == ["sql", "rag"]
     assert answer.trace == ["classification", "execute_sql", "retrieve_documents"]
-    assert answer.answer.endswith("Fuente: SQL + RAG")
+    assert not _has_source_line(answer.answer)
     assert answer.is_valid(), answer.violations()
 
 

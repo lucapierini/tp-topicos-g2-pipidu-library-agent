@@ -118,4 +118,4 @@ def test_the_english_rag_case_finds_its_document(retriever, case) -> None:
 
     assert result.error is None
     assert case.check({"chunks": [{"document": c.document} for c in result.chunks],
-                       "language": "en", "answer": "You have 15 days to return it.\n\nSource: RAG"})
+                       "language": "en", "answer": "You have 15 days to return it."})

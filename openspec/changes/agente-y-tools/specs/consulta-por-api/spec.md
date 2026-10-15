@@ -11,7 +11,7 @@ API es el **único** punto de acceso al agente: ningún cliente lo invoca por ot
 ### Requirement: R-7.0 — La API es el único punto de acceso al agente
 El sistema SHALL ofrecer el acceso al agente exclusivamente por la API HTTP. Ninguna interfaz gráfica
 SHALL invocar al agente en proceso: la presentación de la respuesta, la evidencia y el historial
-corresponden a un frontend que consume la API, aunque se distribuya en este repositorio (D84).
+corresponden a un frontend que consume la API, aunque se distribuya en este repositorio (D93).
 
 #### Scenario: imagen que se ejecuta
 - **GIVEN** la imagen `runtime` que se ejecuta en entorno local (D81)

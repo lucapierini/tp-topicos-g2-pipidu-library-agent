@@ -117,7 +117,7 @@ services:
       timeout: 3s
       retries: 20
 
-  # Interfaz web (D84): SPA de `web/` servida por nginx, que reenvía `/api/` a la API (R-8.8).
+  # Interfaz web (D93): SPA de `web/` servida por nginx, que reenvía `/api/` a la API (R-8.8).
   web:
     build:
       context: .

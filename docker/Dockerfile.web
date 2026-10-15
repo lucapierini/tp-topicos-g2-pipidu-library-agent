@@ -1,4 +1,4 @@
-# Imagen de la interfaz web (D84, R-8.8). Se construye desde la raíz del repo:
+# Imagen de la interfaz web (D93, R-8.8). Se construye desde la raíz del repo:
 #
 #   docker build -f docker/Dockerfile.web -t pipidu-web .
 #

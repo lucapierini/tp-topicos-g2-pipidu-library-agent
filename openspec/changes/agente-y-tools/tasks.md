@@ -125,6 +125,9 @@ la cátedra, riesgo D83) quedó abierta al registrar D83.
 - [x] 7.7 Implementar `scripts/export_runs.py` que vuelque `agent_runs` a un archivo versionado en `TP/evidencia/`, y verificar que contiene las 13 consultas del golden set con sus campos. El fixture de integración hace `TRUNCATE agent_runs` (`tests/test_runs_integration.py`), así que exportar **antes** de correr `pytest -m integration`; la tabla no es una evidencia durable (R-6.1, R-6.2)
   _(`scripts/export_runs.py` (`--last N`), 7 tests; exportadas las 15 consultas en `TP/evidencia/agent_runs_2026-10-11.json`)_
 
+- [x] 7.8 Retirar la línea de fuente del texto de la respuesta y declararla solo en `sources` (R-5.2, R-2.6, D84), y verificar que `answer` no termina con `Fuente: …` / `Source: …` en ningún caso (`sql`, `rag`, `hybrid`, `none`, error) y que una línea de fuente escrita por el modelo se retira
+  _(`tests/test_agent.py`: `_has_source_line` en los casos de composición y `test_a_source_line_written_by_the_model_is_removed_from_the_answer`; `tests/test_api.py::test_the_result_event_carries_the_complete_agent_answer`; `pytest -q`)_
+
 ## 8. API HTTP (único acceso al agente, sin interfaz gráfica propia)
 
 Las tareas 8.1 a 8.3 correspondían a la interfaz Streamlit y quedan **descartadas por D80**: el frontend

@@ -33,7 +33,7 @@ El detalle de cada archivo está en `TP/02` §8 (D20): acá solo van los directo
 Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`). El agente y sus tools están
 implementados (validador y executor de SQL, tool de RAG, clasificador, orquestador, `agent_runs`), junto
 con la API HTTP con streaming de progreso y cancelación, que es el **único acceso** al agente (D80). La
-interfaz gráfica (`web/`, Vite + shadcn/ui) es un cliente de esa API y se levanta junto con ella (D84). La
+interfaz gráfica (`web/`, Vite + shadcn/ui) es un cliente de esa API y se levanta junto con ella (D93). La
 aceptación con el modelo definitivo está medida (T6.7, `gemini-3.1-flash-lite`, 13/13).
 Pendiente: el informe. El sistema se ejecuta en entorno local
 (D81). El detalle está en [`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
@@ -110,7 +110,7 @@ crear el volumen: para cambiarlo hay que hacer `docker compose down -v`.
 # LLM_MODEL=openai/<id> y LLM_API_BASE=http://127.0.0.1:<puerto>/v1; la aceptación se mide después con
 # Gemini (dejar LLM_MODEL y LLM_API_BASE vacíos). Los resultados locales no cuentan como aceptación.
 python scripts/measure_golden.py --out TP/evidencia/<corrida>.json   # mide R-2.1 con el modelo configurado
-docker compose up -d --wait   # todo junto: db (Postgres + pgvector, roles, agent_runs, catálogo completo) + ingest del RAG + api + web (D84)
+docker compose up -d --wait   # todo junto: db (Postgres + pgvector, roles, agent_runs, catálogo completo) + ingest del RAG + api + web (D93)
 # (opcional) traer la base compartida de Neon: definir NEON_DATABASE_URL en .env y
 bash scripts/replicate_neon.sh --check   # versión y objetos de Neon; sin --check vuelca y restaura
 python -m pytest -m integration          # permisos por rol, esquema vs whitelist, flujo con datos reales
@@ -132,7 +132,7 @@ python -m pytest -q                      # suite offline: sin base ni credencial
 python -m ruff check .                   # lint
 ```
 
-## Interfaz web (D84)
+## Interfaz web (D93)
 
 `docker compose up -d --wait` levanta la base, la API y la interfaz, en ese orden (cada servicio espera a que el
 anterior esté sano). Requiere el `.env` completo (`GEMINI_API_KEY` y las contraseñas de la base).
@@ -161,6 +161,6 @@ El enunciado pide al menos dos de cinco. Estado real:
 
 - [x] Framework agéntico (Smolagents): implementado
 - [x] SDD (artefactos en `TP/` y `openspec/`): implementados
-- [ ] Interfaz gráfica: SPA en `web/` (Vite + shadcn/ui) que consume la API (D80, D84); en curso (change `frontend-web-vite`)
+- [ ] Interfaz gráfica: SPA en `web/` (Vite + shadcn/ui) que consume la API (D80, D93); en curso (change `frontend-web-vite`)
 - [ ] Despliegue en la nube (GCP): **descartado por D81** (decisión del equipo, 2026-10-13): el sistema se prepara para correr en entorno local. Queda cubierto solo con `framework agéntico` y `SDD`; hay que confirmarlo con la cátedra (T9.13, riesgo D83). La imagen `runtime` sigue siendo válida para correr local con `uvicorn`
 - [ ] Observabilidad (LangSmith): excluida explícitamente
