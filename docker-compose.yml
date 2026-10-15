@@ -6,7 +6,7 @@
 #
 # Infraestructura local completa (base + RAG + agente), sin tocar Neon:
 #   docker compose up -d --wait db                 # Postgres + pgvector + esquema + roles + datos de desarrollo
-#   docker compose run --rm ingest                 # carga los documentos del RAG (embeddings con Gemini)
+#   docker compose run --rm ingest                 # recarga el RAG a mano (`up` ya lo hace solo)
 #   docker compose run --rm agent "<pregunta>"     # el agente real contra la base local
 #
 # La imagen debe tener la misma versión mayor que Neon para poder restaurar su dump: `PG_IMAGE`.
@@ -44,8 +44,10 @@ services:
       retries: 20
 
   # Ingesta del RAG en la base LOCAL (rag/ingest.py). Escribe como superusuario local; el agente lee como agent_ro.
+  # Corre solo al hacer `up` (antes de la API) y termina: es idempotente por sha256, así que reejecutarlo es barato.
+  # Necesita GEMINI_API_KEY en .env (embeddings); sin ella `up` falla acá en vez de dejar el RAG vacío.
   ingest:
-    profiles: ["tools"]
+    restart: "no"
     build:
       context: .
       dockerfile: docker/Dockerfile
@@ -104,6 +106,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      ingest:
+        condition: service_completed_successfully   # el RAG ya tiene sus documentos cuando la API arranca
     ports:
       # Solo en loopback; la web llega a la API por la red interna. Se publica para depurar y medir.
       - "127.0.0.1:${API_PORT:-8080}:8080"

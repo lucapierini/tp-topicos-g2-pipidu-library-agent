@@ -35,7 +35,7 @@ implementados (validador y executor de SQL, tool de RAG, clasificador, orquestad
 con la API HTTP con streaming de progreso y cancelación, que es el **único acceso** al agente (D80). La
 interfaz gráfica (`web/`, Vite + shadcn/ui) es un cliente de esa API y se levanta junto con ella (D84). La
 aceptación con el modelo definitivo está medida (T6.7, `gemini-3.1-flash-lite`, 13/13).
-Pendiente: la ingesta de PDFs, el seed entregable y el informe. El sistema se ejecuta en entorno local
+Pendiente: el informe. El sistema se ejecuta en entorno local
 (D81). El detalle está en [`tasks.md`](openspec/changes/agente-y-tools/tasks.md).
 El change activo es [`agente-y-tools`](openspec/changes/agente-y-tools/), validado con
 `openspec validate --strict`. El change [`base-de-datos-neon`](openspec/changes/base-de-datos-neon/)
@@ -43,8 +43,10 @@ justifica el esquema, el seed y los documentos fuente del RAG (rama `feature/dat
 
 ## Instalación y ejecución
 
-El flujo de arranque cubre hasta lo implementado. `seed` e `ingest` se agregan cuando existan
-(T2.4, T3.3); la tarea 1.5 de `openspec/changes/agente-y-tools/tasks.md` sigue abierta por eso.
+Para levantar todo alcanza con `cp .env.example .env` (completar `GEMINI_API_KEY` y las contraseñas) y
+`docker compose up -d --build --wait`: crea la base con el catálogo completo (`db/seed.sql`), ingesta los
+documentos del RAG (los embeddings usan Gemini, por eso la clave es obligatoria) y levanta la API y la web en
+http://localhost:3000. Sin `GEMINI_API_KEY` el arranque falla en el paso `ingest`.
 
 ```bash
 cp .env.example .env          # GEMINI_API_KEY y credenciales de BD
@@ -52,7 +54,7 @@ cp .env.example .env          # GEMINI_API_KEY y credenciales de BD
 # LLM_MODEL=openai/<id> y LLM_API_BASE=http://127.0.0.1:<puerto>/v1; la aceptación se mide después con
 # Gemini (dejar LLM_MODEL y LLM_API_BASE vacíos). Los resultados locales no cuentan como aceptación.
 python scripts/measure_golden.py --out TP/evidencia/<corrida>.json   # mide R-2.1 con el modelo configurado
-docker compose up -d --wait   # todo junto: db (Postgres + pgvector, roles, agent_runs, datos de desarrollo) + api + web (D84)
+docker compose up -d --wait   # todo junto: db (Postgres + pgvector, roles, agent_runs, catálogo completo) + ingest del RAG + api + web (D84)
 # (opcional) traer la base compartida de Neon: definir NEON_DATABASE_URL en .env y
 bash scripts/replicate_neon.sh --check   # versión y objetos de Neon; sin --check vuelca y restaura
 python -m pytest -m integration          # permisos por rol, esquema vs whitelist, flujo con datos reales
@@ -72,7 +74,6 @@ docker build -f docker/Dockerfile --target measure -t pipidu-measure . # + scrip
 docker run --env-file .env -e POSTGRES_HOST=host.docker.internal -e API_ALLOWED_ORIGINS=http://localhost:5173 -p 8080:8080 pipidu-agent
 python -m pytest -q                      # suite offline: sin base ni credenciales
 python -m ruff check .                   # lint
-# Pendientes (no existen todavía): seed sintético (T2.4), ingesta RAG (T3.3)
 ```
 
 ## Interfaz web (D84)
