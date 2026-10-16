@@ -15,6 +15,7 @@ Un artefacto vive en **un solo lugar**:
 | Decisiones | `TP/CHANGELOG.md` |
 | Tasks | `openspec/changes/agente-y-tools/tasks.md` |
 | Validation | `TP/05-validacion.md` |
+| Evidencia de corridas medidas | `TP/evidencia/*.json` |
 | Enunciado original | `TP/Enunciado TP - 2026.pdf` |
 
 `openspec/` es la **fuente de verdad operativa**: ahí se valida, se actualiza y se archiva cada change.
@@ -27,6 +28,8 @@ edita una copia en paralelo.
 
 ## Capabilities especificadas
 
+Change `agente-y-tools` (agente y tools; los IDs `R-1.x` a `R-7.x`):
+
 1. `entrada-de-consulta`
 2. `seleccion-de-fuente`
 3. `sql-query-tool`
@@ -37,9 +40,16 @@ edita una copia en paralelo.
 
 Change `base-de-datos-neon` (justificación del esquema, seed y documentos fuente del RAG):
 
-7. `esquema-de-base-de-datos`
-8. `datos-de-prueba`
-9. `documentos-fuente-rag`
+- `esquema-de-base-de-datos` (`R-7.1` a `R-7.10`)
+- `datos-de-prueba` (`R-8.1` a `R-8.7`)
+- `documentos-fuente-rag` (`R-9.1` a `R-9.7`)
+
+Changes `frontend-web-vite` y `frontend-markdown-answer` (interfaz web): capability `interfaz-web`
+(`R-8.1` a `R-8.11`).
+
+**Los prefijos `R-7.x` y `R-8.x` se repiten entre capabilities** (los IDs no se renumeran): se citan junto con
+su capability cuando hay ambigüedad (por ejemplo, «R-7.8 de `consulta-por-api`» es CORS y «R-7.8 de
+`esquema-de-base-de-datos`» es el vector de 768 dimensiones).
 
 Los PDFs documentales los genera el integrante responsable de RAG y base de datos, y deben cubrir el
 contenido que sostienen los casos G6–G9 y R1–R3 del golden set.
@@ -49,7 +59,7 @@ contenido que sostienen los casos G6–G9 y R1–R3 del golden set.
 ```bash
 openspec list --specs          # inventario de capacidades
 openspec list                  # changes en curso
-openspec validate --strict     # valida requisitos y escenarios
+openspec validate --all --strict   # valida requisitos y escenarios de todos los changes
 openspec show agente-y-tools   # ver el change
 openspec context               # contexto del proyecto
 ```

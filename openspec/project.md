@@ -24,15 +24,17 @@ Entrega: 16/10/2026 23:59 (GMT-03). Coloquio: 23/10 o 30/10/2026.
 ## Estructura del repositorio
 
 ```
-db/            schema.sql, dev_seed.sql, migrations/, init/, post_restore.sql (seed_data.py y dump.sql: pendientes)
-rag/           documents/ (PDFs), ingest.py, chunking.py
+db/            schema.sql, seed.sql (catálogo completo), dev_seed.sql (seed mínimo), migrations/, init/ (roles y carga
+               inicial), post_restore.sql (seed_data.py y dump.sql: pendientes)
+rag/           documents/ (.md y pdf/), ingest.py, build_pdfs.py, upload_to_bucket.py, requirements.txt
 agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)
-scripts/       measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+scripts/       ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py,
+               replicate_neon.sh
 api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
 web/           SPA Vite + React + shadcn/ui: cliente de la API (D93)
 tests/         ver el detalle en `TP/02` §8
-docker/        Dockerfile
+docker/        Dockerfile, Dockerfile.web, nginx.conf (docker-compose.yml está en la raíz)
 TP/            artefactos SDD adjuntables al informe
 openspec/      raíz operativa de SDD (esta carpeta)
 ```
