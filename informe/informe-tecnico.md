@@ -5,7 +5,7 @@ subtitle: "Trabajo Práctico Integrador, AI Engineering (UCSE, Ingeniería en In
 
 # 1. Resumen
 
-**Pipidu Library Agent** es un agente de IA para una biblioteca universitaria. Recibe consultas en lenguaje natural (castellano o inglés) y las resuelve a partir de dos fuentes: una **base de datos relacional** (libros, autores, socios y préstamos) y un **repositorio de documentos PDF** consultado con RAG (reglamento, políticas y reseñas). El agente decide en cada consulta qué fuente usar, o si usa ambas, y siempre informa de dónde sale la respuesta.
+**Pipidu Library Agent** es un agente de IA para una biblioteca universitaria. Recibe consultas en lenguaje natural (castellano o inglés) y las resuelve a partir de dos fuentes: una **base de datos relacional** (libros, autores, socios y préstamos) y un **repositorio de documentos PDF** consultado con RAG (reglamento, políticas y reseñas). El agente decide en cada consulta qué fuente usar, o si usa ambas, e informa de dónde sale la respuesta o declara que no hay información suficiente.
 
 El sistema cumple los cuatro criterios de aprobación del enunciado y tres de los cinco criterios de promoción:
 
@@ -84,9 +84,9 @@ Se levanta con Docker Compose: `db` (PostgreSQL con pgvector), `ingest` (una sol
 
 ## 3.2 Flujo de una consulta
 
-1. **Entrada.** `POST /ask` recibe la pregunta; una consulta vacía devuelve 422 sin abrir el flujo. La respuesta es un flujo de eventos SSE: `start`, `classified`, `tool_call`, `tool_result`, `composing`, `heartbeat` (cada 5 s) y `result` (D75).
+1. **Entrada.** `POST /ask` recibe la pregunta; una consulta vacía devuelve 422 sin abrir el flujo. La respuesta es un flujo de eventos SSE: `start`, `classified`, `tool_call`, `tool_result`, `step`, `composing`, `heartbeat` (cada 5 s), `result` y, ante una falla inesperada, `error` (D75).
 2. **Clasificación antes de cualquier herramienta (D3).** Una llamada al modelo con salida estructurada obligatoria devuelve la fuente (`sql`, `rag`, `hybrid` o `none`), el idioma y si la consulta pide escribir datos. La clasificación se emite primero, de modo que el agente solo recibe las herramientas de la fuente elegida.
-3. **Pedidos de escritura.** Si la consulta pide crear, modificar o borrar datos, no se llama al modelo ni a la base: el agente responde con un mensaje fijo, porque es de solo lectura.
+3. **Pedidos de escritura.** Si la consulta pide crear, modificar o borrar datos, no se ejecuta ninguna herramienta ni se llama al modelo para redactar: el agente responde con un mensaje fijo, porque es de solo lectura.
 4. **Ejecución.** El agente (`ToolCallingAgent`, D2) usa `execute_sql`, `retrieve_documents` o ambas. En un híbrido consulta primero la base, luego los documentos y recién después concluye, separando el hecho verificado de la conclusión.
 5. **Composición.** El agente redacta en el idioma de la pregunta. La fuente nunca va dentro del texto: viaja aparte en `sources`, y la evidencia (sentencia SQL, filas, fragmentos con documento y ubicación) en `evidence` (D84).
 6. **Ausencia de información.** Si ninguna fuente tiene la respuesta, el agente lo declara en lugar de inventar (`answer_kind = no_coverage`).
@@ -122,21 +122,21 @@ El registro completo, con fecha, alternativa descartada y motivo de cada decisi�
 | Decisión | Alternativa descartada | Motivo |
 |---|---|---|
 | D1 El agente genera el SQL; la herramienta valida y ejecuta | La herramienta recibe la pregunta y llama al modelo | Se puede probar sin credenciales y el SQL queda atribuido |
-| D2 `ToolCallingAgent` | `CodeAgent` | No ejecuta código arbitrario del modelo |
+| D2 `ToolCallingAgent` | `CodeAgent` | `CodeAgent` exige un ejecutor de código y agrega una superficie de ejecución que el agente no necesita |
 | D3 Clasificación con salida estructurada, antes de las herramientas | Instrucción en texto libre | La fuente es verificable y el agente solo recibe las herramientas que corresponden |
 | D4 Validación con `sqlglot` | Expresiones regulares | Distinguen mal CTE, subconsultas e identificadores |
 | D7 Vencimiento calculado en una vista | Guardar el estado `vencido` | Un valor almacenado se desactualiza |
-| D9 `psycopg2` directo | SQLAlchemy | Menos capas para un conjunto pequeño de consultas |
+| D9 `psycopg2` directo | SQLAlchemy | Hay un único `SELECT` dinámico; un ORM entorpece la validación estática y el control del timeout |
 | D10 Fragmentos por sección | Cortes de largo fijo | Un fragmento por artículo permite citar la ubicación |
 | D12 Umbral 0,64 y top-k 5 | Valor arbitrario sin medir | Calibrado con 21 casos sobre los documentos reales |
 | D14 Rol de solo lectura propio | `SET ROLE` desde un usuario con más permisos | Defensa en profundidad |
 | D16 Pruebas sobre clasificación, SQL y filas | Comparar la prosa | El texto del modelo no es determinista |
 | D56 Proveedor configurable | Modelo fijo en el código | Se valida el flujo con un modelo local sin gastar cuota |
-| D77 Consultas en serie | Concurrencia sin control | El agente comparte una conexión por backend |
-| D80 La API es el único acceso al agente | Interfaz dentro del mismo proceso | Una sola puerta; la interfaz es un cliente |
+| D77 Consultas en serie | Concurrencia sin control | Cada backend guarda una sola conexión: dos consultas simultáneas se pisarían |
+| D80 La API es el único acceso al agente | Interfaz Streamlit en el mismo servicio | El frontend consume el agente por HTTP y la evidencia viaja en `result.evidence` |
 | D81 Ejecución local | Despliegue en la nube | Decisión del equipo; el sistema corre con Docker |
 | D84 La fuente nunca va en el texto | Línea «Fuente:» al pie | La interfaz ya la muestra desde `sources`; si estaba en el texto, aparecía duplicada |
-| D93 SPA propia con proxy del mismo origen | Interfaz generada dentro de la API | Habilita progreso en vivo y evita CORS |
+| D93 SPA propia en su servicio, con proxy del mismo origen | Interfaz Streamlit en el servicio del agente (D80) | En Docker la web llega a la API por un proxy del mismo origen, sin CORS, y cubre el criterio de promoción «Interfaz gráfica» |
 
 # 6. Pruebas y evidencias
 
@@ -165,7 +165,7 @@ Medición de aceptación del 2026-10-16, con el modelo definitivo (`gemini-3.1-f
 
 El único caso fallido (G9, el horario de la biblioteca) no se debió a una clasificación equivocada: el servicio de Gemini devolvió un error 503 por alta demanda durante la llamada del clasificador. Repetido solo, G9 clasificó `rag`, recuperó el reglamento y respondió bien. Las otras mediciones versionadas del modelo definitivo dieron 13 de 13 en la clasificación (corridas del 2026-10-10 y 2026-10-11). Las corridas con un modelo local sirven para validar el flujo y no cuentan como aceptación (R-2.8).
 
-**Latencia.** En esta corrida, la mediana por consulta fue de 5,7 s y los casos sin cobertura o de una sola fuente tardaron entre 1,5 y 12 s. Los híbridos tardan más porque combinan varias llamadas (7 a 67 s). Los valores máximos de las corridas versionadas (por ejemplo 146 s en B2) corresponden a esperas de la API ante la cuota y los picos de demanda, no al cómputo del agente (ver `TP/05-validacion.md`, sección 4.1).
+**Latencia.** En esta corrida, la mediana por consulta fue de 5,7 s y los casos sin cobertura o de una sola fuente tardaron entre 1,5 y 12,5 s. Los híbridos tardan más porque combinan varias llamadas (7 a 67 s). Los valores máximos de las corridas versionadas (por ejemplo 146 s en B2) corresponden a esperas de la API ante la cuota y los picos de demanda, no al cómputo del agente (ver `TP/05-validacion.md`, sección 4.1).
 
 ## 6.3 Calibración del umbral del RAG
 
@@ -205,7 +205,7 @@ Fuentes declaradas: `sql` y `rag`.
 
 **Sin cobertura.** «¿Cuál es el precio del libro "Rayuela"?» El modelo de datos no registra precios, así que el agente no inventa un valor y responde con un mensaje fijo: «Busqué en la base y en los documentos y no encontré nada sobre eso. Probá con otra pregunta o con el título exacto del libro.» No invocó ninguna herramienta (1,5 s) y `sources` quedó vacío.
 
-**Pedido de escritura.** Una consulta que pide modificar datos no llega al modelo de composición ni a la base; se responde con un mensaje fijo que explica que el agente es de solo lectura.
+**Pedido de escritura.** Una consulta que pide modificar datos no ejecuta ninguna herramienta ni llama al modelo para redactar; se responde con un mensaje fijo que explica que el agente es de solo lectura.
 
 ## 6.5 Registro de trazabilidad
 
@@ -220,7 +220,7 @@ El agente atiende las consultas **en serie** (D77): cada una espera a que termin
 - **Alcance de solo lectura.** El agente no crea, modifica ni borra datos; lo declara cuando se le pide.
 - **Un turno por consulta.** No recibe historial: la interfaz conserva la conversación solo en pantalla.
 - **Umbral del RAG grueso.** Las similitudes de los casos con y sin cobertura se solapan; la ausencia de información se apoya además en el clasificador y en la regla de no responder con conocimiento propio.
-- **Cuota de la API.** Con el modelo gratuito de Gemini la latencia depende de la cuota y de picos de demanda (como el error 503 de G9); el sistema reintenta, pero una consulta puede tardar minutos.
+- **Cuota de la API.** La latencia depende de la cuota de la API de Gemini y de sus picos de demanda (como el error 503 de G9); el sistema reintenta, pero una consulta puede tardar minutos.
 - **Sin autenticación.** El servicio corre en entorno local; exponerlo públicamente exigiría control de acceso.
 - **Cobertura documental.** El conocimiento del RAG se limita a los seis documentos incluidos.
 
