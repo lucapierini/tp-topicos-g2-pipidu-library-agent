@@ -38,7 +38,7 @@ ALLOWED_TABLES: dict[str, set[str]] = {
         "id", "nombre", "apellido", "legajo", "tipo_socio", "email", "fecha_alta",
     },
     # `estado` existe pero solo vale 'activo' o 'devuelto' (CHECK en el esquema): un préstamo
-    # vencido sigue siendo 'activo' acá. El vencimiento se consulta en la vista (D64, reemplaza D51).
+    # vencido sigue siendo 'activo' acá. El vencimiento se consulta en la vista (D64).
     "prestamos": {
         "id", "libro_id", "socio_id", "fecha_prestamo", "fecha_devolucion_prevista",
         "fecha_devolucion_real", "estado",

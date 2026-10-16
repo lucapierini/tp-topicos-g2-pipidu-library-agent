@@ -27,7 +27,7 @@ def test_the_prompt_states_the_language_of_the_answer_explicitly() -> None:
 
 
 def test_the_prompt_forbids_naming_the_source_in_the_answer() -> None:
-    # R-5.2, D100: la fuente va en `sources` y en la evidencia; ni la línea "Fuente" ni el nombre del documento
+    # R-5.2, D84: la fuente va en `sources` y en la evidencia; ni la línea "Fuente" ni el nombre del documento
     # deben llegar al texto, así que el prompt no puede pedir lo contrario.
     prompt = system_prompt()
 

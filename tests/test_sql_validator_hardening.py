@@ -1,9 +1,6 @@
-"""Regresión de la auditoría del 2026-10-10 sobre el validador (D38–D44, D51, D53).
+"""Regresión del validador de SQL: casos que deben rechazarse y casos que deben aceptarse (D38–D44, D53).
 
-Verificado contra el validador de `HEAD` (antes del fix): de los 28 casos de `REJECTED`, 17 se
-aceptaban (B1, B2, B5–B7, B9, B10, B13, B14, B20), se rechazaban con otro código (B3, B8, B15, B16,
-B19) o lanzaban una excepción (B22, B26). Los otros 11 ya se rechazaban —varios por coincidencia
-de columnas, no por diseño— y quedan como regresión preventiva. Corren sin base ni credenciales.
+Corren sin base ni credenciales.
 """
 from __future__ import annotations
 

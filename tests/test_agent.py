@@ -249,7 +249,7 @@ def test_a_source_line_written_by_the_model_is_removed_from_the_answer(model_lin
     ],
 )
 def test_a_parenthetical_source_citation_is_removed_from_the_answer(model_text: str, expected: str) -> None:
-    # R-5.2, D100: ni la línea de fuente ni la cita entre paréntesis (con "Fuente:" o el nombre de un documento)
+    # R-5.2, D84: ni la línea de fuente ni la cita entre paréntesis (con "Fuente:" o el nombre de un documento)
     # llegan al texto; un paréntesis común se conserva.
     agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], text=model_text)
 

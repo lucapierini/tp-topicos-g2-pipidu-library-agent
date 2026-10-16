@@ -1,7 +1,6 @@
 """Calibra el umbral de similitud con los documentos reales (T3.6, R-4.8, D12).
 
-El 0.35 inicial era una **hipótesis**; la calibración lo fijó en 0.67 (D85) y D88 lo bajó a 0.64 (valor provisorio). Este script mide, contra los PDFs ya
-indexados en `documentos_chunks`, la similitud máxima de cada caso:
+Este script mide, contra los PDFs ya indexados en `documentos_chunks`, la similitud máxima de cada caso:
 
 - Casos con cobertura (`rag`): `RETRIEVAL_TESTS` (R1–R3), `CALIBRATION_EXTRA` (R9–R15) y las preguntas `rag` del
   golden set y del set bilingüe. Su similitud máxima debe quedar **por encima** del umbral.

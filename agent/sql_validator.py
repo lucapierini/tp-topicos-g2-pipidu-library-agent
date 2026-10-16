@@ -6,13 +6,9 @@ ni identificadores entre comillas, así que la whitelist no sería verificable.
 La validación ocurre **antes** de tocar la conexión: si falla, no se ejecuta nada
 (R-3.7). Nunca lanza: cualquier fallo interno se reporta como rechazo (falla cerrado).
 
-Historia (ver `TP/CHANGELOG.md`):
-- D25–D31: expansión de `*`, allowlist de funciones, `FOR UPDATE`, minúsculas, parse estricto.
-- D38–D44 (auditoría 2026-10-10): la resolución de tablas y columnas pasa a ser **por scope**
-  (`traverse_scope` + `qualify_columns` con la whitelist como schema). El mapa global
-  alias→tabla de D23 permitía ocultar una tabla prohibida con una CTE homónima en otra
-  subquery, dejaba sin validar las columnas sin calificar en un JOIN y rompía la expansión
-  de `*` sobre CTEs y subqueries.
+La resolución de tablas y columnas es **por scope** (`traverse_scope` + `qualify_columns` con la
+whitelist como schema, D38–D44): una CTE homónima en otra subquery no oculta una tabla prohibida,
+las columnas sin calificar en un JOIN se validan y `*` se expande también sobre CTEs y subqueries.
 """
 from __future__ import annotations
 
