@@ -13,19 +13,20 @@
 - [ ] 2.1 Aplicar `db/schema.sql` y `db/seed.sql` en una base local limpia y verificar que el seed termina sin errores y que `SELECT count(*)` da ≥ 15 en las 7 tablas de dominio (R-8.1, R-8.5)
 - [ ] 2.2 Verificar que `v_prestamos_estado` devuelve al menos un préstamo `vencido` tras cargar el seed (R-8.2, R-7.5)
 - [ ] 2.3 Verificar que una segunda aplicación del seed aborta sin cambiar filas (R-8.6)
-- [ ] 2.4 Verificar que los títulos reseñados existen en `libros` (R-8.3)
-- [ ] 2.5 Verificar con `pytest -m integration` los CHECK de R-7.4 y R-7.6, la dimensión de R-7.8 y los permisos de R-7.9 (hoy cubiertos por `tests/test_runs_integration.py` y los tests de integración existentes; agregar los que falten)
+- [ ] 2.4 Verificar que los títulos reseñados existen en `libros` (R-8.8)
+- [ ] 2.5 Verificar con `pytest -m integration` los CHECK de R-7.4 y R-7.6, la dimensión de R-7.8 y los permisos de R-7.9. Hoy están cubiertos solo en parte: `tests/test_seed_contract.py` verifica `libros_disponibles_ck` y el cálculo del vencimiento, y `tests/test_runs_integration.py` verifica que `agent_ro` no lee `agent_runs`; faltan el CHECK de R-7.4, la dimensión de R-7.8 y los permisos de R-7.9 sobre `documentos*` (ese rol tiene `SELECT` concedido en `db/post_restore.sql`, así que la exclusión la hace la whitelist de la herramienta SQL, D21)
 
 ## 3. Verificación de documentos y bucket
 
-- [ ] 3.1 Verificar con `pypdf` que cada PDF de `rag/documents/pdf/` extrae texto y contiene el título de su `.md` (R-9.5)
+- [x] 3.1 Verificar con `pypdf` que cada PDF de `rag/documents/pdf/` extrae texto y contiene el título de su `.md` (R-9.5)
+  _(medido 2026-10-16 con `pypdf` sobre los 6 PDF de `rag/documents/pdf/`: cada uno extrae texto (1746 a 4745 caracteres) y su título aparece en el texto extraído. La coincidencia línea a línea del Markdown no se da: `pypdf` pierde el formato (`#`, `*`, listas) y ajuste de líneas. No hay test en el repo que lo automatice: queda como corrida manual)_
 - [ ] 3.2 Revisar a mano que las políticas no contradicen al reglamento y dejar el resultado en `TP/CHANGELOG.md` (R-9.3)
 - [ ] 3.3 Cruzar los casos RAG e híbridos de `tests/golden_set.py` con los documentos y verificar que cada uno tiene un fragmento fuente (R-9.7)
 - [ ] 3.4 Ejecutar `python rag/upload_to_bucket.py` dos veces con `.env.local` y verificar que el bucket `rag` queda con 6 objetos bajo `documents/` (R-9.6). Requiere las credenciales de Neon
 
 ## 4. Cierre
 
-- [ ] 4.1 Actualizar `agente-y-tools/tasks.md` marcando 2.5, 2.7 y 3.1 si 2.1 y 3.1 de este change pasan, y 9.6 con la decisión D-DB1
+- [ ] 4.1 Actualizar `agente-y-tools/tasks.md` marcando 2.5 cuando 2.1 de este change pase (2.7 ya está marcada) y 3.1 cuando pase la verificación con `pypdf` de 3.1 de este change; 9.6 quedó descartada (D81)
 - [x] 4.2 Correr `openspec validate --strict` y corregir lo que reporte
 - [ ] 4.3 Archivar con `openspec archive base-de-datos-neon` cuando 2.x y 3.x estén completas
 

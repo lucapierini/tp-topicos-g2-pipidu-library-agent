@@ -6,14 +6,16 @@ El agente (change `agente-y-tools`) consulta una base relacional y un repositori
 el origen y la justificación de ambos vivían en otro repositorio (`UCSE-2026-TAIA`, features 01 y 02).
 El esquema se adoptó como "compartido" (D64) sin que en este repo figurara por qué tiene esa forma,
 dónde corre, cómo se pobló ni de dónde salen los documentos del RAG. Sin eso, el informe no puede
-sustentar el modelo de datos y las tareas 2.4, 2.5, 3.1 y 9.6 quedan sin respaldo.
+sustentar el modelo de datos.
 
-Este change trae esa justificación y los artefactos que la sostienen, y la deja trazable con SDD.
+Este change trae esa justificación y los artefactos que la sostienen, y la deja trazable con SDD. Las tareas
+2.4, 2.5 y 3.1 quedan sin respaldo; la 9.6 quedó descartada (D81).
 
 ## What Changes
 
 - Se documenta la elección de **Neon** (PostgreSQL gestionado + pgvector + bucket privado) como
-  base compartida, y sus consecuencias sobre el despliegue en GCP (solo agente + UI).
+  base compartida. Sus consecuencias sobre el despliegue en GCP (solo agente + UI) quedaron sin efecto: el
+  despliegue en la nube se descartó (D81) y la UI es la SPA de `web/` (D93).
 - Se versiona la justificación del DDL (decisiones D-DB1 a D-DB10 en `design.md`).
 - Se incorpora el **seed** con catálogo real y socios/préstamos sintéticos (`db/seed.sql`).
 - Se incorporan los **6 documentos fuente del RAG** en Markdown, sus PDFs, y los scripts de
@@ -44,5 +46,6 @@ fundamenta los datos sobre los que operan)_
 - Archivos nuevos: `db/seed.sql`, `rag/documents/*.md`, `rag/documents/pdf/*.pdf`,
   `rag/build_pdfs.py`, `rag/upload_to_bucket.py`, `rag/requirements.txt`.
 - `.gitignore`: se agregan `.env.local` (credenciales de Neon) y `.neon/` (enlace local).
-- Tareas de `agente-y-tools` que este change respalda: 2.1, 2.4 (parcial), 2.5, 2.7, 3.1, 9.6, 9.8.
+- Tareas de `agente-y-tools` que este change respalda: 2.1, 2.4 (parcial), 2.5, 2.7, 3.1, 9.6 y 9.8
+  (9.6 quedó descartada, D81).
 - Origen: `UCSE-2026-TAIA`, rama `feature/initial-database` (docs `feature-01` y `feature-02`).

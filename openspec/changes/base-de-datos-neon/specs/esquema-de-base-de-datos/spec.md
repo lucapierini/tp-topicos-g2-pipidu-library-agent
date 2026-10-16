@@ -15,6 +15,7 @@ Neon, con la extensión `vector` habilitada.
 - **GIVEN** el esquema aplicado en la rama `production` del proyecto `library-agent`
 - **WHEN** se inspeccionan los objetos de la base
 - **THEN** existen 9 tablas (7 de dominio: `autores`, `categorias`, `editoriales`, `libros`, `libros_autores`, `socios`, `prestamos`; 2 documentales: `documentos`, `documentos_chunks`) y la vista `v_prestamos_estado`
+- **AND** `agent_runs` no está entre ellas: es la tabla de trazabilidad y se crea aparte (R-6.1)
 - **AND** la extensión `vector` está instalada
 
 ### Requirement: R-7.2 — Identificadores generados por la base
@@ -60,16 +61,27 @@ El esquema SHALL exponer la vista `v_prestamos_estado` con `estado_calculado` y 
 - **THEN** PostgreSQL rechaza la fila por `libros_disponibles_ck`
 
 ### Requirement: R-7.7 — Borrado protegido
-Las referencias de dominio SHALL usar `ON DELETE RESTRICT`; las de la tabla puente y de `documentos_chunks`, `ON DELETE CASCADE`.
+Las referencias de dominio SHALL usar `ON DELETE RESTRICT`; la FK de `libros_autores` que apunta a `libros` y la de
+`documentos_chunks` que apunta a `documentos` SHALL usar `ON DELETE CASCADE`.
 
 #### Scenario: libro con préstamos
 - **GIVEN** un libro con préstamos registrados
 - **WHEN** se intenta borrarlo
 - **THEN** PostgreSQL rechaza el borrado
 
+#### Scenario: autor con libros
+- **GIVEN** un autor con filas en `libros_autores`
+- **WHEN** se intenta borrarlo
+- **THEN** PostgreSQL rechaza el borrado
+
 #### Scenario: documento con fragmentos
 - **WHEN** se borra un documento
 - **THEN** se eliminan sus fragmentos
+
+#### Scenario: libro sin préstamos
+- **GIVEN** un libro sin préstamos
+- **WHEN** se borra
+- **THEN** se eliminan también sus filas de `libros_autores`
 
 ### Requirement: R-7.8 — Vector de 768 dimensiones con índice por coseno
 `documentos_chunks.embedding` SHALL ser `vector(768)` con un índice HNSW `vector_cosine_ops`.

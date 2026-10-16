@@ -47,11 +47,16 @@ Cada documento fuente SHALL tener su PDF en `rag/documents/pdf/`, generado con `
 - **THEN** contiene el contenido del Markdown de origen
 
 ### Requirement: R-9.6 — Originales en bucket privado
-Los PDFs SHALL almacenarse en el bucket privado `rag` de Neon bajo el prefijo `documents/`, y la subida MUST ser idempotente.
+Los PDFs SHALL almacenarse en el bucket privado `rag` de Neon bajo el prefijo `documents/`, y la subida MUST ser idempotente. El flujo local no usa el bucket: la ingesta no lo lee y el agente no lo consulta (D81); `documentos.bucket_key` queda como referencia.
 
 #### Scenario: subida repetida
 - **WHEN** se ejecuta `rag/upload_to_bucket.py` dos veces
 - **THEN** el bucket queda con un objeto por PDF, sin duplicados
+
+#### Scenario: base local sin bucket
+- **GIVEN** la base de `docker compose` sin credenciales de Neon
+- **WHEN** se levanta con `up` y se ingesta
+- **THEN** el RAG queda con sus fragmentos y ninguna lectura depende del bucket
 
 #### Scenario: sin secretos versionados
 - **WHEN** se revisa el árbol versionado

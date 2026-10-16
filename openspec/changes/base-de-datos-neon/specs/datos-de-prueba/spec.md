@@ -27,7 +27,7 @@ Las fechas de los préstamos SHALL calcularse relativas a `CURRENT_DATE`, de mod
 - **WHEN** se consulta `v_prestamos_estado` por `estado_calculado = 'vencido'`
 - **THEN** hay al menos un préstamo vencido
 
-### Requirement: R-8.3 — Los libros reseñados existen en el catálogo
+### Requirement: R-8.3 — Los libros reseñados existen en el catálogo (reemplazado por R-8.8)
 El catálogo SHALL incluir los libros reseñados en `documentos-fuente-rag`: *Cien años de soledad*, *Clean Code* y *Artificial Intelligence: A Modern Approach*.
 
 #### Scenario: cruce entre fuentes
@@ -73,4 +73,13 @@ El seed SHALL abortar sin modificar la base si ya existen libros o socios.
 #### Scenario: libros reseñados
 - **WHEN** se buscan en `libros` los títulos reseñados en `resenas_tolkien` y `resenas_empyrean`
 - **THEN** existen los 8: El Silmarillion, El Hobbit, los 3 tomos de El Señor de los Anillos, Alas de sangre, Alas de hierro y Alas de ónix
+
+### Requirement: R-8.8 — El catálogo cubre los títulos reseñados
+El catálogo SHALL incluir cada título reseñado en los documentos fuente del RAG: *Cien años de soledad*, *Clean Code*, los 5 títulos de Tolkien y los 3 de la saga Empyrean. *Artificial Intelligence: A Modern Approach* sigue en el catálogo y ya no tiene reseña (D87).
+
+#### Scenario: cruce entre fuentes
+- **GIVEN** los 6 documentos de `rag/documents/`
+- **WHEN** se busca cada título reseñado en `libros`
+- **THEN** existe una fila por título
+- **AND** no hay reseña cuyo título falte en el catálogo
 
