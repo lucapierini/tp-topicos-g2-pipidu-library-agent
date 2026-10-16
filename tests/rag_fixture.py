@@ -1,4 +1,4 @@
-"""Corpus simulado y recuperador léxico para medir el agente sin PDFs ni ingesta (T3.x pendiente, D19).
+"""Corpus simulado y recuperador léxico para medir el agente sin PDFs ni ingesta (D19).
 
 Qué es: un `RagRetriever` **real** (top-k, umbral y reporte de no-relevancia de `agent/tools/rag_tool.py`)
 sobre un `InMemoryVectorStore` con un puñado de fragmentos escritos a mano y un embedder léxico

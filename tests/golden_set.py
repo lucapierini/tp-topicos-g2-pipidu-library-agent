@@ -15,8 +15,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-# Entidades que el seed (`db/seed_data.py`, T2.x) debe contener para que las preguntas
-# tengan respuesta. Eran placeholders literales (`X`, "el libro X") que ninguna base satisface.
+# Entidades que el seed (`db/seed.sql`) contiene para que las preguntas tengan respuesta.
 # `tests/test_golden_seed.py` verifica que existan cuando haya base.
 SEED_ENTITIES = {
     "socio_nombre": "Juan",

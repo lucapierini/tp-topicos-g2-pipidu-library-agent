@@ -5,7 +5,7 @@ AWS_SECRET_ACCESS_KEY, AWS_ENDPOINT_URL_S3, AWS_REGION).
 Es idempotente: sobrescribe la misma clave `documents/<archivo>.pdf`.
 
 Fuera del flujo local (D81): la ingesta (`rag/ingest.py`) no sube ni lee el bucket y el agente no lo usa;
-`documentos.bucket_key` queda como referencia. Lo verifica la tarea 3.4 de `base-de-datos-neon`, pendiente.
+`documentos.bucket_key` queda como referencia.
 """
 from pathlib import Path
 

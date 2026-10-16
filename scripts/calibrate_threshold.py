@@ -1,4 +1,4 @@
-"""Calibra el umbral de similitud con los documentos reales (T3.6, R-4.8, D12).
+"""Calibra el umbral de similitud con los documentos reales (R-4.8, D12).
 
 Este script mide, contra los PDFs ya indexados en `documentos_chunks`, la similitud máxima de cada caso:
 
