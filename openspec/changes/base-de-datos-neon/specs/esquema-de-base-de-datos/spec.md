@@ -95,15 +95,15 @@ Las referencias de dominio SHALL usar `ON DELETE RESTRICT`; la FK de `libros_aut
 - **THEN** declara el operador `vector_cosine_ops` (y no L2 por defecto)
 
 ### Requirement: R-7.9 — El SQL tool no accede al almacén vectorial
-El rol que ejecuta el SQL generado por el agente SHALL poder leer solo las tablas de negocio y la vista, y MUST NOT poder escribir ni leer `documentos` ni `documentos_chunks`.
+El SQL generado por el agente SHALL poder leer solo las tablas de negocio y la vista, y MUST NOT poder escribir ni leer `documentos` ni `documentos_chunks`. La lectura se impide en la herramienta SQL (lista de tablas permitidas, R-3.4); a nivel de permisos, el rol de la aplicación SHALL ser de solo lectura y MAY leer `documentos` y `documentos_chunks` porque la herramienta de recuperación los consulta con ese mismo rol (D63, D99).
 
 #### Scenario: lectura de chunks por el SQL tool
-- **GIVEN** la conexión del rol de solo lectura del SQL tool
-- **WHEN** consulta `documentos_chunks`
-- **THEN** PostgreSQL rechaza la consulta por permisos
+- **GIVEN** una sentencia SQL generada por el agente que consulta `documentos_chunks`
+- **WHEN** la herramienta SQL la valida
+- **THEN** la rechaza con `TABLE_NOT_ALLOWED` y no la ejecuta
 
 #### Scenario: escritura
-- **WHEN** ese rol intenta `INSERT`, `UPDATE`, `DELETE` o DDL
+- **WHEN** el rol de la aplicación intenta `INSERT`, `UPDATE`, `DELETE` o DDL
 - **THEN** PostgreSQL lo rechaza
 
 ### Requirement: R-7.10 — Reglas de negocio fuera de las tablas
