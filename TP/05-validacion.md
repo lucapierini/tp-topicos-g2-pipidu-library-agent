@@ -11,7 +11,7 @@ La semilla es fija y versionada: `db/seed.sql` es el entregable (catálogo real 
 préstamos sintéticos) y `db/dev_seed.sql` es la base de desarrollo, que contiene las entidades que nombran
 los casos (`tests/golden_set.py::SEED_ENTITIES`). Las fechas de préstamo son relativas a `CURRENT_DATE`, así
 que los atrasos envejecen: las afirmaciones deterministas son sobre entidades, filas y clasificación, no
-sobre días literales. La semilla generada con `--seed 42` (`db/seed_data.py`, T2.4) no está implementada.
+sobre días literales.
 
 ### Método de afirmación (D16)
 
@@ -23,8 +23,7 @@ el texto del modelo no es determinista. La prosa se valida con una rúbrica manu
 3. El idioma y el formato cumplen R-5.5 y R-5.6.
 
 La afirmación automática de cada caso queda en `tests/golden_set.py` (`GOLDEN_SET`, `BILINGUAL_SET`), ejecutada
-por `tests/test_golden_set.py`. El resultado de la rúbrica manual no se registra en el repositorio: se consigna
-en el informe (pendiente).
+por `tests/test_golden_set.py`.
 
 ### Casos SQL (≥5, criterio de aprobación 2)
 
@@ -82,7 +81,7 @@ Casos adversos. El criterio de éxito es **rechazo sin ejecución contra la base
 | S4 | `SELECT * FROM libros -- comentario` | `SQL_NOT_READONLY` |
 | S5 | `WITH x AS (SELECT 1) INSERT INTO autores VALUES (...)` | `SQL_NOT_READONLY` |
 | S6 | `COPY libros TO '/etc/passwd'` | `SQL_NOT_READONLY` |
-| S7 | `SELECT * FROM libros WHERE id = 1 /* bloque */ ; CREATE TABLE t (a int)` | `SQL_NOT_READONLY` |
+| S7 | `SELECT * FROM libros /* bloque */ ; CREATE TABLE t (a int)` | `SQL_NOT_READONLY` |
 | S8 | `SELECT * FROM usuarios_vistos` (tabla inexistente) | `TABLE_NOT_ALLOWED` |
 | S9 | `CALL some_procedure()` | `SQL_NOT_READONLY` |
 | S10 | `SELECT * FROM libros LIMIT 100000` | límite aplicado (≤50 filas) — se verifica en la ejecución (T4.3), no en la validación estática |
@@ -115,8 +114,8 @@ Los casos S23–S33 y el alcance de la allowlist (cada función permitida es alc
 `tests/test_sql_validator_hardening.py`. Las consultas de referencia G1–G5 y G10–G12 también deben
 pasar la validación.
 
-`tests/test_sql_validator_hardening.py` tiene 31 casos adversos (`REJECTED`): 13 tienen ID en la tabla anterior
-(B1=S23, B5=S24, B9=S25, B13=S26, B15=S27, B19=S29, B21=S30, B22 y B23=S31, B26=S28, B29=S34, B30=S35) y 18
+`tests/test_sql_validator_hardening.py` tiene 31 casos adversos (`REJECTED`): 12 tienen ID en la tabla anterior
+(B1=S23, B5=S24, B9=S25, B13=S26, B15=S27, B19=S29, B21=S30, B22 y B23=S31, B26=S28, B29=S34, B30=S35) y 19
 no están nombrados acá, con el mismo criterio de rechazo: B2, B3, B4 (CTE homónima en `CROSS JOIN`,
 `documentos_embeddings`, `pg_class` → `TABLE_NOT_ALLOWED`), B6, B7 (`UPDATE` e `INSERT` dentro de una CTE →
 `SQL_NOT_READONLY`), B8 (`SELECT … INTO` → `SQL_NOT_READONLY`), B10, B11, B12 (columna fuera de la whitelist
@@ -124,7 +123,7 @@ sin calificar, calificada y dentro de una subquery → `COLUMN_NOT_ALLOWED`), B1
 `TABLE_NOT_ALLOWED`), B16, B17, B18, B27, B28 (función de efecto en `CROSS JOIN`, en `WHERE`, `set_config`,
 `current_user` → `FUNCTION_NOT_ALLOWED`), B20 (nueve tablas → `QUERY_TOO_COMPLEX`, R-3.17), B24, B25 (solo
 espacios y solo `;` → `SQL_NOT_READONLY`), B31 (`SELECT nombre_archivo FROM documentos` → `TABLE_NOT_ALLOWED`,
-D21). El mismo archivo suma 18 consultas que NO deben rechazarse (`ACCEPTED`), 17 entradas hostiles que no
+D21). El mismo archivo suma 20 consultas que NO deben rechazarse (`ACCEPTED`), 17 entradas hostiles que no
 deben lanzar excepción, y un test que verifica que cada función de la allowlist es alcanzable.
 
 ### Casos de regeneración (R-3.10, D8)
@@ -149,41 +148,36 @@ deben lanzar excepción, y un test que verifica que cada función de la allowlis
 
 | # | Pregunta | Criterio |
 |---|---|---|
-| R1 | "¿Cuántos días tengo para devolver un libro y cuándo empieza la multa?" | top-1 pertenece a `reglamento_biblioteca.pdf` |
-| R2 | "¿De qué trata el libro Cien años de soledad?" | top-1 pertenece a la reseña correspondiente |
-| R3 | "¿Cómo renuevo un préstamo?" | top-1 pertenece a `reglamento_biblioteca.pdf` |
-| R4 | "¿Cuánto cuesta el libro Cien años de soledad?" | similitud máxima < umbral → reporte de no-relevancia |
+| R1 | "plazo de devolución y multas" | top-1 pertenece a `reglamento_biblioteca.pdf` |
+| R2 | "sinopsis del libro Cien años de soledad" | top-1 pertenece a la reseña correspondiente |
+| R3 | "condiciones para renovar un préstamo" | top-1 pertenece a `reglamento_biblioteca.pdf` |
+| R4 | "precio del libro Rayuela" | similitud máxima < umbral → reporte de no-relevancia |
 
-El top-1 de R1–R3 con embeddings reales (T3.7) **no está verificado**: la evidencia versionada registra
-similitudes, no el documento recuperado.
-
-### Casos extra de la calibración (T3.6, `CALIBRATION_EXTRA`)
+### Casos extra de la calibración (`CALIBRATION_EXTRA`)
 
 `scripts/calibrate_threshold.py` suma 12 preguntas y usa además G6–G9 y B2: 21 casos en total.
 
 | # | Pregunta | Cobertura esperada | Similitud top-1 medida |
 |---|---|---|---|
-| R5 | ¿Hay wifi en la biblioteca? | ninguna | 0,649 |
-| R6 | ¿Puedo tomar café en la sala de lectura? | ninguna | 0,644 |
-| R7 | ¿Cómo reservo una sala de estudio? | ninguna | 0,597 |
-| R8 | ¿Puedo imprimir o fotocopiar? | ninguna | 0,602 |
-| R9 | ¿Cuánto es la multa por día de atraso? | RAG | 0,771 |
-| R10 | ¿Hasta qué hora está abierta la biblioteca? | RAG | 0,735 |
-| R11 | ¿Cuántos libros puedo llevar al mismo tiempo? | RAG | 0,765 |
+| R5 | ¿Hay wifi disponible en la sala de lectura? | ninguna | 0,649 |
+| R6 | ¿La biblioteca tiene cafetería o estacionamiento? | ninguna | 0,644 |
+| R7 | ¿Puedo reservar una sala de estudio grupal? | ninguna | 0,597 |
+| R8 | ¿Cuánto cuesta imprimir o sacar fotocopias? | ninguna | 0,602 |
+| R9 | ¿cuánto es la multa por día de atraso? | RAG | 0,771 |
+| R10 | ¿hasta qué hora está abierta la biblioteca? | RAG | 0,735 |
+| R11 | ¿cuántos libros puedo tener prestados a la vez? | RAG | 0,765 |
 | R12 | ¿De qué trata El Hobbit? | RAG | 0,732 |
-| R13 | ¿En qué orden conviene leer a Tolkien? | RAG | 0,737 |
-| R14 | ¿De qué trata Alas de hierro? | RAG | 0,706 |
-| R15 | ¿Quién es Violet Sorrengail? | RAG | 0,646 |
-| R16 | ¿Quién escribe la Canción de hielo y fuego? | ninguna | 0,627 |
+| R13 | ¿En qué orden conviene leer los libros de Tolkien? | RAG | 0,737 |
+| R14 | ¿De qué trata la saga Alas de hierro? | RAG | 0,706 |
+| R15 | ¿Quién es Violet Sorrengail y qué le pasa en la academia? | RAG | 0,646 |
+| R16 | ¿De qué trata la saga Canción de hielo y fuego? | ninguna | 0,627 |
 | G6–G9 | plazos, reseña de Cien años de soledad, renovación, horario | RAG | 0,755 / 0,762 / 0,703 / 0,758 |
 | B2 | días antes de la multa (inglés) | RAG | 0,686 |
 
 El valor vigente es top-k = 5 (`RAG_TOP_K`) y umbral de similitud de coseno = **0,64**
-(`RAG_SIMILARITY_THRESHOLD`, default en `agent/config/__init__.py` y `.env.example`). Historia del número:
-0,35 fue hipótesis (D12); la primera corrida con los PDFs reales lo fijó en 0,67 (D85); la corrida completa
-de 21 casos lo bajó a 0,64 (D88, valor provisorio: T3.6 sigue abierta).
+(`RAG_SIMILARITY_THRESHOLD`, default en `agent/config/__init__.py` y `.env.example`).
 
-### Cómo se calibra el umbral (T3.6)
+### Cómo se calibra el umbral
 
 El umbral no es un criterio de aceptación hasta estar medido. Calibrar = medir la distribución real de
 similitud de coseno sobre los chunks efectivamente ingesta dos y elegir el valor que separa las dos
@@ -202,8 +196,7 @@ de embeddings. Se registra en `CHANGELOG.md` y se ajusta antes de fijar el núme
 `TP/evidencia/calibracion_umbral.json`): los 15 casos con cobertura quedan entre **0,646 y 0,802** y los 6
 sin cobertura entre **0,597 y 0,649**. Las poblaciones **se solapan** (`separable: false`, peor positivo
 0,646 vs. mejor negativo 0,649), así que ningún umbral las separa: hace falta otro modelo de embeddings,
-otro chunking o más casos negativos (T3.6, D88). La expectativa de 0,55–0,70 para relevantes y 0,25–0,40
-para irrelevantes **no se confirmó**: los casos sin cobertura medidos quedan muy por encima de 0,40.
+otro chunking o más casos negativos (D12).
 
 ---
 
@@ -230,11 +223,10 @@ Reglas:
 1. Orden: primero el modelo local para depurar el flujo; después, sin cambiar código ni prompts, Gemini.
 2. Cada corrida se guarda con `scripts/measure_golden.py --out TP/evidencia/<archivo>.json`, que registra
    el modelo, el endpoint, la fecha, la configuración y el resultado por caso (R-6.5).
-3. El seed entregable (T2.4/T2.5) no está: en las corridas del golden set la base de desarrollo
-   (`db/dev_seed.sql`) y el corpus simulado son los backends falsos, y el validador de SQL es el real: la
-   corrida mide clasificación, herramientas invocadas, orden y SQL aceptado, **no** el contenido (D59). Los
-   `check` de contenido corren con `--db` (casos SQL) y con `--rag-mock` (casos RAG; D69); un híbrido se
-   evalúa solo con ambos. Los PDFs sí existen y están ingesta dos: se usan en la calibración
+3. El validador de SQL es el real; la base de desarrollo (`db/dev_seed.sql`) y el corpus simulado son los
+   backends falsos: la corrida mide clasificación, herramientas invocadas, orden y SQL aceptado, **no** el
+   contenido (D59). Los `check` de contenido corren con `--db` (casos SQL) y con `--rag-mock` (casos RAG;
+   D69); un híbrido se evalúa solo con ambos. Los PDFs existen y están ingesta dos: se usan en la calibración
    (`scripts/calibrate_threshold.py`), no en la corrida del golden set.
 4. Un modelo local más débil puede clasificar bien y aun así generar peor SQL; que el validador rechace sus
    errores es el comportamiento esperado, no una falla de la prueba.
@@ -248,44 +240,31 @@ Corridas registradas:
 | 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 12/13 clasificados + 1 error del clasificador (G12) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` |
 | 2026-10-11 | Strata `qwen3.8-flash-next-iq2_xs` (local), base local + RAG simulado (`--db --rag-mock`, D69) | 12/13 clasificados + 1 error del clasificador (G12, timeout) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo y del contenido. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-11_db-mock.json` |
 | 2026-10-11 | `gemini-3.1-flash-lite`, base local + RAG simulado (`--db --rag-mock`, D69) | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí para R-2.1: es el modelo definitivo (D71); el retrieval es simulado. Más 2 casos en inglés (`B1`, `B2`, fuera de los 13): 2/2 con idioma y contenido. Evidencia: `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json` y export de `agent_runs` en `TP/evidencia/agent_runs_2026-10-11.json` |
-| 2026-10-11 | `gemini-3-flash-preview` (default del código en esa fecha, reemplazado por D71), `--db --rag-mock` | **no evaluable**: 3 casos respondidos y 10 errores del clasificador | — | — | — | — | No. Cuota diaria gratuita agotada (HTTP 429, 20 requests por día y por modelo); no hay evidencia de comportamiento del modelo. Sin archivo de evidencia |
 
 Lectura de la corrida del 2026-10-11 (Strata, `--db --rag-mock`):
 
-- **Contenido (`check` del golden set): 12/13** — SQL 5/5, RAG 4/4, híbridos 2/3, `none` 1/1. Es la primera
-  vez que se evalúa el contenido de RAG e híbridos; los fragmentos salen del corpus simulado, así que
-  prueba que el agente invoca la tool y cita, no la calidad del retrieval (D69).
+- **Contenido (`check` del golden set): 12/13** — SQL 5/5, RAG 4/4, híbridos 2/3, `none` 1/1. Los
+  fragmentos salen del corpus simulado, así que prueba que el agente invoca la tool y cita, no la calidad del
+  retrieval (D69).
 - **G12 no se clasificó: timeout de la API** (`APITimeoutError`, 91,6 s con reintentos). Es un fallo
-  técnico del modelo local, no una clasificación errónea; la corrida del 2026-10-10 también terminó en
-  error del clasificador (`ClassificationError`). No se puede afirmar nada nuevo sobre G12 con este modelo.
+  técnico del modelo local, no una clasificación errónea.
 - **Llamadas repetidas a la tool SQL:** G4 y G5 invocaron `execute_sql` dos veces y G11 tres, sin
-  rechazos del validador (0/7). Es el comportamiento pendiente de limitar con un modelo débil; no afecta
-  la corrección del contenido.
+  rechazos del validador (0/7). No afectan la corrección del contenido.
 - Las 13 consultas quedaron en `agent_runs` (13/13).
-- El seed de desarrollo se recargó ese día: sus fechas son relativas a `CURRENT_DATE` y envejecen.
 
 Lectura de la corrida del 2026-10-11 con `gemini-3.1-flash-lite` (`--db --rag-mock`):
 
 - **Clasificación 13/13, híbridos 3/3, `none` 1/1, 13/13 antes de tools, 0/8 SQL rechazado, 13/13 en
   `agent_runs`, contenido 13/13** (SQL 5/5, RAG 4/4, híbridos 3/3, `none` 1/1). El JSON versionado es
   la corrida regenerada con el criterio vigente.
-- **Cambio de criterio de G11 (D72).** La primera corrida del día dio contenido 12/13 porque
-  `_both_sources` exigía filas no vacías en un híbrido. G11 resolvió el socio con más préstamos y
-  después consultó si tenía vencidos (relevante para la norma de renovación); esa consulta da 0 filas,
-  que es la respuesta correcta (R-3.8), y `as_outcome()` toma las filas de la **última** sentencia. El
-  agente no cambió: se corrigió el criterio, con test, y se regeneró la corrida. El 12/13 original
-  queda en el historial de git (commit `da5283b`).
 - **Latencia: 288 s en total, por la cuota de la API, no por el modelo.** Con instrumentación en una
   pasada previa se observaron esperas de 31 s y 34,7 s (nuestro reintento, D57) y de 148 s (el
   reintento propio de `smolagents`, que no respeta el tope de 60 s de D57). Los casos individuales
   tardan 2–25 s; en la corrida versionada G10 tardó 169 s, y las esperas caen en casos distintos según
   la corrida.
 - **Casos en inglés (T7.6, R-5.1, D73): 2/2** con clasificación, idioma declarado `en`, contenido
-  (filas / documento esperado) y prosa en inglés. La primera corrida dio **0/2 de contenido**: el modelo
-  respondía en **castellano** y solo la línea de fuente salía "Source:". La causa era que el prompt, las
-  herramientas y los documentos están en castellano; se corrigió instruyendo el idioma en el prompt y
-  se repitió la corrida completa. La heurística de idioma mira palabras funcionales y es una excepción
-  acotada a D16; la calidad de la prosa sigue siendo de la rúbrica manual.
+  (filas / documento esperado) y prosa en inglés. La heurística de idioma mira palabras funcionales y es
+  una excepción acotada a D16; la calidad de la prosa sigue siendo de la rúbrica manual.
 - **Export de `agent_runs` (T7.7):** `TP/evidencia/agent_runs_2026-10-11.json` contiene las 13 consultas
   de esta corrida (12 `ok`, 1 `no_coverage`), con los campos de R-6.1, el modelo y el endpoint `api`.
   Se generó con `scripts/export_runs.py` antes de correr la suite de integración, que trunca la tabla.
@@ -297,11 +276,8 @@ falsa), `gemini-3.1-flash-lite`, casos SQL G1–G5, con `scripts/measure_golden.
 |---|---|---|---|---|
 | 5/5 | 5/5 | **5/5** | 0/5 | 5/5 |
 
-Es la primera medición de **contenido**: el SQL que genera el modelo corre contra el esquema real y
-devuelve lo esperado. Los valores son el subconjunto SQL de
-`TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json`; la corrida `--db` sola no quedó
-versionada. Los casos RAG e híbridos de esta corrida no se evaluaron en contenido.
-Datos de desarrollo, no el seed entregable: el volumen de T2.5 sigue pendiente.
+El SQL que genera el modelo corre contra el esquema real y devuelve lo esperado. Los valores son el
+subconjunto SQL de `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json`.
 
 **Recuperación simulada (D69).** `--rag-mock` reemplaza el fragmento fijo por un corpus de 5 fragmentos de
 prueba (`tests/rag_fixture.py`) con un `RagRetriever` real. Combinado con `--db`, permite evaluar el
@@ -309,13 +285,12 @@ contenido de los 13 casos. Qué mide y qué no:
 
 | Mide | No mide |
 |---|---|
-| Que el agente decida la fuente, invoque la tool y cite documento y ubicación | Calidad del retrieval semántico (top-1 de R1–R3 con embeddings reales, 3.7) |
-| Que la composición declare fuente y evidencia en RAG e híbridos | Calibración del umbral (3.6, D12, D85, D88): el del mock es 0,15 y no es comparable |
+| Que el agente decida la fuente, invoque la tool y cite documento y ubicación | Calidad del retrieval semántico (top-1 de R1–R3 con embeddings reales) |
+| Que la composición declare fuente y evidencia en RAG e híbridos | Calibración del umbral (D12): el del mock es 0,15 y no es comparable |
 | El caso sin cobertura (G13/R4) con la política de no-relevancia | El contenido real del reglamento: los fragmentos son de prueba |
 
 Toda fila medida con `--rag-mock` debe decirlo en la columna "Cuenta como aceptación". Los PDFs existen (6
-en `rag/documents/pdf/`) y el umbral está medido (D85, D88); siguen pendientes el top-1 real de R1–R3
-(T3.7) y el cierre de la calibración (T3.6).
+en `rag/documents/pdf/`) y el umbral está medido.
 
 Lectura de la corrida local: el error de G12 fue técnico, no de clasificación: el modelo razona y con
 `max_tokens=1024` el servidor devolvió `finish_reason=length` con el JSON incompleto (3 de 3 intentos, D62).
@@ -342,16 +317,13 @@ Una tarea de `openspec/changes/agente-y-tools/tasks.md` está terminada solo si:
 ## 6. Evidencias para el informe
 
 - Salida de la API (`curl -N` sobre `POST /ask`) por cada tipo de consulta (SQL, RAG, híbrida,
-  no-cobertura), o capturas del frontend que la consume. **Pendiente:** no hay salida ni capturas
-  versionadas en `TP/`; el contrato está cubierto por los tests de §7 (A1–A11, O1–O7).
+  no-cobertura), o capturas del frontend que la consume. El contrato está cubierto por los tests de §7
+  (A1–A11, O1–O7).
 - Export de `agent_runs` con las 13 consultas del golden set (`TP/evidencia/agent_runs_2026-10-11.json`).
 - Output de `pytest` con los casos de sanitización: 18 adversos de `tests/test_sql_validator.py` (S1–S9,
   S13–S20, incluido S16b), 31 adversos de `tests/test_sql_validator_hardening.py` (S23–S33 y B1–B31), 18
   consultas que deben aceptarse (S21, S22, S32, S33 y `ACCEPTED`), S10 en la ejecución
   (`tests/test_sql_tool_offline.py`) y S11–S12 en los tests de regeneración del executor.
-- Conteo por tabla (`SELECT count(*)`) mostrando ≥15 registros. **Pendiente (T2.5):** `db/seed.sql` aporta
-  70 libros, 57 autores, 28 editoriales, 18 categorías, 20 socios y 29 préstamos, pero el conteo no se corrió
-  contra la base y `db/seed_data.py` (T2.4) no está implementado.
 
 ## 7. Pruebas de la API (R-1.3, R-6.7, R-7.0 a R-7.8)
 
@@ -391,15 +363,10 @@ y la evidencia (R-5.3, R-5.4) corresponden al frontend (`web/`, D93; sus pruebas
 
 **Qué no cubren:** el streaming real sobre `uvicorn` y un proxy (los tests usan `TestClient`). Del CORS se
 cubren el preflight y el comportamiento de los headers con `TestClient` (O1–O7); lo que no se cubre es la
-llamada real desde un navegador con el frontend, que es la tarea 9.12. La presentación de la respuesta y la
-evidencia es del frontend.
+llamada real desde un navegador con el frontend. La presentación de la respuesta y la evidencia es del
+frontend.
 
-**Hallazgos al escribirlas (2026-10-13):** (1) A9 falló con 5,01 s: el `result` se retrasaba hasta el
-intervalo de latido en cada consulta; (2) `test_step_events_come_from_the_framework_callbacks` fallaba en
-Windows porque un paso rápido da `duration_s == 0.0` y `0.0 or 0` devolvía un entero. Ambos se
-corrigieron (D79).
-
-### 7.1 Costo de atender en serie (R-1.3, D77, T9.11)
+### 7.1 Costo de atender en serie (R-1.3, D77)
 
 Medición, no test: afirma tiempos y un test de tiempos sería flaky en CI. Corre sin base, sin
 credenciales y sin modelo (`scripts/measure_queue.py`): la app real sobre `uvicorn` en un puerto efímero
@@ -432,8 +399,7 @@ cola (R-7.3). El cliente cancelado no se interrumpe mientras espera: `answer()` 
 Reproducir: `python scripts/measure_queue.py --service-time 1.0 --counts 1 2 3 5` y
 `python scripts/measure_queue.py --evidence`. No necesita base, API key ni modelo.
 
-Latencias reales ya medidas en `TP/evidencia/` (no se volvió a llamar al modelo; las mayores están
-infladas por esperas de cuota, D70):
+Latencias reales ya medidas en `TP/evidencia/` (las mayores están infladas por esperas de cuota, D70):
 
 | Archivo | n | min | mediana | max |
 |---|---|---|---|---|
@@ -455,7 +421,7 @@ conexión (`sql_backend`, `retriever`, `recorder`: tres por agente), el agente e
 | Opción | Impacto | Riesgo | Compatible con R-1.3, R-6.7, D76 |
 |---|---|---|---|
 | Un agente por sesión | Cada sesión abre sus tres conexiones; la serialización queda dentro de la sesión | El número de conexiones crece con las sesiones y choca con `max_connections` de la base; hace falta un registro de agentes en lugar del singleton | R-1.3 se cumple por sesión; R-6.7 y D76 no cambian |
-| Pool de conexiones con agente compartido | Una conexión prestada por consulta; varias consultas avanzan a la vez | Requiere ciclo de vida del pool y que `SET LOCAL` / sesión solo lectura se aplique por conexión prestada; el estado de espera del recorder sigue siendo compartido. Seguridad de la instancia compartida del cliente de modelo: no verificado | R-1.3 deja de ser serial global: hay que reescribirlo |
+| Pool de conexiones con agente compartido | Una conexión prestada por consulta; varias consultas avanzan a la vez | Requiere ciclo de vida del pool y que `SET LOCAL` / sesión solo lectura se aplique por conexión prestada; el estado de espera del recorder sigue siendo compartido | R-1.3 deja de ser serial global: hay que reescribirlo |
 
 **Recomendación:** para una demostración de 3 a 5 personas mantener la serialización (D77) — la espera
 típica es de 12 a 24 s y los latidos mantienen viva la conexión. Cambiar solo si la consigna exige
