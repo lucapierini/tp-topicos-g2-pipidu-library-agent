@@ -318,7 +318,6 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
   - statement raíz `SELECT`/`WITH` (y operaciones de conjunto): se rechaza cualquier statement que no
     sea lectura, incluyendo `DROP`, `DELETE`, `UPDATE`, `INSERT`, `TRUNCATE`, `GRANT`, `COPY`, `CALL`,
     `EXEC` y las cláusulas de bloqueo (`FOR UPDATE`),
-  - rechazo de cláusulas de bloqueo (`FOR UPDATE`),
   - extracción de tablas y columnas contra la whitelist, con identificadores normalizados a minúsculas
     (`FROM "Libros"` no se rechaza falsamente),
   - `SELECT *` se **expande a las columnas de la whitelist** antes de ejecutar: sin esto la whitelist de
@@ -340,7 +339,10 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
 
 ### 5.3 Prompt engineering
 
-- Prompt de sistema con: rol del agente, esquema de la base de datos (DDL resumido), instrucciones de cuándo usar SQL vs RAG, formato de respuesta esperado.
+- Prompt de sistema con: rol del agente, el esquema generado desde la whitelist (tablas, columnas permitidas
+  y relaciones), instrucciones de uso de cada tool y del orden en los híbridos, formato de respuesta
+  esperado. La elección de la fuente no está en el prompt: la hace el clasificador antes de invocar
+  cualquier tool (D3).
 - Few-shot examples de preguntas NL → SQL para mejorar precisión del text-to-SQL.
 
 ### 5.4 Contratos de las tools
@@ -364,7 +366,7 @@ class SqlResult:
     truncated: bool           # había más filas que el límite de 50 (R-3.6)
 ```
 
-**`rag_search_tool(question: str) -> RagResult`**
+**`rag_search_tool(question: str) -> RagResult`** — en el código es `RagRetriever.retrieve(query)`
 
 ```python
 @dataclass
@@ -377,9 +379,9 @@ class RagResult:
 class Chunk:
     id: int
     document: str            # nombre del PDF de origen
-    location: str            # página o sección
+    location: str            # `metadata`: sección, ubicación o página; si no hay nada, "fragmento N" (R-4.7)
     text: str
-    content_hash: str        # sha256(contenido), unique para idempotencia (D11)
+    content_hash: str        # `sha256` del documento + `chunk_index`; estable entre corridas (D11)
     similarity: float
 ```
 
@@ -392,9 +394,12 @@ class AgentAnswer:
     classification: str      # sql | rag | hybrid | none
     sources: list[str]       # fuentes efectivamente usadas
     answer: str              # texto sin línea de fuente: la fuente va en `sources` (R-5.2, D84)
-    evidence: dict           # sql, rows, truncated, chunks, language, model, sql_attempts, sql_errors, error
+    evidence: dict           # model (id, endpoint), language, sql, sql_original, rows, truncated, attempts,
+                             # chunks, sql_attempts, sql_errors, error (code, detail), write_request,
+                             # inconsistency, run_recording_error
     run_id: int | None       # fila en agent_runs; None si el registro falló o está desactivado (R-6.6)
     answer_kind: str         # answer | no_coverage | error
+    title: str | None        # frase corta de un mensaje fijo de ausencia o error (R-5.9, D96); None en una respuesta normal
     trace: list[str]         # eventos en orden: "classification" primero (D3)
 
 # Punto de entrada. `on_event(nombre, datos)` recibe el progreso a medida que ocurre y `cancel`
@@ -417,7 +422,8 @@ ejemplo `npm run dev`) necesita `API_ALLOWED_ORIGINS` (tarea 9.12).
 ### 6.1 Contrato HTTP
 
 `uvicorn api.app:app --port 8000`. `POST /ask` con `{"question": "..."}` responde `text/event-stream`;
-`GET /health` responde `{"status":"ok"}`. Una consulta vacía devuelve 422 sin abrir el stream (R-1.2,
+`GET /health` responde `{"status":"ok"}`. Ambos con `200`. No hay longitud máxima en el cuerpo: se valida
+solo que la consulta no esté vacía, y en ese caso `POST /ask` devuelve `422` sin abrir el stream (R-1.2,
 R-7.4).
 
 `answer()` es bloqueante y no emite tokens: lo que se transmite es el progreso real del agente.
@@ -427,32 +433,35 @@ R-7.4).
 | `start` | `question` |
 | `classified` | `classification`, `language` |
 | `tool_call` | `tool`, `sql` o `query` |
-| `tool_result` | `tool`, `ok`, `rows` o `chunks`, `error` |
+| `tool_result` | `tool`, `ok`, `rows` o `chunks`, `error`, `detail` (solo en `execute_sql`) |
 | `step` | `step`, `duration_s`, `input_tokens`, `output_tokens`, `tools` (callbacks de smolagents) |
 | `composing` | — |
 | `heartbeat` | `elapsed_s`, cada 5 s sin eventos |
 | `result` | el `AgentAnswer` completo |
 | `error` | `detail` |
 
-**Cancelación (R-7.5, R-6.7, D76):** si el cliente cierra la conexión, se activa un `threading.Event` y el agente se detiene antes del siguiente paso (`interrupt()` de smolagents). Una llamada al modelo en vuelo termina. La consulta cancelada no se registra en `agent_runs` y no emite `result`.
+**Cancelación (R-7.5, R-6.7, D76):** si el cliente cierra la conexión, se activa un `threading.Event` y el agente se detiene antes del siguiente paso (`interrupt()` de smolagents); una llamada al modelo que ya está en vuelo se completa (D76). La consulta cancelada no se registra en `agent_runs` y no emite `result`.
 
 **Cómo debe consumirlo el frontend** (a partir del evento `result`, que es un `AgentAnswer`):
 
 - `answer`: texto final, sin línea de fuente (D84): mostrar la fuente a partir de `sources` y no del texto.
 - `answer_kind`: `answer`, `no_coverage` o `error`; conviene mostrarlos distinto.
 - `sources`: `sql`, `rag` o ambas; vacío cuando se declara ausencia de información o un error.
-- `evidence`: `sql` (sentencia ejecutada), `rows`, `truncated`, `chunks` (cada uno con `document`,
-  `location`, `text`, `similarity`), `language`, `model`, `sql_attempts`, `sql_errors`, `error` y, si
-  falló el registro, `run_recording_error`.
+- `title`: `null` en una respuesta normal; frase corta en los mensajes fijos de ausencia o error (R-5.9).
+- `evidence`: `sql` (sentencia ejecutada), `rows`, `truncated`, `chunks` (cada uno con `id`, `document`,
+  `location`, `text`, `similarity`, `content_hash`), `language`, `model` (`id` y `endpoint`), `sql_attempts`,
+  `sql_errors`, `error` (`code` y `detail`) y, si falló el registro, `run_recording_error`. En un híbrido
+  puede venir `inconsistency` (clasificación declarada vs fuentes realmente invocadas, R-2.7); cuando la
+  consulta pedía escribir, `write_request` (R-2.9, Art. 3).
 - `run_id`: puede ser `null` (registro desactivado o fallido, R-6.6).
 - El historial lo conserva el frontend; el agente es de un solo turno y recibe solo la consulta actual
   (R-7.0, D17).
 - Una consulta tarda de 3 a 170 s según la cuota: el frontend necesita un indicador de espera y tolerar
   los eventos `heartbeat`.
 
-**Llamada directa (uso interno):** `from agent.agent import answer, EmptyQuestionError`. La usan el golden
-set (`scripts/measure_golden.py`) y los tests; no es un punto de acceso para clientes. Una consulta vacía
-lanza `EmptyQuestionError`.
+**Llamada directa (uso interno):** `from agent.agent import answer, EmptyQuestionError`. La usan la API y
+`scripts/ask.py`; el golden set (`scripts/measure_golden.py`) y los tests construyen un `LibraryAgent` con
+backends inyectados. No es un punto de acceso para clientes. Una consulta vacía lanza `EmptyQuestionError`.
 
 **Concurrencia (R-1.3, D77):** el agente guarda una sola conexión por backend; `LibraryAgent.answer()`
 serializa las consultas con un `threading.Lock`, por lo que dos sesiones simultáneas se atienden una detrás
@@ -600,10 +609,33 @@ tp-topicos-g2-pipidu-library-agent/
 
 ## 9. Plan de pruebas
 
-- Unit tests sobre `sql_tool` (validación de sanitización, ejecución correcta de queries conocidas).
-- Unit tests sobre `rag_tool` (retrieval devuelve chunks esperados para preguntas de prueba).
-- Casos de prueba end-to-end: set de preguntas de ejemplo (SQL puras, RAG puras, mixtas) con respuesta esperada, documentadas en el informe técnico como evidencia.
-- Tests de la API (`tests/test_api.py`) sin modelo ni base: un doble de `answer()` sobre `TestClient`. El mapeo requisito → test está en `TP/05` §7.
+Corren sin base, sin API y sin `smolagents` (Art. 6); lo marcado `integration` o `llm` se deselecciona por
+defecto (`pytest.ini`, D34). Los casos y los criterios de aceptación están en `TP/05` §1 y §2; acá solo qué
+prueba cada archivo.
+
+- Validación estática de SQL: `tests/test_sql_validator.py` (los casos S de `TP/05` §2) y
+  `tests/test_sql_validator_hardening.py` (regresión de la auditoría del 2026-10-10, D38–D44, que cubre
+  S23–S33).
+- `execute_sql`: `tests/test_sql_tool_offline.py` (sanitización, límite de filas, regeneración, sin base ni
+  credenciales) y `tests/test_sql_tool.py` (ejecución correcta de queries conocidas con el rol `agent_ro`,
+  `integration`).
+- `rag_tool`: `tests/test_rag_tool.py` (top-k, umbral y no-relevancia con el embedder y el store como dobles)
+  y `tests/test_rag_fixture.py` (el corpus simulado responde a las preguntas del golden set; no mide
+  semántica, D16).
+- Golden set: `tests/golden_set.py` (fixtures compartidas, D16) y `tests/test_golden_set.py` (SQL puras, RAG
+  puras, mixtas y no-cobertura, G1–G13); `tests/test_golden_seed.py` verifica que el seed contenga las
+  entidades que las preguntas nombran (`integration`). La evidencia de las corridas medidas va en
+  `TP/evidencia/`.
+- Orquestador, contratos y configuración: `tests/test_agent.py`, `tests/test_agent_smolagents.py`,
+  `tests/test_classifier.py`, `tests/test_contracts.py`, `tests/test_prompts.py`, `tests/test_config.py`,
+  `tests/test_schema_whitelist.py`, `tests/test_seed_contract.py`, `tests/test_retry.py`.
+- Trazabilidad: `tests/test_runs.py` y `tests/test_export_runs.py` (offline) y `tests/test_runs_integration.py`
+  (`integration`).
+- API: `tests/test_api.py` (contrato SSE con un doble de `answer()` sobre `TestClient`) y
+  `tests/test_api_cors.py` (orígenes que reciben `Access-Control-Allow-Origin` y los que no, D82). El mapeo
+  requisito → test está en `TP/05` §7.
+- Imagen: `tests/test_dockerfile.py` (chequeos estáticos, sin construir la imagen).
+- Smoke con el modelo real: `tests/test_llm_smoke.py` (`llm`, deseleccionado por defecto).
 
 ## 10. Metodología SDD (artefactos a entregar)
 
