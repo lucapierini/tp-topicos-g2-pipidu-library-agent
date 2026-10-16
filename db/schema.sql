@@ -1,16 +1,9 @@
 -- Esquema de la base de la biblioteca (T2.1). Fuente: el esquema compartido en Neon, normalizado para
 -- que corra tal cual en PostgreSQL local.
 --
--- Qué se cambió respecto del DDL exportado de Neon (y por qué), para que quien mantiene el esquema
--- compartido pueda reflejarlo:
---   * `CREATE SCHEMA "public"` se omite: el esquema ya existe.
---   * Se agrega `CREATE EXTENSION vector` (el DDL exportado no lo incluye y `vector(768)` lo necesita).
---   * `CREATE VIEW ... TABLESPACE public` no es sintaxis válida: se quitó `TABLESPACE public`.
---   * Se quitaron los `CREATE UNIQUE INDEX` que duplican el índice que ya crea cada PRIMARY KEY o
---     UNIQUE (`*_pkey`, `*_key`, `autores_nombre_uk`, `documentos_chunks_uk`): fallaban con
---     "relation already exists".
---   * El índice HNSW se declara con `vector_cosine_ops`. El exportado no declaraba operador y por
---     defecto pgvector usa distancia L2: el agente consulta por coseno (`<=>`, D13) y no lo usaría.
+-- Normalizado para PostgreSQL local: sin CREATE SCHEMA public, con CREATE EXTENSION vector, vista sin
+-- TABLESPACE, sin CREATE UNIQUE INDEX aparte de los de PK/UNIQUE, e índice HNSW con vector_cosine_ops
+-- (el agente consulta por coseno, D13).
 --
 -- Estado de vencimiento (D7): la tabla guarda solo `activo`/`devuelto`; "vencido" se calcula en la vista
 -- `v_prestamos_estado.estado_calculado`.

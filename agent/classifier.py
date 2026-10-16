@@ -41,7 +41,8 @@ class Classifier(Protocol):
 
 
 def parse_classification(raw: str) -> Classification:
-    """Valida la salida estructurada. El enum es case-sensitive: `"SQL"` se normaliza (D50)."""
+    """Valida la salida estructurada; la etiqueta y el idioma se normalizan (minúsculas, sin espacios)
+    antes de compararlos."""
     try:
         data = json.loads(raw)
     except (TypeError, ValueError) as exc:
@@ -82,9 +83,8 @@ class LiteLLMClassifier:
     `parse_classification`, que rechaza cualquier etiqueta fuera del vocabulario.
     """
 
-    # Los modelos que razonan antes de contestar gastan tokens en eso: con un tope bajo devuelven
-    # `content: None` (observado con Strata y `max_tokens=16`) o `finish_reason=length` con el JSON
-    # incompleto (G12 con `max_tokens=1024`, 3 de 3 intentos). Con 2048 completó la misma consulta.
+    # Los modelos que razonan gastan tokens antes de contestar: con un tope bajo devuelven
+    # `content: None` o `finish_reason=length` con el JSON incompleto. 4096 deja margen.
     MAX_TOKENS = 4096
 
     def __init__(self, config: Config | None = None, completion=None) -> None:
@@ -121,7 +121,8 @@ class LiteLLMClassifier:
         except ClassificationError:
             raise
         except Exception as exc:  # noqa: BLE001
-            # El motivo se conserva: "ClassificationError" a secas escondió un `finish_reason=length`.
+            # Se conserva el motivo real del fallo (clase y primeros 200 caracteres del mensaje) para
+            # distinguir cuota, límite de tokens y salida inválida.
             raise ClassificationError(
                 f"falló la llamada de clasificación: {type(exc).__name__}: {str(exc)[:200]}"
             ) from exc
@@ -190,7 +191,8 @@ class GeminiClassifier:
         except ClassificationError:
             raise
         except Exception as exc:  # noqa: BLE001
-            # El motivo se conserva (igual que en LiteLLM): `ClientError` a secas escondió una cuota agotada.
+            # Se conserva el motivo real del fallo (clase y primeros 200 caracteres del mensaje) para
+            # distinguir cuota, límite de tokens y salida inválida.
             raise ClassificationError(
                 f"falló la llamada de clasificación: {type(exc).__name__}: {str(exc)[:200]}"
             ) from exc

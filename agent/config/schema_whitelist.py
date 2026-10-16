@@ -50,8 +50,8 @@ ALLOWED_TABLES: dict[str, set[str]] = {
     },
 }
 
-# Explícitamente fuera de la whitelist, para que el test de regresión no se
-# apoye en un olvido. `documentos_embeddings` es el nombre que se asumió antes de conocer el esquema.
+# Explícitamente fuera de la whitelist. `documentos_embeddings` no existe en el esquema; se lista
+# para que el test no dependa de un olvido.
 FORBIDDEN_TABLES: set[str] = {
     "agent_runs",
     "documentos",

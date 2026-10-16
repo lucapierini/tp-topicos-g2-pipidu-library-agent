@@ -12,8 +12,8 @@ Escribe, así que usa el dueño de la base. Destino, en este orden (Art. 9: nunc
 
 Es idempotente: si el `sha256` del PDF no cambió y la base ya tiene esa cantidad de fragmentos, se saltea
 (`--force` lo rehace).
-La carpeta `rag/documents/` es la fuente de verdad: los documentos que ya no están se borran de la base
-(`--keep-orphans` lo evita).
+La carpeta `rag/documents/` es la fuente de verdad: los documentos ausentes de la carpeta se borran
+de la base (`--keep-orphans` lo evita).
 
     python rag/ingest.py --dry-run     # muestra los fragmentos; sin red ni base
     python rag/ingest.py               # ingesta

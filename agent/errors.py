@@ -1,4 +1,4 @@
-"""Códigos de error tipados de la herramienta SQL (R-3.2, R-3.3, R-3.4, R-3.6, R-3.13, R-3.16, R-3.17)."""
+"""Códigos de error tipados de las herramientas SQL y de recuperación (R-3.2, R-3.3, R-3.4, R-3.6, R-3.13, R-3.16, R-3.17, R-4.6)."""
 from __future__ import annotations
 
 SQL_NOT_READONLY = "SQL_NOT_READONLY"

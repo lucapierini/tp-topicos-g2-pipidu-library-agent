@@ -7,7 +7,8 @@
 # (Art. 9). Solo LEE de Neon (`pg_dump`): no modifica la base compartida.
 #
 # Uso:  bash scripts/replicate_neon.sh [--check]
-#   --check   solo informa la versión de Neon y qué imagen usar; no vuelca ni restaura.
+#   --check   informa la versión de Neon, la imagen a usar y las extensiones, tablas y vistas;
+#             no vuelca ni restaura.
 #
 # No requiere `pg_dump` ni `psql` instalados: corre dentro de contenedores.
 set -euo pipefail
@@ -17,7 +18,7 @@ cd "$ROOT"
 
 # --- URL de Neon: entorno o .env, sin imprimirla ------------------------------------------------
 if [[ -z "${NEON_DATABASE_URL:-}" && -f .env ]]; then
-  # `|| true`: sin esa línea en .env, `grep` sale con 1 y `set -e` cortaba el script sin decir nada.
+  # `|| true`: si `.env` no tiene la línea, `grep` devuelve 1 y `set -e` cortaría el script sin mensaje.
   NEON_DATABASE_URL="$(grep -E '^NEON_DATABASE_URL=' .env | head -1 | cut -d= -f2- | tr -d '\r' \
     | sed -e 's/^"//' -e 's/"$//' || true)"
 fi

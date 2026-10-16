@@ -5,7 +5,7 @@
 --
 -- `agent_runs` queda fuera a propósito (D21): la trazabilidad no se concede a este rol.
 -- `documentos` y `documentos_chunks` entran: la herramienta de RAG las lee con este rol por una vía propia;
--- la whitelist de la herramienta SQL las excluye (D21), así que el agente no puede consultarlas con SQL.
+-- la whitelist de la herramienta SQL las excluye (D99), así que el agente no puede consultarlas con SQL.
 
 DO $$
 DECLARE

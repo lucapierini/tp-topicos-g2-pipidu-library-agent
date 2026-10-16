@@ -174,7 +174,8 @@ class AgentRunner(Protocol):
 
 
 class SmolagentsRunner:
-    """`ToolCallingAgent` (D2) sobre Gemini vía LiteLLM, con temperatura 0 y timeout (D15)."""
+    """`ToolCallingAgent` (D2) sobre el modelo configurado (`LLM_MODEL`, vía LiteLLM), con
+    temperatura 0 y timeout (D15)."""
 
     def __init__(self, config: Config | None = None, model: Any = None) -> None:
         self.cfg = config or load_config()

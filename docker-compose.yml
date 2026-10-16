@@ -1,4 +1,5 @@
-# Base local para pruebas: PostgreSQL + pgvector con los roles del proyecto (T1.3, D14).
+# Infraestructura local del proyecto: base (PostgreSQL + pgvector con los roles del proyecto, D14),
+# ingesta del RAG, API, web y CLI del agente.
 #
 #   cp .env.example .env     # completar las contraseñas
 #   docker compose up -d --wait   # db + api + web; la interfaz queda en http://localhost:3000

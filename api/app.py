@@ -47,8 +47,8 @@ _DONE = "__done__"  # marcador interno: el agente terminó; nunca sale al client
 def _report_loop_exception(_loop: asyncio.AbstractEventLoop, context: dict) -> None:
     """Handler del bucle de eventos que no pasa por `logging`.
 
-    El handler por defecto escribe con `logging` y el filtro de litellm (instalado en los handlers) falla con
-    `KeyError: 'litellm'` al registrar: el error real quedaba oculto y se repetía hasta dejar la API sin responder.
+    El handler por defecto escribe con `logging` y el filtro de litellm falla con `KeyError: 'litellm'`;
+    este handler escribe directo en stderr.
     """
     exc = context.get("exception")
     detail = "".join(traceback.format_exception(exc)) if exc else ""
@@ -96,13 +96,12 @@ async def _stream(question: str) -> AsyncIterator[str]:
 
     cancel = threading.Event()
     task = asyncio.create_task(asyncio.to_thread(answer, question, on_event, cancel))
-    # Al terminar el agente se encola un marcador: sin él, el bucle quedaba esperando el próximo
-    # evento y el `result` salía recién al vencer el latido (hasta HEARTBEAT_S de retraso por consulta).
+    # Al terminar el agente se encola un marcador. El marcador evita esperar el próximo evento o el
+    # latido (hasta HEARTBEAT_S) antes de emitir el `result`.
     # Los eventos del agente se encolan antes que el marcador, así que el orden se conserva.
     task.add_done_callback(lambda _task: events.put_nowait((_DONE, {})))
-    # Si el cliente corta, el generador se cierra antes de leer el resultado y `AnswerCancelled` quedaba sin
-    # recuperar: asyncio lo registraba por el logger y ese registro rompía dentro de litellm, dejando la API
-    # sin responder a las consultas siguientes. Se lo consume acá, sea cual sea el camino de salida.
+    # Si el cliente corta, el generador se cierra sin leer el resultado: este callback consume la
+    # excepción para que asyncio no la registre por el logger.
     task.add_done_callback(lambda t: None if t.cancelled() else t.exception())
     try:
         while True:
