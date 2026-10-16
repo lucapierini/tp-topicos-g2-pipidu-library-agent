@@ -17,8 +17,8 @@ elegir el valor es una decisión de compromiso que necesita datos.
 
 **Non-Goals:**
 - Cambiar el valor del umbral (se mantiene 0.64, D88) ni el modelo de embeddings.
-- Búsqueda híbrida, re-ranking o reformulación de la consulta: son la mejora de fondo, pero van en otro change
-  y se medirán con este mismo set.
+- Adoptar búsqueda híbrida o re-ranking en `retrieve()`: se **miden** acá (R-4.10, D98) pero el equipo decide después,
+  con consultas nuevas. La reformulación de la consulta sigue fuera.
 
 ## Decisions
 
@@ -37,8 +37,45 @@ elegir el valor es una decisión de compromiso que necesita datos.
    recall 100 % con 10 de 49 falsos positivos. Mover el umbral cambia un tipo de error por otro; la decisión queda
    registrada en D97 y abierta para el equipo.
 
+7. **Se evalúan puntajes alternativos, no una nueva arquitectura.** `scripts/evaluate_retrieval.py` calcula, sobre las
+   mismas 126 consultas y con las mismas métricas, el puntaje de cada estrategia sobre *todos* los fragmentos (el
+   corpus tiene 44), sin modificar `retrieve()`.
+8. **Léxico: cobertura IDF, no BM25 crudo.** BM25 no tiene escala fija y no se puede cortar con un umbral. La cobertura
+   (fracción del peso IDF de la consulta presente en el fragmento) va de 0 a 1 y castiga lo que buscamos: un término
+   que no existe en ningún documento («wifi») pesa lo máximo y no se cubre. Raíz tosca de 6 caracteres y sin acentos,
+   sin dependencias. Con una base grande correspondería `tsvector` de PostgreSQL.
+9. **Híbrido: combinación lineal con el coseno normalizado a [0.50, 0.85].** Se prueba `α ∈ {0.5…0.9}`. RRF no sirve porque
+   no da un puntaje absoluto para cortar (hay que poder decir «no hay nada»).
+10. **Re-ranking: el modelo juzga si el fragmento *contiene la respuesta*.** Escala 0–3 con una consigna que dice que
+    compartir tema o vocabulario no pasa de 1; una llamada por consulta con los 5 candidatos, temperatura 0 y salida
+    estructurada validada. Los resultados se guardan en un caché para que la medición sea repetible y barata. Se
+    prueba solo, combinado con el coseno (el coseno desempata) y sobre los candidatos del híbrido.
+11. **Reintento ante 5xx.** `call_with_retry` solo cubre la cuota (429); la medición cayó por un 503 de alta demanda, así que
+    el re-ranker reintenta 5xx con backoff y no reintenta errores de cliente.
+
+## Results (D98)
+
+Sobre 77 consultas cubiertas y 49 sin cobertura:
+
+| Estrategia | AUC | Mejor F1 | Con recall ≥ 95 % |
+|---|---|---|---|
+| Coseno (actual) | 0.983 | 0.951 (8 falsos positivos) | 6 falsos positivos |
+| Léxico solo | 0.879 | 0.883 | no sirve |
+| Híbrido α=0.8 | 0.988 | 0.968 | 3 falsos positivos, recall 97 % |
+| Re-ranking solo | 0.976 | 0.946 | 8 falsos positivos, recall 99 % |
+| Re-ranking + coseno | 0.994 | 0.987 | 1 falso positivo, recall 97–99 % |
+| Híbrido + re-ranking + coseno | 0.993 | 0.981 | 2 falsos positivos, recall 97 % |
+
+Lectura: el léxico solo es malo (no entiende el inglés ni los sinónimos) pero **aporta una señal que el coseno no tiene**:
+combinado baja los falsos positivos a la mitad sin costo de modelo. El re-ranking es lo único que ataca el problema de
+fondo —juzgar si el fragmento *contesta*—: 41 de 49 consultas sin cobertura reciben 0 y solo una recibe 3. Solo, empata
+mucho (4 valores), y por eso el coseno como desempate lo lleva a AUC 0.994. Los pocos errores que quedan son dos consultas
+en inglés y una definición; el falso positivo («descuentos en las multas para docentes») tiene una etiqueta discutible.
+
 ## Risks / Trade-offs
 
 - **El set refleja los 6 documentos actuales** → al cambiar el corpus hay que recalibrar; los tests avisan si una etiqueta deja de ser válida.
 - **126 consultas siguen siendo pocas para fijar un decimal** → se informa la meseta de umbrales empatados, no un único valor, y el criterio de cada candidato.
+- **α, el rango de normalización y el umbral de cada estrategia se eligieron sobre este mismo set** → los números están optimistas; adoptar una estrategia exige confirmarla con consultas no vistas.
+- **El re-ranking suma una llamada al modelo por consulta** (latencia y cuota) y su calidad depende de un prompt y de un modelo → hay que decidir si el costo vale la mejora; el híbrido no cuesta llamadas.
 - **Los negativos «difíciles» los elegimos nosotros** → pueden ser más fáciles o más difíciles que las preguntas reales; los registros de `agent_runs` son la fuente para ampliar el set.

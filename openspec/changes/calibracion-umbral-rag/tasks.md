@@ -11,15 +11,22 @@
 - [x] 2.2 Reescribir `scripts/calibrate_threshold.py`: barrido de umbrales (recall, falsos positivos, precisión, F1), AUC, candidatos, grupos, precisión del documento y evidencia en JSON; verificar con `pytest tests/test_calibrate_threshold.py` con casos calculados a mano (R-4.9)
 - [x] 2.3 Correr la calibración contra la base local con los 6 documentos y guardar `TP/evidencia/calibracion_umbral.json` (R-4.9)
 
-## 3. Documentación
+## 3. Evaluación de búsqueda híbrida y re-ranking
 
-- [x] 3.1 Registrar D97 en `TP/CHANGELOG.md` con los resultados (AUC 0.983, recall y falsos positivos por umbral) y la decisión de mantener 0.64; verificar con `openspec validate calibracion-umbral-rag --strict`
+- [x] 3.1 Crear `scripts/evaluate_retrieval.py`: tokenización, cobertura IDF, combinación híbrida, re-ranking con el modelo (caché, validación de la salida, reintento ante 5xx) y resumen por estrategia con AUC, F1, falsos positivos y documento correcto; verificar con `pytest tests/test_evaluate_retrieval.py` sobre dobles (R-4.10)
+- [x] 3.2 Correr la evaluación contra la base local y guardar `TP/evidencia/busqueda_hibrida_rerank.json` y el caché `rerank_scores.json` (R-4.10)
 
-## 4. Seguimiento
+## 4. Documentación
 
-- [ ] 4.1 Decidir con el equipo si se mantiene 0.64 o se pasa a 0.655 (recall 96 %, 6 falsos positivos en lugar de 10) (R-4.8)
-- [ ] 4.2 Probar búsqueda híbrida (embeddings + palabras exactas) o re-ranking y medirlos con este mismo set: el objetivo es subir el AUC y bajar los falsos positivos sin perder recall (R-4.9)
-- [ ] 4.3 Ampliar los negativos con consultas reales de `agent_runs` clasificadas `rag` sin documento relevante (R-4.9)
+- [x] 4.1 Registrar D97 en `TP/CHANGELOG.md` con los resultados (AUC 0.983, recall y falsos positivos por umbral) y la decisión de mantener 0.64; verificar con `openspec validate calibracion-umbral-rag --strict`
+- [x] 4.2 Registrar D98 con los resultados de híbrido y re-ranking y actualizar la spec (R-4.10)
+
+## 5. Seguimiento
+
+- [ ] 5.1 Decidir con el equipo si se mantiene 0.64 o se pasa a 0.655 (recall 96 %, 6 falsos positivos en lugar de 10) (R-4.8)
+- [ ] 5.2 Confirmar con consultas no vistas (≥ 40 nuevas, de preferencia reales de `agent_runs`) la mejora del re-ranking + coseno (AUC 0.994, 1 falso positivo) y del híbrido α=0.8 (3 falsos positivos), porque α, el rango y los umbrales se eligieron sobre este set (R-4.10)
+- [ ] 5.3 Si se confirma, implementar la estrategia elegida en `retrieve()` detrás de una variable de configuración, con tests y la latencia extra medida; decidir entre re-ranking (1 llamada más por consulta) e híbrido (sin llamadas) (R-4.4, R-4.10)
+- [ ] 5.4 Ampliar los negativos con consultas reales de `agent_runs` clasificadas `rag` sin documento relevante (R-4.9)
 
 ## Workflow follow-up
 
