@@ -121,6 +121,18 @@ del mismo contenido.
 | D93 | La interfaz gráfica vuelve como cliente de la API (`web/`, change `frontend-web-vite`); la API sigue siendo el único acceso al agente y la imagen `runtime` no sirve interfaz | R-7.0, D80 |
 | D83 | Riesgo de promoción aceptado explícitamente: margen 2/5, desviación del requisito de nube y confirmación con la cátedra abierta | criterios de promoción 1 y 3, D18, D80, D81 |
 | D84 | La fuente se declara solo en `sources`; el texto de `answer` no lleva línea de fuente | R-5.2, R-2.6, D58 |
+| D85 | Umbral de similitud 0.67, calibrado con consultas reales | R-4.6, D12 |
+| D86 | Se elimina el manual de uso del corpus del RAG | R-4.6, D16, D85 |
+| D87 | Ampliación del catálogo y de las reseñas | D85 |
+| D88 | Umbral provisorio 0.64 y editoriales en el prompt | D87 |
+| D89 | Un solo seed y prompt de editoriales genérico | T2.4, T6.1, D87, D88 |
+| D90 | Las reseñas no son datos de la base | T6.1, D88 |
+| D91 | `docker compose up` carga el catálogo completo | T1.3, T2.4, D87 |
+| D92 | `docker compose up` también ingesta el RAG | T3.3, T9.2, D91 |
+| D94 | Pedidos de escritura, una sola nota y mensajes con carácter | R-2.9, R-5.8, R-5.9 |
+| D95 | La SPA presenta `answer` como Markdown (`react-markdown` + `remark-gfm`), sin HTML crudo | R-8.11, R-8.7 |
+| D96 | La frase de los mensajes fijos va en el título | T7.8, D94 |
+| D97 | El chunking es por sección `## `, sin tope de tokens ni solapamiento | R-4.3, R-4.7, R-9.4 |
 
 ## Risks / Trade-offs
 

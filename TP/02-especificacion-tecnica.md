@@ -171,10 +171,12 @@ respuesta, pero tampoco se finge que se registró.
 
 ### 3.2.3 Entorno local con Docker
 
-`docker compose up -d --wait db` levanta PostgreSQL + pgvector y ejecuta `db/init/10-roles.sh`: crea
-los roles `agent_ro` y `agent_logger`, aplica `db/schema.sql`, `db/migrations/001_agent_runs.sql`, los
-permisos (`db/post_restore.sql`) y, por defecto, `db/dev_seed.sql` (pocas filas deterministas con
-fechas relativas a `CURRENT_DATE`). `scripts/replicate_neon.sh` trae el esquema y los datos de Neon con
+`docker compose up -d --wait` levanta PostgreSQL + pgvector (`db`), ingesta el RAG (`ingest`, D92) y arranca la
+API y la web. `db` ejecuta `db/init/10-roles.sh` al crear el volumen: crea los roles `agent_ro` y
+`agent_logger`, aplica `db/schema.sql`, `db/migrations/001_agent_runs.sql`, los permisos (`db/post_restore.sql`) y
+el seed que elige `DEV_SEED`: `full` (por defecto, D91) = `db/seed.sql`, el catálogo completo; `1` =
+`db/dev_seed.sql` (pocas filas deterministas con fechas relativas a `CURRENT_DATE`, lo que esperan los tests de
+integración); `0` = base vacía. `scripts/replicate_neon.sh` trae el esquema y los datos de Neon con
 `pg_dump` desde un contenedor, solo lectura y sin imprimir la connection string.
 
 ### 3.3 Datos sintéticos
@@ -220,7 +222,7 @@ los permisos, pero la lista de `GRANT` lo incluye. El comportamiento correcto es
 #### 3.4.2 Lo que los casos G1–G5 y la semántica temporal necesitan del seed
 
 Las entidades son las de `tests/golden_set.py::SEED_ENTITIES`; las filas nombradas son las de
-`db/dev_seed.sql`, que es la foto actual de la base local.
+`db/dev_seed.sql` (`DEV_SEED=1`), que es la foto de la base de pruebas; el catálogo completo (`db/seed.sql`) conserva esas entidades.
 
 | Caso | Qué necesita del seed | Entidades / filas de las que depende |
 |---|---|---|
@@ -265,8 +267,10 @@ Total: entre 4 y 6 PDFs (mínimo exigido: 2).
 
 ### 4.1 Pipeline de ingesta RAG
 
-1. Extracción de texto de los PDFs (`pypdf`).
-2. Chunking por cláusula/párrafo, con tope de 800 tokens y solapamiento de 150 (D10).
+1. Lectura del texto fuente: `rag/documents/*.md` (el PDF de `rag/documents/pdf/` se genera con el mismo texto,
+   `rag/build_pdfs.py`, y aporta el `sha256` de idempotencia).
+2. Chunking por sección `## ` (un fragmento por artículo o paso numerado, con el título del documento antepuesto),
+   sin tope de tokens ni solapamiento (D97, que reemplaza a D10 en este punto).
 3. Generación de embeddings (Gemini Embeddings API).
 4. Almacenamiento en `pgvector`: un registro en `documentos` y un fragmento por fila en
    `documentos_chunks` (`embedding vector(768)`, `metadata jsonb` con la ubicación citable). Ver §3.2.1.
@@ -536,27 +540,33 @@ base.
 Estado real, verificada con `git ls-files`. Lo marcado *pendiente* no existe todavía.
 
 ```
-pipidu-library-agent/
+tp-topicos-g2-pipidu-library-agent/
 ├── README.md
 ├── requirements.txt              # dependencias de ejecución
 ├── requirements-dev.txt          # pytest, faker, ruff
 ├── pyproject.toml                # configuración de ruff
 ├── pytest.ini                    # marcadores `integration` y `llm` (D34)
 ├── .env.example
-├── docker/Dockerfile             # etapas base, measure, runtime (D74)
-├── docker-compose.yml            # Postgres + pgvector local
+├── .dockerignore, .gitattributes, .gitignore
+├── docker/Dockerfile             # etapas base, measure, local y runtime (D74, D91)
+├── docker/Dockerfile.web         # SPA compilada y servida con nginx (D93)
+├── docker/nginx.conf             # SPA con fallback y proxy de /api/ a la API, sin buffering (D93)
+├── docker-compose.yml            # db (Postgres + pgvector), ingest, api y web; perfil `tools`: agent
 ├── db/
 │   ├── schema.sql                # 7 tablas del dominio + documentos(+chunks) + vista v_prestamos_estado
 │   ├── migrations/               # 001_agent_runs.sql (trazabilidad, R-6.x)
 │   ├── init/                     # roles agent_ro / agent_logger y orden de inicialización (Docker)
 │   ├── post_restore.sql          # permisos de agent_ro tras crear o restaurar el esquema
-│   ├── dev_seed.sql              # datos de desarrollo (no es el seed entregable)
+│   ├── seed.sql                  # catálogo completo: lo carga `docker compose up` (DEV_SEED=full, D91)
+│   ├── dev_seed.sql              # seed mínimo de pruebas (DEV_SEED=1)
 │   ├── seed_data.py              # pendiente (T2.4)
 │   └── dump.sql                  # pendiente (T2.8)
 ├── rag/
-│   ├── documents/                # PDFs fuente (pendiente, T3.1)
-│   ├── chunking.py               # pendiente (T3.2)
-│   └── ingest.py                 # pendiente (T3.3)
+│   ├── documents/                # fuente .md y pdf/ (6 documentos)
+│   ├── build_pdfs.py             # genera los PDF desde los .md
+│   ├── ingest.py                 # ingesta a documentos y documentos_chunks (chunking por sección incluido)
+│   ├── upload_to_bucket.py       # fuera del flujo local (D81)
+│   └── requirements.txt          # fpdf2 y boto3: solo para build_pdfs.py y upload_to_bucket.py
 ├── agent/
 │   ├── agent.py                  # orquestador: ToolCallingAgent (D2), eventos y cancelación (D75, D76), lock (D77)
 │   ├── classifier.py             # clasificación con salida estructurada (D3)
@@ -572,7 +582,7 @@ pipidu-library-agent/
 │   ├── __init__.py
 │   └── app.py                    # FastAPI: POST /ask (SSE), GET /health; único acceso al agente (D75, D80)
 ├── web/                          # SPA Vite + shadcn/ui: cliente de la API (D93)
-├── scripts/                      # measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 ├── TP/                           # artefactos SDD legibles para la entrega
 ├── informe/                      # pendiente (T9.5)
 └── tests/
@@ -606,7 +616,7 @@ pipidu-library-agent/
 Los cuatro pendientes originales se cerraron en `CHANGELOG.md`:
 
 - Capa de acceso a datos: **psycopg2 directo** (D9).
-- Estrategia de chunking: **por cláusula, tope 800 tokens / 150 de solapamiento** (D10).
+- Estrategia de chunking: **por sección `## `, sin tope ni solapamiento** (D97; D10 había fijado 800/150 tokens y no se implementó así).
 - Memoria conversacional: **single-turn**, historial solo visual (D17).
 - Despliegue: **entorno local** (Docker + `uvicorn`), D81, que reemplaza D18 para la parte del servicio. La base de trabajo es la local de Docker; el uso de Neon para los datos compartidos del equipo queda opcional en 9.7 (9.6 descartada por D81).
 
