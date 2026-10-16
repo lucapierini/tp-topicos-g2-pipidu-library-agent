@@ -11,13 +11,14 @@ cliente que lo consuma. Además, el sistema solo corre en local (D81) y hoy `doc
 ## What Changes
 
 - Se agrega una SPA en `web/` con Vite + React + TypeScript + Tailwind + shadcn/ui, inicializada con
-  `npx shadcn@latest init --preset b1Vq8M9Q --template vite` (estilo `luma`, color base `neutral`, tema
+  `npx shadcn@latest init --preset b1Vq8M9Q --template vite` (estilo `base-luma`, color base `neutral`, tema
   `sky`, íconos `hugeicons`, fuente Inter) desde dentro de `web/`.
 - La SPA permite escribir una consulta, ver el progreso en vivo (`classified`, `tool_call`, `tool_result`,
   `step`, `composing`, `heartbeat`), y mostrar la respuesta final con su fuente (`sources`), el tipo
   (`answer_kind`) y la evidencia (`evidence`: SQL y filas, o fragmentos citados). Permite cancelar una consulta en curso.
-- `docker-compose.yml` pasa a levantar todo junto con `docker compose up -d --wait`: `db`, `api` (imagen
-  `runtime` existente) y `web` (build de la SPA servida por nginx), con healthchecks y orden de arranque.
+- `docker-compose.yml` pasa a levantar todo junto con `docker compose up -d --wait`: `db`, `ingest` (la ingesta
+  del RAG), `api` (imagen `runtime` existente) y `web` (build de la SPA servida por nginx), con healthchecks y
+  orden de arranque.
 - Se agrega `docker/Dockerfile.web` (build multi-etapa de Node a estáticos servidos por nginx, que además
   hace de proxy hacia la API para que el navegador use un único origen).
 - Se reformula R-7.0 en `consulta-por-api` (change `agente-y-tools`) y se actualizan las specs y docs que
@@ -45,9 +46,9 @@ en el servidor (v1 de un solo turno).
   `README.md`.
 - **Specs/decisiones**: `openspec/changes/agente-y-tools/specs/consulta-por-api/spec.md` (R-7.0) y la
   documentación `TP/` que cite D80 / R-7.0 (coordinar con ese change, que sigue abierto).
-- **Dependencias**: Node 24 y npm para construir `web/`; imagen `nginx:alpine`; en runtime del usuario,
+- **Dependencias**: Node 24 y npm para construir `web/`; imagen `nginx:1.29-alpine`; en runtime del usuario,
   solo Docker.
 - **Riesgos**: el compose necesita `GEMINI_API_KEY` y credenciales en `.env`; el `agente-y-tools` sigue en
-  curso (35/58 tareas), por lo que hay que evitar conflictos en `README.md` y `docker/Dockerfile`.
+  curso (38/60 tareas), por lo que hay que evitar conflictos en `README.md` y `docker/Dockerfile`.
 - **Fuera de alcance**: autenticación, historial persistente de conversaciones, multi-turno, despliegue en
   la nube (descartado por D81) y cambios al agente.

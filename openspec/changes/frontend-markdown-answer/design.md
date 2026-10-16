@@ -2,8 +2,8 @@
 
 ## Context
 
-`AnswerView` pone `result.answer` en un `BubbleContent` con `whitespace-pre-wrap`. El modelo responde en
-Markdown, así que se ven `*` y `**` literales. shadcn/ui no trae un componente de Markdown: las guías del skill
+`AnswerView` ponía `result.answer` en un `BubbleContent` con `whitespace-pre-wrap`. El modelo responde en
+Markdown, así que se veían `*` y `**` literales. shadcn/ui no trae un componente de Markdown: las guías del skill
 piden componer con los componentes existentes (`Table`, `Separator`, `Badge`), tokens semánticos (`text-muted-foreground`, `bg-muted`),
 `gap-*` en vez de `space-y-*` y `size-*`, y nada de HTML o estilos a mano que dupliquen un componente. Ya están
 instalados `Table` y `Separator`, y los íconos son de `hugeicons`. `web/` usa React 19, Vite y Tailwind v4 sin `@tailwindcss/typography`.
@@ -25,7 +25,7 @@ instalados `Table` y `Separator`, y los íconos son de `hugeicons`. `web/` usa R
    crudo sin `rehype-raw`, que no se agrega. Alternativas: `marked` + `dangerouslySetInnerHTML` (requiere sanitizar,
    descartada) y escribir un parser propio (descartada).
 2. **Un componente `Markdown` propio en `web/src/components/ask/markdown.tsx`** con el mapa `components` de
-   `react-markdown`: `table`/`thead`/`tbody`/`tr`/`th`/`td` → `Table*` de shadcn; `ul`/`ol` con `flex flex-col gap-1` y `list-inside`/`pl-5`;
+   `react-markdown`: `table`/`thead`/`tbody`/`tr`/`th`/`td` → `Table*` de shadcn; `ul`/`ol` con `flex flex-col gap-1` y `list-disc`/`list-decimal` con `pl-5`;
    `p` con `leading-relaxed`; `code` en línea con `bg-muted`; `pre` con el estilo de la evidencia SQL (`rounded-xl bg-muted p-3 font-mono text-xs`);
    `blockquote` con borde `border-l-2` y `text-muted-foreground`; `a` con `target="_blank" rel="noreferrer noopener"`; `hr` → `Separator`;
    `h1`–`h4` con tamaños acotados al ancho de la burbuja. Solo clases de layout y tokens semánticos, sin colores crudos.
@@ -38,7 +38,7 @@ instalados `Table` y `Separator`, y los íconos son de `hugeicons`. `web/` usa R
 ## Risks / Trade-offs
 
 - **Dependencias nuevas** (~40 KB gzip) → aceptable para una SPA local; versiones fijadas por `package-lock.json`.
-- **Texto plano con saltos simples**: Markdown junta líneas contiguas en un párrafo → se usa `remark-breaks` solo si la verificación
-  con respuestas reales lo muestra necesario; se decide en la tarea 3.1.
+- **Texto plano con saltos simples**: Markdown junta líneas contiguas en un párrafo → se agregó `remark-breaks`
+  (D95): el test de la tarea 3.1 verifica que un `answer` en texto plano conserva sus saltos de línea.
 - **XSS**: sin `rehype-raw`, el HTML crudo se escapa; se cubre con un test (R-8.11) y los enlaces `javascript:` los neutraliza `react-markdown` por defecto.
 - **Respuestas largas** (como la agrupación por editorial) → la lista crece dentro de la burbuja; el scroll lo da `MessageScroller`.

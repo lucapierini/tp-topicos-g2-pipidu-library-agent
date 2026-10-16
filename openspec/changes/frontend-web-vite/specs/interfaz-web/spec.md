@@ -47,7 +47,7 @@ ninguna fuente como respuesta antes del evento `result` (R-7.2, Art. 4).
 
 #### Scenario: indicador de espera
 - **WHEN** la consulta está en curso
-- **THEN** la interfaz muestra un texto de estado con efecto shimmer, sin spinner
+- **THEN** la interfaz muestra un texto de estado animado, sin spinner
 
 #### Scenario: espera larga
 - **GIVEN** una consulta que tarda más de 5 segundos sin eventos de progreso
