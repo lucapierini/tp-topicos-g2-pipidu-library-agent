@@ -45,9 +45,9 @@ del mismo contenido.
 | D7 | Estado de vencimiento calculado, no almacenado | R-3.12 |
 | D8 | Regeneración de SQL limitada a 2 intentos | R-3.10, R-5.7, R-6.4 |
 | D9 | psycopg2 directo, no SQLAlchemy | R-3.5, R-3.6 |
-| D10 | Chunking por cláusula, tope 800 / solapamiento 150 | R-4.3 |
-| D11 | Idempotencia por `sha256(contenido)` | R-4.5 |
-| D12 | top-k = 5, umbral 0.35 calibrado con medición | R-4.4, R-4.8 |
+| D10 | Chunking por cláusula, tope 800 / solapamiento 150 — el tope y el solapamiento se reemplazaron por D97 | R-4.3 |
+| D11 | Idempotencia por `sha256(contenido)` — precisada por D66 y D98: el hash es el del archivo y el unique es `(documento_id, chunk_index)` | R-4.5 |
+| D12 | top-k = 5, umbral calibrado con medición: 0.35 hipótesis, 0.67 (D85), vigente 0.64 provisorio (D88) | R-4.4, R-4.8 |
 | D13 | Índice HNSW `vector_cosine_ops` | T3.4 |
 | D14 | Usuario dedicado `agent_ro` + timeout + `search_path` | R-3.5 |
 | D15 | `max_steps = 6`, temperatura 0, timeout de API 30 s | Art. 7, R-6.2 |
@@ -121,7 +121,7 @@ del mismo contenido.
 | D93 | La interfaz gráfica vuelve como cliente de la API (`web/`, change `frontend-web-vite`); la API sigue siendo el único acceso al agente y la imagen `runtime` no sirve interfaz | R-7.0, D80 |
 | D83 | Riesgo de promoción aceptado explícitamente: margen 2/5, desviación del requisito de nube y confirmación con la cátedra abierta | criterios de promoción 1 y 3, D18, D80, D81 |
 | D84 | La fuente se declara solo en `sources`; el texto de `answer` no lleva línea de fuente | R-5.2, R-2.6, D58 |
-| D85 | Umbral de similitud 0.67, calibrado con consultas reales | R-4.6, D12 |
+| D85 | Umbral de similitud 0.67, calibrado con consultas reales — precisado por D88 (0.64, poblaciones que se solapan) | R-4.6, D12 |
 | D86 | Se elimina el manual de uso del corpus del RAG | R-4.6, D16, D85 |
 | D87 | Ampliación del catálogo y de las reseñas | D85 |
 | D88 | Umbral provisorio 0.64 y editoriales en el prompt | D87 |
@@ -133,12 +133,13 @@ del mismo contenido.
 | D95 | La SPA presenta `answer` como Markdown (`react-markdown` + `remark-gfm`), sin HTML crudo | R-8.11, R-8.7 |
 | D96 | La frase de los mensajes fijos va en el título | T7.8, D94 |
 | D97 | El chunking es por sección `## `, sin tope de tokens ni solapamiento | R-4.3, R-4.7, R-9.4 |
+| D98 | La clave de idempotencia es el `sha256` del PDF en `documentos`; el unique del fragmento es `(documento_id, chunk_index)` (precisa D11) | R-4.5, D66 |
 
 ## Risks / Trade-offs
 
 - **[Text-to-SQL poco preciso]** → mitigación: few-shot de 8 ejemplos en el prompt + golden set de 5 casos SQL que se ejecuta en CI local con `pytest`.
 - **[Clasificación de fuente inestable por no determinismo]** → mitigación: temperatura 0, golden set de 13 casos, umbral de aceptación ≥11/13 documentado en `TP/05-validacion.md`.
-- **[Retrieval devuelve fragmentos irrelevantes y el agente alucina]** → mitigación: umbral de similitud mínimo (R-4.6) obliga a declarar "no se encontró información relevante".
+- **[Retrieval devuelve fragmentos irrelevantes y el agente alucina]** → mitigación: umbral de similitud mínimo (R-4.6) obliga a declarar "no se encontró información relevante". Con los documentos reales el margen es angosto y las poblaciones de casos con y sin cobertura se solapan (D87, D88): el umbral es solo un filtro grueso y la segunda barrera es el clasificador.
 - ~~**[Cloud SQL sin pgvector disponible en la región/cuota]**~~ — descartado por D81 (entorno local).
 - **[Margen mínimo de promoción: 2 de 5 sin nube]** → mitigación: el tercer criterio es la interfaz gráfica, la SPA de `web/` sobre la API (D80, D93); confirmar con la cátedra; registrado en D83.
 - **[Un modelo local valida el flujo pero no es el modelo definitivo]** → mitigación: R-2.8 separa
@@ -157,7 +158,9 @@ del mismo contenido.
 1. `docker compose up` con Postgres + pgvector en local.
 2. `db/schema.sql` (esquema compartido normalizado, D65) y `db/migrations/001_agent_runs.sql`; roles
    `agent_ro` y `agent_logger` con `db/init/10-roles.sh`. Todo se levanta con `docker compose up -d --wait`.
-3. `db/seed_data.py --seed 42` → `db/dump.sql` para el entregable.
+3. Datos: `db/seed.sql` (catálogo completo, 70 libros) lo carga `docker compose up` con `DEV_SEED=full`
+   (D91); `DEV_SEED=1` carga `db/dev_seed.sql` (7 libros, el que usan los tests de integración). El
+   entregable `db/dump.sql` está pendiente (T2.8).
 4. `rag/ingest.py` sobre los PDFs.
 5. **Validación del flujo contra un modelo local** (`LLM_MODEL=openai/<id>`, `LLM_API_BASE=http://127.0.0.1:<puerto>/v1`):
    confirma clasificación previa, tools por fuente, límites y composición sin consumir cuota (R-2.8, D56).
@@ -172,5 +175,5 @@ del mismo contenido.
 
 Las tres preguntas que había se cerraron: evaluación del golden set (D16), semántica temporal
 (D6) y origen de los PDFs (D19). Lo que queda abierto son decisiones y mediciones, y vive en `tasks.md`
-por su ID: 9.11, 9.13 y 2.9. Lo único numérico es el umbral de similitud definitivo (D12), que se cierra
-con la medición de T3.6.
+por su ID: 9.11, 9.13 y 2.9. El umbral de similitud se cerró con evidencia en 0.67 (D85) y quedó en 0.64
+provisorio (D88); T3.6 sigue abierta hasta que la calibración separe las poblaciones.
