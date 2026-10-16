@@ -5,9 +5,9 @@ subtitle: "Trabajo Práctico Integrador, AI Engineering (UCSE, Ingeniería en In
 
 # 1. Resumen
 
-**Pipidu Library Agent** es un agente de IA para una biblioteca universitaria. Recibe consultas en lenguaje natural (castellano o inglés) y las resuelve a partir de dos fuentes: una **base de datos relacional** (libros, autores, socios y préstamos) y un **repositorio de documentos PDF** consultado con RAG (reglamento, políticas y reseñas). El agente decide en cada consulta qué fuente usar, o si usa ambas, e informa de dónde sale la respuesta o declara que no hay información suficiente.
+**Pipidu Library Agent** es un agente de IA para una biblioteca universitaria. Recibe consultas en lenguaje natural (castellano o inglés) y las resuelve a partir de dos fuentes: una **base de datos relacional** (libros, autores, socios y préstamos) y un **repositorio de documentos PDF** consultado con RAG, generación aumentada por recuperación (reglamento, políticas y reseñas). El agente decide en cada consulta qué fuente usar, o si usa ambas, e informa de dónde sale la respuesta o declara que no hay información suficiente.
 
-El sistema cumple los cuatro criterios de aprobación del enunciado y tres de los cinco criterios de promoción:
+El sistema cumple los cuatro criterios técnicos de aprobación del enunciado (los otros dos son este informe y el coloquio) y tres de los cinco criterios de promoción:
 
 | Criterio | Cómo se cumple |
 |---|---|
@@ -16,10 +16,10 @@ El sistema cumple los cuatro criterios de aprobación del enunciado y tres de lo
 | RAG sobre 2 PDF como mínimo | 6 PDF, 44 fragmentos, búsqueda vectorial con pgvector |
 | Código documentado y reproducible | `README.md` con un único comando de arranque (`docker compose up -d --build --wait`) |
 | Promoción: framework agéntico | Smolagents (`ToolCallingAgent`) |
-| Promoción: interfaz gráfica | SPA propia en React con progreso en vivo, fuente y evidencia |
-| Promoción: SDD | OpenSpec con cuatro changes, constitución, especificaciones y registro de decisiones |
+| Promoción: interfaz gráfica | SPA (aplicación web de una sola página) propia en React con progreso en vivo, fuente y evidencia |
+| Promoción: SDD (Spec Driven Development) | OpenSpec con cuatro changes, constitución, especificaciones y registro de decisiones |
 
-No se despliega en la nube ni se integra LangSmith: el sistema corre en entorno local (decisión D81), y la trazabilidad propia vive en la tabla `agent_runs`.
+No se despliega en la nube ni se integra LangSmith: el sistema corre en entorno local (decisión D81), y la trazabilidad propia vive en la tabla `agent_runs`, que no se presenta como el criterio de observabilidad.
 
 # 2. Modelo de datos
 
@@ -54,8 +54,8 @@ Todas las tablas del dominio superan el mínimo de 15 registros que pide el enun
 - **Autores en tabla puente (D64).** Un libro puede tener varios autores, por eso no existe `libros.autor_id`: la relación N:M se resuelve con `libros_autores`.
 - **El vencimiento no se almacena (D7).** `prestamos.estado` solo vale `activo` o `devuelto`, ligado por un CHECK a `fecha_devolucion_real` (`devuelto` si y solo si hay fecha real). El estado `vencido` se calcula en la vista `v_prestamos_estado`, que expone `estado_calculado` y `dias_atraso`. Un valor almacenado se desactualizaría cada día; la vista no.
 - **Integridad en la base, no en el código.** Los CHECK, las claves foráneas (`ON DELETE RESTRICT` en el dominio, `CASCADE` en la tabla puente y en los fragmentos) y los índices por clave foránea hacen que los datos inválidos no entren, sin depender del agente.
-- **Un solo motor para datos y vectores (D13).** pgvector corre sobre el mismo PostgreSQL. El índice vectorial es HNSW con distancia coseno (`vector_cosine_ops`).
-- **Roles con mínimo privilegio (D14, D63).** El agente se conecta como `agent_ro`, que solo hace `SELECT` sobre los objetos permitidos. El registro de trazabilidad lo escribe otro rol, `agent_logger`, que solo puede hacer `INSERT` sobre `agent_runs`, y que `agent_ro` no puede leer.
+- **Un solo motor para datos y vectores.** pgvector corre sobre el mismo PostgreSQL. El índice vectorial es HNSW (grafo jerárquico de vecinos cercanos) con distancia coseno (`vector_cosine_ops`, D13). Con 44 fragmentos el índice no hace falta por rendimiento: se mantiene porque es el diseño que escala y porque se puede demostrar.
+- **Roles con mínimo privilegio (D14, D63).** El agente se conecta como `agent_ro`, que solo hace `SELECT` sobre los objetos permitidos. El registro de trazabilidad lo escribe otro rol, `agent_logger`, que solo puede hacer `INSERT` sobre `agent_runs` (y leer el `id` generado), y que `agent_ro` no puede leer.
 
 ## 2.3 Datos
 
@@ -84,9 +84,9 @@ Se levanta con Docker Compose: `db` (PostgreSQL con pgvector), `ingest` (una sol
 
 ## 3.2 Flujo de una consulta
 
-1. **Entrada.** `POST /ask` recibe la pregunta; una consulta vacía devuelve 422 sin abrir el flujo. La respuesta es un flujo de eventos SSE: `start`, `classified`, `tool_call`, `tool_result`, `step`, `composing`, `heartbeat` (cada 5 s), `result` y, ante una falla inesperada, `error` (D75).
+1. **Entrada.** `POST /ask` recibe la pregunta; una consulta vacía devuelve 422 sin abrir el flujo. La respuesta es un flujo de eventos SSE (Server-Sent Events): `start`, `classified`, `tool_call`, `tool_result`, `step`, `composing`, `heartbeat` (cada 5 s), `result` y, ante una falla inesperada, `error` (D75).
 2. **Clasificación antes de cualquier herramienta (D3).** Una llamada al modelo con salida estructurada obligatoria devuelve la fuente (`sql`, `rag`, `hybrid` o `none`), el idioma y si la consulta pide escribir datos. La clasificación se emite primero, de modo que el agente solo recibe las herramientas de la fuente elegida.
-3. **Pedidos de escritura.** Si la consulta pide crear, modificar o borrar datos, no se ejecuta ninguna herramienta ni se llama al modelo para redactar: el agente responde con un mensaje fijo, porque es de solo lectura.
+3. **Pedidos de escritura.** Si la consulta pide crear, modificar o borrar datos, solo interviene el clasificador: no se ejecuta ninguna herramienta ni se llama al modelo para redactar, y el agente responde con un mensaje fijo, porque es de solo lectura.
 4. **Ejecución.** El agente (`ToolCallingAgent`, D2) usa `execute_sql`, `retrieve_documents` o ambas. En un híbrido consulta primero la base, luego los documentos y recién después concluye, separando el hecho verificado de la conclusión.
 5. **Composición.** El agente redacta en el idioma de la pregunta. La fuente nunca va dentro del texto: viaja aparte en `sources`, y la evidencia (sentencia SQL, filas, fragmentos con documento y ubicación) en `evidence` (D84).
 6. **Ausencia de información.** Si ninguna fuente tiene la respuesta, el agente lo declara en lugar de inventar (`answer_kind = no_coverage`).
@@ -94,7 +94,7 @@ Se levanta con Docker Compose: `db` (PostgreSQL con pgvector), `ingest` (una sol
 
 ## 3.3 Herramienta SQL
 
-El contrato está invertido (D1): **el agente genera el SQL y la herramienta solo lo valida y lo ejecuta**. Así la herramienta se prueba sin credenciales de API y cada sentencia queda atribuida al modelo. La ejecución tiene `statement_timeout` de 10 s, devuelve a lo sumo 50 filas y permite hasta 2 intentos de regeneración si la validación rechaza la sentencia (D8).
+El contrato está invertido (D1): **el agente genera el SQL y la herramienta solo lo valida y lo ejecuta**. Así la herramienta se prueba sin credenciales de API y cada sentencia queda atribuida al modelo. La ejecución tiene `statement_timeout` de 10 s, devuelve a lo sumo 50 filas y permite hasta 2 intentos de generación (una regeneración) si la validación rechaza la sentencia (D8).
 
 ## 3.4 Herramienta RAG
 
@@ -109,23 +109,23 @@ La SPA (`web/`: React 19, TypeScript, Vite, Tailwind y shadcn/ui) es un cliente 
 El SQL lo escribe un modelo de lenguaje, así que se trata como entrada no confiable. Hay cuatro capas, de modo que ninguna falla individual abra una escritura o una fuga:
 
 1. **Prompt.** Restringe la generación a un único `SELECT` sobre el esquema documentado, con la semántica temporal (cuatrimestre, zona horaria) resuelta desde la configuración (D6).
-2. **Validación estática con `sqlglot` (D4).** Se parsea la sentencia con modo estricto en lugar de usar expresiones regulares, que no distinguen CTE, subconsultas ni identificadores entre comillas. Se rechaza todo lo que no sea lectura (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `COPY`, `FOR UPDATE`, escrituras dentro de una CTE), los puntos y coma y los comentarios; se resuelven tablas y columnas **por ámbito** contra una lista blanca (D38); `SELECT *` se expande a las columnas permitidas, para que no se alcance una columna no documentada; las funciones permitidas son una lista cerrada (se rechazan `pg_sleep`, `pg_read_file`, `dblink`, etc.); y se limita la complejidad (sin `WITH RECURSIVE` y con un tope de tablas por consulta).
-3. **Rol `agent_ro`.** Aunque la validación fallara, la base solo concede `SELECT` sobre los objetos permitidos, con `statement_timeout` y `search_path` restringido (D14). El repositorio documental queda fuera del alcance del SQL (D21).
+2. **Validación estática con `sqlglot` (D4).** Se parsea la sentencia con modo estricto en lugar de usar expresiones regulares, que no distinguen expresiones de tabla común (CTE), subconsultas ni identificadores entre comillas. Se rechaza todo lo que no sea lectura (`INSERT`, `UPDATE`, `DELETE`, `DROP`, `COPY`, `FOR UPDATE`, escrituras dentro de una CTE), los puntos y coma y los comentarios; se resuelven tablas y columnas **por ámbito** contra una lista blanca (D38); `SELECT *` se expande a las columnas permitidas, para que no se alcance una columna no documentada; las funciones permitidas son una lista cerrada (se rechazan `pg_sleep`, `pg_read_file`, `dblink`, etc.); y se limita la complejidad (sin `WITH RECURSIVE` y con un tope de tablas por consulta).
+3. **Rol `agent_ro`.** Aunque la validación fallara, la base solo concede `SELECT` sobre los objetos permitidos, con `statement_timeout` y `search_path` restringido (D14). Las tablas del repositorio documental quedan fuera del alcance del SQL por la lista blanca (D21); el rol puede leerlas porque la herramienta de recuperación las necesita.
 4. **Falla cerrada.** Una sentencia rechazada nunca abre conexión; cualquier error interno de la validación se informa como rechazo.
 
 La sentencia que se registra y se muestra al usuario es la **normalizada**, la que realmente se ejecutó; la original del modelo se conserva para la auditoría.
 
 # 5. Decisiones técnicas principales
 
-El registro completo, con fecha, alternativa descartada y motivo de cada decisión, está en `TP/CHANGELOG.md`. Las más relevantes:
+El registro completo, con fecha, alternativa considerada y motivo de cada decisión, está en `TP/CHANGELOG.md`. Las más relevantes:
 
-| Decisión | Alternativa descartada | Motivo |
+| Decisión | Alternativa considerada | Motivo |
 |---|---|---|
 | D1 El agente genera el SQL; la herramienta valida y ejecuta | La herramienta recibe la pregunta y llama al modelo | Se puede probar sin credenciales y el SQL queda atribuido |
 | D2 `ToolCallingAgent` | `CodeAgent` | `CodeAgent` exige un ejecutor de código y agrega una superficie de ejecución que el agente no necesita |
 | D3 Clasificación con salida estructurada, antes de las herramientas | Instrucción en texto libre | La fuente es verificable y el agente solo recibe las herramientas que corresponden |
 | D4 Validación con `sqlglot` | Expresiones regulares | Distinguen mal CTE, subconsultas e identificadores |
-| D7 Vencimiento calculado en una vista | Guardar el estado `vencido` | Un valor almacenado se desactualiza |
+| D7 Vencimiento calculado en una vista | Guardar el estado `vencido` | Evita que la misma pregunta dé resultados distintos según el momento de ejecución: un valor almacenado se desactualiza |
 | D9 `psycopg2` directo | SQLAlchemy | Hay un único `SELECT` dinámico; un ORM entorpece la validación estática y el control del timeout |
 | D10 Fragmentos por sección | Cortes de largo fijo | Un fragmento por artículo permite citar la ubicación |
 | D12 Umbral 0,64 y top-k 5 | Valor arbitrario sin medir | Calibrado con 21 casos sobre los documentos reales |
@@ -134,7 +134,7 @@ El registro completo, con fecha, alternativa descartada y motivo de cada decisi�
 | D56 Proveedor configurable | Modelo fijo en el código | Se valida el flujo con un modelo local sin gastar cuota |
 | D77 Consultas en serie | Concurrencia sin control | Cada backend guarda una sola conexión: dos consultas simultáneas se pisarían |
 | D80 La API es el único acceso al agente | Interfaz Streamlit en el mismo servicio | El frontend consume el agente por HTTP y la evidencia viaja en `result.evidence` |
-| D81 Ejecución local | Despliegue en la nube | Decisión del equipo; el sistema corre con Docker |
+| D81 Ejecución local | Despliegue en la nube | Decisión del equipo: el sistema se entrega para ejecutarse en entorno local con Docker y el criterio de despliegue en la nube no se presenta |
 | D84 La fuente nunca va en el texto | Línea «Fuente:» al pie | La interfaz ya la muestra desde `sources`; si estaba en el texto, aparecía duplicada |
 | D93 SPA propia en su servicio, con proxy del mismo origen | Interfaz Streamlit en el servicio del agente (D80) | En Docker la web llega a la API por un proxy del mismo origen, sin CORS, y cubre el criterio de promoción «Interfaz gráfica» |
 
@@ -142,7 +142,7 @@ El registro completo, con fecha, alternativa descartada y motivo de cada decisi�
 
 ## 6.1 Pruebas automáticas
 
-La suite tiene **460 pruebas** que corren sin base, sin credenciales y sin modelo (`pytest -q`); además hay pruebas de integración y con el modelo real que se ejecutan aparte. Cubren: la validación de SQL (más de 160 casos, entre sentencias que deben rechazarse y que deben aceptarse), la herramienta SQL, la recuperación, el clasificador, el orquestador, los contratos, la trazabilidad, la API (flujo SSE, cancelación, CORS) y la imagen de Docker. El frontend tiene sus propias pruebas con Vitest. Se agregan `ruff` para el estilo y `openspec validate --all --strict` para las especificaciones.
+La suite tiene **460 pruebas** que corren sin base, sin credenciales y sin modelo (`pytest -q` termina con `460 passed, 38 deselected`); además hay pruebas de integración y con el modelo real que se ejecutan aparte. Cubren: la validación de SQL (más de 160 casos, entre sentencias que deben rechazarse y que deben aceptarse), la herramienta SQL, la recuperación, el clasificador, el orquestador, los contratos, la trazabilidad, la API (flujo SSE, cancelación, CORS) y la imagen de Docker. El frontend tiene sus propias pruebas con Vitest. Se agregan `ruff` para el estilo y `openspec validate --all --strict` para las especificaciones.
 
 Las **pruebas de sanitización** son casos adversos con rechazo sin ejecución contra la base: `DELETE` y `DROP`, sentencias apiladas, comentarios, tablas fuera de la lista blanca (`agent_runs`, `pg_catalog`), columnas no documentadas, funciones de efecto (`pg_sleep`, `pg_read_file`, `dblink`), `FOR UPDATE`, CTE homónimas que ocultan una tabla prohibida, escrituras dentro de una CTE y cadenas mal formadas. Un mismo conjunto verifica que las consultas legítimas, incluidas las que usan `CASE`, `EXISTS` o `string_agg`, sí se acepten.
 
@@ -159,17 +159,17 @@ Medición de aceptación del 2026-10-16, con el modelo definitivo (`gemini-3.1-f
 | Pregunta sin cobertura sin invocar herramientas | 1 de 1 |
 | Clasificación emitida antes de las herramientas | 12 de 13 |
 | Contenido correcto (SQL, RAG, híbridos y sin cobertura) | 12 de 13 (5/5, 3/4, 3/3 y 1/1) |
-| Sentencias SQL rechazadas por el validador | 0 de 8 |
+| Casos con alguna sentencia SQL rechazada por el validador | 0 de 8 |
 | Consultas registradas en `agent_runs` | 13 de 13 |
 | Casos en inglés (B1 y B2) | 2 de 2, con respuesta en inglés |
 
-El único caso fallido (G9, el horario de la biblioteca) no se debió a una clasificación equivocada: el servicio de Gemini devolvió un error 503 por alta demanda durante la llamada del clasificador. Repetido solo, G9 clasificó `rag`, recuperó el reglamento y respondió bien. Las otras mediciones versionadas del modelo definitivo dieron 13 de 13 en la clasificación (corridas del 2026-10-10 y 2026-10-11). Las corridas con un modelo local sirven para validar el flujo y no cuentan como aceptación (R-2.8).
+El único caso fallido (G9, el horario de la biblioteca) no se debió a una clasificación equivocada: el servicio de Gemini devolvió un error 503 por alta demanda durante la llamada del clasificador. Repetido solo, G9 clasificó `rag`, recuperó el reglamento y respondió bien. Las otras mediciones versionadas del modelo definitivo (2026-10-10 y 2026-10-11) dieron 13 de 13 en la clasificación, pero con base y recuperación falsas o simuladas: miden la clasificación y no la calidad del contenido real. Sin contar la repetición de G9, el resultado formal de la corrida de aceptación es 12 de 13, por encima del mínimo de 11; es una única medición, con temperatura 0. Las corridas con un modelo local sirven para validar el flujo y no cuentan como aceptación (R-2.8).
 
-**Latencia.** En esta corrida, la mediana por consulta fue de 5,7 s y los casos sin cobertura o de una sola fuente tardaron entre 1,5 y 12,5 s. Los híbridos tardan más porque combinan varias llamadas (7 a 67 s). Los valores máximos de las corridas versionadas (por ejemplo 146 s en B2) corresponden a esperas de la API ante la cuota y los picos de demanda, no al cómputo del agente (ver `TP/05-validacion.md`, sección 4.1).
+**Latencia.** En esta corrida, la mediana por pregunta fue de 5,7 s. Diez de las quince preguntas (sin cobertura o de una sola fuente) tardaron entre 1,5 y 12,5 s y las tres híbridas entre 7 y 67 s, porque combinan varias llamadas. Las más lentas fueron G9 (30 s, con el error 503 de la API) y B2 (146 s, sin error). No se midió por separado cuánto de ese tiempo es espera de la API, aunque `TP/05-validacion.md` (sección 4.1) documenta esperas por cuota y reintentos en corridas anteriores.
 
 ## 6.3 Calibración del umbral del RAG
 
-El umbral se midió con 21 preguntas sobre los documentos reales: 15 con cobertura (similitud entre 0,646 y 0,802) y 6 sin cobertura (entre 0,597 y 0,649). Las dos poblaciones **se solapan** apenas, así que ningún valor las separa del todo. Se fijó **0,64**: es un filtro grueso, y la segunda barrera es el clasificador junto con la regla de declarar la ausencia de información cuando los fragmentos no responden.
+El umbral se midió con 21 preguntas sobre los documentos reales: 15 con cobertura (similitud entre 0,646 y 0,802) y 6 sin cobertura (entre 0,597 y 0,649). El peor positivo (0,646) queda por debajo del mejor negativo (0,649): ningún umbral separa del todo ambas poblaciones. El archivo de calibración registra 0,67 como el valor probado en esa corrida; se fijó **0,64** para no perder el positivo más bajo (0,646). Dos de los seis negativos (0,649 y 0,644) superan ese umbral, así que es un filtro grueso y la segunda barrera es el clasificador junto con la regla de declarar la ausencia de información cuando los fragmentos no responden.
 
 ## 6.4 Ejemplos de consultas
 
@@ -183,7 +183,7 @@ FROM v_prestamos_estado AS v JOIN socios AS s ON s.id = v.socio_id
 WHERE v.estado_calculado = 'vencido' ORDER BY v.dias_atraso DESC
 ```
 
-> Los socios que tienen préstamos vencidos son: Roberto Medina, con 15 días de atraso; Tomás Romero, con 11; Juan Pérez, con 6; Facundo Torres, con 4; Nicolás Gómez, con 2.
+> Los socios que tienen préstamos vencidos son: Roberto Medina, con 15 días de atraso; Tomás Romero, con 11; Juan Pérez, con 6; Facundo Torres, con 4; Nicolás Gómez, con 2. *(La respuesta original los lista uno por línea.)*
 
 Fuente declarada: `sql`. El SQL usa la vista, porque el vencimiento no se guarda.
 
@@ -191,7 +191,7 @@ Fuente declarada: `sql`. El SQL usa la vista, porque el vencimiento no se guarda
 
 **Consulta RAG.** «¿Cuántos días tengo para devolver un libro antes de que me multen?» (clasificación `rag`, 5,7 s). Se recuperaron fragmentos de `reglamento_biblioteca.pdf` («Artículo 5. Multas por atraso», similitud 0,796; «Artículo 2. Plazos de préstamo», 0,742) y de `politicas_universidad.pdf`.
 
-> El plazo depende de tu categoría como socio. Alumnos: 14 días corridos. Docentes: 30 días corridos. […] Si el libro se devuelve después de esa fecha, se genera una multa por cada día de atraso.
+> El plazo para devolver un libro sin recibir una multa depende de tu categoría como socio. Alumnos: el préstamo es de 14 días corridos. Docentes: el préstamo es de 30 días corridos. […] Si el libro se devuelve después de esa fecha, se genera una multa de $200 por cada día de atraso y por cada libro. *(Extracto de la respuesta; […] marca lo omitido.)*
 
 Fuente declarada: `rag`. La interfaz muestra los fragmentos con su documento y ubicación.
 
@@ -201,11 +201,11 @@ Fuente declarada: `rag`. La interfaz muestra los fragmentos con su documento y u
 
 Fuentes declaradas: `sql` y `rag`.
 
-**Consulta en inglés.** «How many days do I have to return a book before I get fined?» El agente respondió en inglés, a partir del mismo reglamento en castellano: «Students: the loan period is 14 consecutive days. Teachers: 30 consecutive days.»
+**Consulta en inglés.** «How many days do I have to return a book before I get fined?» (clasificación `rag`, 146 s, la más lenta de la corrida). El agente respondió en inglés, a partir del mismo reglamento en castellano. Extracto: «Students: The loan period is 14 consecutive days. Teachers: The loan period is 30 consecutive days.»
 
 **Sin cobertura.** «¿Cuál es el precio del libro "Rayuela"?» El modelo de datos no registra precios, así que el agente no inventa un valor y responde con un mensaje fijo: «Busqué en la base y en los documentos y no encontré nada sobre eso. Probá con otra pregunta o con el título exacto del libro.» No invocó ninguna herramienta (1,5 s) y `sources` quedó vacío.
 
-**Pedido de escritura.** Una consulta que pide modificar datos no ejecuta ninguna herramienta ni llama al modelo para redactar; se responde con un mensaje fijo que explica que el agente es de solo lectura.
+**Pedido de escritura.** Una pregunta que pide modificar datos solo pasa por el clasificador: no ejecuta ninguna herramienta ni llama al modelo para redactar; se responde con un mensaje fijo que explica que el agente es de solo lectura.
 
 ## 6.5 Registro de trazabilidad
 
@@ -220,7 +220,7 @@ El agente atiende las consultas **en serie** (D77): cada una espera a que termin
 - **Alcance de solo lectura.** El agente no crea, modifica ni borra datos; lo declara cuando se le pide.
 - **Un turno por consulta.** No recibe historial: la interfaz conserva la conversación solo en pantalla.
 - **Umbral del RAG grueso.** Las similitudes de los casos con y sin cobertura se solapan; la ausencia de información se apoya además en el clasificador y en la regla de no responder con conocimiento propio.
-- **Cuota de la API.** La latencia depende de la cuota de la API de Gemini y de sus picos de demanda (como el error 503 de G9); el sistema reintenta, pero una consulta puede tardar minutos.
+- **Cuota de la API.** La latencia depende de la API de Gemini (cuota y picos de demanda, como el error 503 de G9); el sistema reintenta, pero una pregunta puede tardar minutos (B2 tardó 146 s).
 - **Sin autenticación.** El servicio corre en entorno local; exponerlo públicamente exigiría control de acceso.
 - **Cobertura documental.** El conocimiento del RAG se limita a los seis documentos incluidos.
 
