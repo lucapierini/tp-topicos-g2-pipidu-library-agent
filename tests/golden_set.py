@@ -1,7 +1,7 @@
 """Golden set como fixtures compartidas (T9.1, D16).
 
-Se define **antes** de implementar el agente, para que los dos integrantes codeen
-contra la misma definición de "terminado".
+Es la definición compartida de "terminado" para el agente: los tests y
+scripts/measure_golden.py la usan.
 
 Las afirmaciones van sobre **clasificación, SQL y filas**, nunca sobre la prosa
 generada por el modelo. La prosa se valida con la rúbrica manual de 3 criterios
@@ -22,7 +22,7 @@ SEED_ENTITIES = {
     "socio_apellido": "Pérez",
     "categoria": "Ciencias de la Computación",
     "editorial": "Sudamericana",
-    "libro_con_resena": "Cien años de soledad",   # tiene reseña en `resenas_libro_*.pdf`
+    "libro_con_resena": "Cien años de soledad",   # tiene reseña en `resenas_cien_anios_de_soledad.pdf`
     "libro_sin_precio": "Rayuela",                 # el modelo de datos no registra precios (G13)
 }
 SOCIO = f"{SEED_ENTITIES['socio_nombre']} {SEED_ENTITIES['socio_apellido']}"
@@ -61,7 +61,7 @@ def _both_sources(out: dict) -> bool:
 
     Las filas pueden ser 0: "sin resultados" es una respuesta válida (R-3.8) y, en un híbrido, la
     última sentencia suele ser una verificación (p. ej. "¿tiene vencidos?") cuya respuesta correcta es
-    vacía. Exigir filas daba por fallida a G11 aun con la respuesta correcta.
+    vacía. Exigir filas rechazaría a G11 aun con la respuesta correcta.
     """
     return {"sql", "rag"} <= set(out.get("sources", [])) and bool(out.get("sql")) and bool(out.get("chunks"))
 
@@ -176,4 +176,3 @@ CALIBRATION_EXTRA: list[GoldenCase] = [
 ]
 
 ACCEPTANCE_MIN = 11  # ≥ 11/13 (R-2.1)
-ACCENT = ACCEPTANCE_MIN  # alias del nombre anterior

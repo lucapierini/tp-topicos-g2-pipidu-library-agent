@@ -1,7 +1,7 @@
 """Golden set (T9.1, R-2.1, D16).
 
 Dos niveles:
-1. Forma del set y de sus `check`: se verifica hoy, sin agente.
+1. Forma del set y de sus `check`: se verifica sin agente.
 2. Exactitud de clasificación: corre con `pytest -m llm` contra el agente real sobre backends
    falsos, con `GEMINI_API_KEY` o un servidor local (`LLM_API_BASE`). En la suite offline se salta.
 
@@ -88,7 +88,7 @@ def test_hybrid_check_requires_evidence_from_both_sources() -> None:
 
 def test_hybrid_check_accepts_an_empty_result_from_an_executed_statement() -> None:
     # R-3.8: "sin filas" es una respuesta válida. G11 verifica si el socio top tiene vencidos y la
-    # respuesta correcta es 0 filas; exigir filas la daba por fallida (corrida 2026-10-11).
+    # respuesta correcta es 0 filas; exigir filas rechazaría la respuesta correcta.
     g11 = _case("G11").check
     answer = {"sources": ["sql", "rag"], "sql": "SELECT 1 WHERE false", "rows": [],
               "chunks": [{"document": "reglamento_biblioteca.pdf"}]}
@@ -97,7 +97,7 @@ def test_hybrid_check_accepts_an_empty_result_from_an_executed_statement() -> No
 
 
 def test_english_cases_are_extra_and_do_not_change_the_acceptance_denominator() -> None:
-    # El enunciado pide castellano o inglés (R-5.1); R-2.1 se mide sobre los 13 casos de siempre.
+    # El enunciado pide castellano o inglés (R-5.1); R-2.1 se mide sobre los 13 casos del golden set.
     assert len(GOLDEN_SET) == 13
     assert [c.id for c in BILINGUAL_SET] == ["B1", "B2"]
     assert not {c.id for c in BILINGUAL_SET} & {c.id for c in GOLDEN_SET}
@@ -144,9 +144,9 @@ def test_classification_is_normalized_before_comparing() -> None:
 def live_agent():
     """El agente real (Gemini + smolagents + validador de SQL) sobre backends falsos.
 
-    No hay base ni PDFs todavía, así que las filas y los fragmentos son canned: estos tests
-    afirman lo que el orquestador controla (clasificación, herramientas invocadas, orden, SQL que
-    pasa el validador), no el contenido. Los `check` de contenido corren cuando exista el seed.
+    Las filas y los fragmentos son falsos: estos tests afirman lo que el orquestador
+    controla (clasificación, herramientas invocadas, orden, SQL que pasa el validador), no el
+    contenido. Los check de contenido se evalúan en scripts/measure_golden.py --db --rag-real.
     """
     pytest.importorskip("smolagents")
     pytest.importorskip("google.genai")

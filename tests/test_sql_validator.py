@@ -27,18 +27,18 @@ ADVERSARIAL = [
     ("S8", "SELECT * FROM usuarios_vistos", TABLE_NOT_ALLOWED),
     ("S9", "CALL some_procedure()", SQL_NOT_READONLY),
     # S10–S12 son casos de ejecución/regeneración en `TP/05-validacion.md` (tests de executor).
-    # IDs alineados con esa tabla; antes S10–S12 repetían S13–S15 y contaban doble.
+    # Los IDs siguen la tabla de TP/05-validacion.md.
     ("S13", "SELECT * FROM agent_runs", TABLE_NOT_ALLOWED),
     ("S14", "SELECT * FROM documentos_embeddings", TABLE_NOT_ALLOWED),
     ("S15", "SELECT secreto FROM socios", COLUMN_NOT_ALLOWED),
-    # Fix 2 (R-3.13): funciones de efecto, no de cálculo sobre el dominio.
+    # R-3.13: funciones de efecto, no de cálculo sobre el dominio.
     ("S16", "SELECT id, pg_sleep(10) FROM libros", FUNCTION_NOT_ALLOWED),
     ("S17", "SELECT pg_read_file('/etc/passwd') FROM libros", FUNCTION_NOT_ALLOWED),
     ("S18", "SELECT dblink('dbname=x', 'SELECT 1') AS r FROM libros", FUNCTION_NOT_ALLOWED),
     ("S16b", "SELECT pg_advisory_lock(1) FROM libros", FUNCTION_NOT_ALLOWED),
-    # Fix 3 (R-3.2): lock de fila no es lectura.
+    # R-3.2: lock de fila no es lectura.
     ("S19", "SELECT id FROM libros FOR UPDATE", SQL_NOT_READONLY),
-    # Fix 5: parse estricto, sin degradación a Command.
+    # D29: parse estricto, sin degradación a Command.
     ("S20", "SELECT FROM WHERE", SQL_NOT_READONLY),
 ]
 
@@ -70,7 +70,7 @@ def test_valid_queries_pass(sql: str) -> None:
     assert result.ok, f"no debería rechazarse: {result.error} ({result.detail})"
 
 
-# --- Fix 1: la whitelist de columnas deja de ser evadible por `SELECT *` (R-3.4) ---
+# --- R-3.4 / D25: la whitelist de columnas se aplica también a `SELECT *` ---
 
 def test_star_expands_to_whitelisted_columns() -> None:
     result = validate_sql("SELECT * FROM socios")
@@ -95,7 +95,7 @@ def test_qualified_star_expands_only_its_own_table() -> None:
     assert "prestamos." not in result.normalized_sql
 
 
-# --- Fix 4: identificadores normalizados (case-sensitive false rejection) ---
+# --- D28: identificadores normalizados (case-sensitive false rejection) ---
 
 def test_quoted_identifier_is_not_falsely_rejected() -> None:
     result = validate_sql('SELECT id FROM "Libros"')

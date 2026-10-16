@@ -215,7 +215,7 @@ def test_rag_answer_cites_document_and_location() -> None:
 @pytest.mark.parametrize("language", ["es", "en"])
 def test_the_answer_declares_the_language_of_the_question(language) -> None:
     # R-5.1: la evidencia registra el idioma con el que se compuso la respuesta (el enunciado pide
-    # castellano o inglés). La fuente ya no viaja en el texto (R-5.2, D84): solo en `sources`.
+    # castellano o inglés). La fuente no viaja en el texto (R-5.2, D84): solo en `sources`.
     agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], language=language)
 
     answer = agent.answer("Which books are on loan?" if language == "en" else "¿Qué libros hay prestados?")
@@ -259,8 +259,8 @@ def test_a_parenthetical_source_citation_is_removed_from_the_answer(model_text: 
 
 
 def test_the_detected_language_reaches_the_model_prompt() -> None:
-    # La etiqueta fija sale en inglés por plantilla, pero la prosa la escribe el modelo: sin la
-    # instrucción en el prompt respondía en castellano a una consulta en inglés (corrida 2026-10-11).
+    # La etiqueta fija sale en inglés por plantilla, pero la prosa la escribe el modelo: el prompt
+    # instruye el idioma; sin esa instrucción el modelo tiende al castellano.
     agent, runner, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], language="en")
 
     agent.answer("Which books are on loan?")

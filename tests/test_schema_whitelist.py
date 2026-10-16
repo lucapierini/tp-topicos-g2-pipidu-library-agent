@@ -31,7 +31,7 @@ def _table_columns(text: str, table: str) -> set[str]:
     return {n for n in names if n.upper() not in _NOT_COLUMNS}
 
 
-@pytest.mark.skipif(not SCHEMA.exists(), reason="db/schema.sql todavía no existe (T2.1)")
+@pytest.mark.skipif(not SCHEMA.exists(), reason="falta db/schema.sql")
 def test_whitelist_matches_schema_sql() -> None:
     text = _schema_text()
     tables = set(re.findall(r"CREATE TABLE(?: IF NOT EXISTS)?\s+(\w+)", text, flags=re.I))
@@ -53,7 +53,7 @@ def test_whitelist_matches_schema_sql() -> None:
         )
 
 
-@pytest.mark.skipif(not SCHEMA.exists(), reason="db/schema.sql todavía no existe (T2.1)")
+@pytest.mark.skipif(not SCHEMA.exists(), reason="falta db/schema.sql")
 def test_view_columns_exist_in_the_view_definition() -> None:
     text = _schema_text()
     view = re.search(r"CREATE VIEW\s+v_prestamos_estado\s+AS\s+(.*?);", text, re.I | re.S)

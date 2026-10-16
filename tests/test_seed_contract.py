@@ -150,14 +150,11 @@ def ro_cursor():
 
 @pytest.mark.integration
 @pytest.mark.xfail(
-    reason="T2.5 abierta: el seed de desarrollo (`dev_seed.sql`) no llega a 15 filas; falta `db/seed_data.py` (T2.4)",
+    reason="con DEV_SEED=1 (dev_seed.sql) las tablas tienen menos de 15 filas; con seed.sql se cumple",
     strict=False,
 )
 def test_volume_min_rows_per_domain_table(ro_cursor) -> None:
-    """T2.5: >= 15 filas en cada tabla del dominio. Con `dev_seed.sql` no se cumple: es evidencia, no se arregla.
-
-    Queda como `xfail` para que `pytest -m integration` no quede en rojo por un faltante conocido que es de
-    otro integrante; cuando el seed entregable llegue pasa a XPASS y hay que quitar el marcador.
+    """T2.5: >= 15 filas en cada tabla del dominio. Se cumple con db/seed.sql; con db/dev_seed.sql no.
     """
     counts: dict[str, int] = {}
     for table in DOMAIN_TABLES:

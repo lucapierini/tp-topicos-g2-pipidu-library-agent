@@ -17,8 +17,8 @@ def system_prompt(label="hybrid", tools=("execute_sql", "retrieve_documents")) -
 
 
 def test_the_prompt_states_the_language_of_the_answer_explicitly() -> None:
-    # R-5.1: con una instrucción genérica ("en el idioma de la consulta") el modelo respondió en
-    # castellano a dos preguntas en inglés, porque las herramientas y el prompt están en castellano.
+    # R-5.1: el prompt instruye el idioma de la respuesta; una instrucción genérica no alcanza
+    # porque las herramientas y el prompt están en castellano.
     english = render_system_prompt(load_config(), classification="sql", tools=["execute_sql"], language="en")
     spanish = render_system_prompt(load_config(), classification="sql", tools=["execute_sql"], language="es")
 
@@ -116,7 +116,7 @@ def test_the_classifier_prompt_asks_for_the_structured_fields() -> None:
 
 
 def test_reviews_are_steered_to_the_documents_not_to_sql() -> None:
-    # Caso real (D90): "libros con reseña" se clasificó `sql` y el modelo inventó la tabla `reseñas`.
+    # D90: las consultas sobre reseñas no se resuelven con SQL.
     assert "reseñas" not in {t.lower() for t in ALLOWED_TABLES}
     classifier = render_classifier_prompt()
     assert "no son datos de la base" in classifier and "`rag`" in classifier

@@ -108,7 +108,7 @@ def test_timeout_devuelve_error_tipado() -> None:
 
 
 def test_timeout_se_reconoce_por_sqlstate_57014() -> None:
-    # `25000` (el valor anterior) es `invalid_transaction_state`, no el de `statement_timeout`.
+    # `25000` es `invalid_transaction_state`, no el de `statement_timeout`.
     class Other(Exception):
         pgcode = "25000"
 
@@ -160,7 +160,7 @@ def test_rollback_despues_de_cada_ejecucion() -> None:
 
 
 def test_timeout_ms_se_aplica_antes_de_la_consulta() -> None:
-    # D46: el parámetro dejó de ser ignorado.
+    # D46: `timeout_ms` se aplica con `SET LOCAL` antes de la consulta.
     conn = FakeConn()
     SqlExecutor(load_config(), conn).execute_sql("SELECT id FROM socios", timeout_ms=1)
     assert conn.executed[0] == "SET LOCAL statement_timeout = 1"

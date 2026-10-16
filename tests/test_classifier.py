@@ -122,7 +122,7 @@ def test_litellm_classifier_wraps_transport_errors() -> None:
 
 
 def test_the_underlying_reason_is_not_hidden_behind_the_exception_class() -> None:
-    # Con solo el nombre de la clase, un `finish_reason=length` parecía una clasificación inválida.
+    # El error conserva el motivo real (finish_reason=length).
     completion = FakeCompletion(None, error=RuntimeError("structured output was incomplete (finish_reason=length)"))
     with pytest.raises(ClassificationError, match="finish_reason=length"):
         LiteLLMClassifier(local_config(), completion=completion).classify("q")
@@ -163,7 +163,7 @@ def test_gemini_classifier_wraps_transport_errors() -> None:
 
 
 def test_gemini_classifier_keeps_the_reason_of_an_api_error(monkeypatch) -> None:
-    # `ClientError` a secas escondió una cuota diaria agotada: 10 de 13 casos parecían fallas del modelo.
+    # El error conserva el motivo (cuota agotada).
     monkeypatch.setattr("agent.retry.time.sleep", lambda _seconds: None)
     quota = RuntimeError("429 RESOURCE_EXHAUSTED: Quota exceeded, limit: 20, model: gemini-3-flash")
     with pytest.raises(ClassificationError, match="429 RESOURCE_EXHAUSTED.*limit: 20"):
