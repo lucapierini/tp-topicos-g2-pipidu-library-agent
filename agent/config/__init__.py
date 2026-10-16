@@ -54,6 +54,10 @@ class Config:
     # RAG (D12, R-4.4, R-4.8)
     top_k: int
     similarity_threshold: float
+    # Estrategia de recuperación (R-4.11, D100): `rerank` = el modelo juzga si cada fragmento contesta (1 llamada
+    # por consulta documental) y el puntaje combinado se corta con `rerank_threshold`; `dense` = solo coseno.
+    rag_strategy: str
+    rerank_threshold: float
 
     # Herramienta SQL (R-3.6, D8, D15)
     max_rows: int
@@ -103,6 +107,8 @@ def load_config() -> Config:
         timezone=_env("APP_TIMEZONE", "America/Argentina/Buenos_Aires"),
         top_k=_env_int("RAG_TOP_K", "5"),
         similarity_threshold=_env_float("RAG_SIMILARITY_THRESHOLD", "0.64"),
+        rag_strategy=_env("RAG_STRATEGY", "rerank").strip().lower(),
+        rerank_threshold=_env_float("RAG_RERANK_THRESHOLD", "0.40"),
         max_rows=_env_int("SQL_MAX_ROWS", "50"),
         statement_timeout_ms=_env_int("SQL_STATEMENT_TIMEOUT_MS", "10000"),
         max_sql_attempts=_env_int("SQL_MAX_ATTEMPTS", "2"),

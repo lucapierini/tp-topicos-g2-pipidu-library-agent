@@ -34,6 +34,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from agent.tools.reranker import (  # noqa: E402
+    DENSE_HIGH,
+    DENSE_LOW,
+    RERANK_MAX,
+    build_prompt,
+    normalize_dense,
+    parse_relevance,
+    rerank_score,
+)
+from agent.tools.reranker import GeminiReranker as ProductionReranker  # noqa: E402
 from scripts.calibrate_threshold import auc, build_cases, pick_thresholds, sweep  # noqa: E402
 
 def build_validation_cases():
@@ -46,8 +56,6 @@ def build_validation_cases():
 
 TOP_K = 5
 ALPHAS = (0.5, 0.6, 0.7, 0.8, 0.9)
-DENSE_LOW, DENSE_HIGH = 0.50, 0.85   # rango observado de la similitud de coseno: se lleva a [0, 1]
-RERANK_MAX = 3                       # escala del re-ranking: 0 = no se relaciona … 3 = contesta directo
 PREFIX = 6                           # raíz tosca: "préstamo" y "préstamos" comparten "presta"
 
 _STOPWORDS = frozenset("""
@@ -97,10 +105,6 @@ def coverage(query_tokens: list[str], chunk_tokens: set[str], idf: dict[str, flo
 # --------------------------------------------------------------------------- puntajes (puros)
 
 
-def normalize_dense(similarity: float) -> float:
-    return min(1.0, max(0.0, (similarity - DENSE_LOW) / (DENSE_HIGH - DENSE_LOW)))
-
-
 def hybrid(dense: float, lexical: float, alpha: float) -> float:
     return alpha * normalize_dense(dense) + (1 - alpha) * lexical
 
@@ -110,38 +114,7 @@ def best_chunk(chunks: list[dict], key: Callable[[dict], float]) -> dict:
 
 
 def rerank_prompt(question: str, chunks: list[dict]) -> str:
-    body = "\n\n".join(f"[{i}] ({c['document']}, {c['location']})\n{c['text']}" for i, c in enumerate(chunks))
-    return f"Pregunta: {question}\n\nFragmentos:\n\n{body}"
-
-
-RERANK_SYSTEM = """Sos un evaluador de relevancia para un buscador de documentos de una biblioteca universitaria.
-Dada una pregunta y unos fragmentos numerados, puntuá cada fragmento de 0 a 3 según si CONTIENE la información que
-la pregunta pide:
-
-0 = no tiene relación con la pregunta.
-1 = es del mismo tema general, pero no contiene lo que se pregunta.
-2 = contiene parte de la respuesta.
-3 = contesta la pregunta de forma directa.
-
-Compartir el tema o el vocabulario (biblioteca, salas, libros, préstamos) NO alcanza para más de 1: hay que
-encontrar el dato pedido. No inventes ni supongas lo que no está escrito. Devolvé solo JSON:
-{"scores": [<un entero por fragmento, en el mismo orden>]}"""
-
-
-def parse_relevance(raw: str | None, n: int) -> list[int]:
-    """Valida la salida del re-ranking: `n` enteros en 0..RERANK_MAX; cualquier otra cosa es un error."""
-    try:
-        data = json.loads(raw or "")
-        scores = [int(round(float(s))) for s in data["scores"]]
-    except (TypeError, ValueError, KeyError) as exc:
-        raise ValueError(f"salida de re-ranking inválida: {exc}") from exc
-    if len(scores) != n:
-        raise ValueError(f"se esperaban {n} puntajes y llegaron {len(scores)}")
-    return [min(RERANK_MAX, max(0, s)) for s in scores]
-
-
-def rerank_score(relevances: list[int]) -> float:
-    return max(relevances) / RERANK_MAX if relevances else 0.0
+    return build_prompt(question, [(c["document"], c["location"], c["text"]) for c in chunks])
 
 
 def rerank_plus_dense(relevance: float, dense: float, weight: float = 0.7) -> float:
@@ -246,69 +219,23 @@ class CachedEmbedder:
 
 
 class GeminiReranker:
-    """Una llamada por consulta con sus fragmentos candidatos. Los resultados se guardan en un caché JSON."""
+    """El re-ranker de producción más un caché JSON: la medición es repetible y no vuelve a gastar cuota."""
 
     def __init__(self, config, cache_path: Path | None = None, client=None) -> None:
         self.cfg = config
-        self._client = client
+        self._inner = ProductionReranker(config, client)
         self.cache_path = cache_path
         self.cache: dict[str, list[int]] = {}
         self.calls = 0
         if cache_path and cache_path.exists():
             self.cache = json.loads(cache_path.read_text(encoding="utf-8"))
 
-    def _get_client(self):
-        if self._client is None:
-            from google import genai
-            from google.genai import types
-
-            key = os.environ.get("GEMINI_API_KEY")
-            if not key:
-                raise SystemExit("Falta GEMINI_API_KEY (Art. 9: se lee del entorno)")
-            self._client = genai.Client(
-                api_key=key, http_options=types.HttpOptions(timeout=self.cfg.api_timeout_s * 1000)
-            )
-        return self._client
-
-    TRANSIENT_ATTEMPTS = 8
-
-    def _generate_with_backoff(self, client, prompt, config, call_with_retry):
-        """`call_with_retry` cubre la cuota (429); acá se suman los 5xx transitorios (503 por alta demanda)."""
-        import time
-
-        for attempt in range(self.TRANSIENT_ATTEMPTS):
-            try:
-                return call_with_retry(
-                    lambda: client.models.generate_content(model=self.cfg.model, contents=prompt, config=config),
-                    retries=self.cfg.api_max_retries,
-                )
-            except Exception as exc:  # noqa: BLE001
-                code = getattr(exc, "code", None) or getattr(exc, "status_code", None)
-                if not (isinstance(code, int) and 500 <= code < 600) or attempt == self.TRANSIENT_ATTEMPTS - 1:
-                    raise
-                time.sleep(min(60, 5 * 2 ** attempt))
-
     def relevances(self, question: str, chunks: list[dict]) -> list[int]:
         key = question + "|" + ",".join(str(c["id"]) for c in chunks)
         if key in self.cache:
             return self.cache[key]
-        from google.genai import types
-
-        from agent.retry import call_with_retry
-
-        client = self._get_client()
-        config = types.GenerateContentConfig(
-            system_instruction=RERANK_SYSTEM, temperature=0, response_mime_type="application/json",
-            response_schema=types.Schema(
-                type=types.Type.OBJECT,
-                properties={"scores": types.Schema(type=types.Type.ARRAY, items=types.Schema(type=types.Type.INTEGER))},
-                required=["scores"],
-            ),
-        )
-        prompt = rerank_prompt(question, chunks)
-        response = self._generate_with_backoff(client, prompt, config, call_with_retry)
+        scores = self._inner.relevances(question, [(c["document"], c["location"], c["text"]) for c in chunks])
         self.calls += 1
-        scores = parse_relevance(response.text, len(chunks))
         self.cache[key] = scores
         if self.cache_path:
             self.cache_path.parent.mkdir(parents=True, exist_ok=True)

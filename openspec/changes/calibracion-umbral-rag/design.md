@@ -17,8 +17,8 @@ elegir el valor es una decisión de compromiso que necesita datos.
 
 **Non-Goals:**
 - Cambiar el valor del umbral (se mantiene 0.64, D88) ni el modelo de embeddings.
-- Adoptar búsqueda híbrida o re-ranking en `retrieve()`: se **miden** acá (R-4.10, D98) pero el equipo decide después,
-  con consultas nuevas. La reformulación de la consulta sigue fuera.
+- La búsqueda híbrida no se adopta (queda medida): el re-ranking la supera fuera de muestra. La reformulación de la
+  consulta sigue fuera.
 
 ## Decisions
 
@@ -82,15 +82,45 @@ en inglés y una definición; el falso positivo («descuentos en las multas para
 
 ### Validación fuera de muestra (D99)
 
-**Pendiente de la cuota diaria.** La corrida se cortó con 429 (`generate_content` 500/día y `embed_content` 1.000/día
-agotadas; se renuevan en unas 23 h). Hay re-ranking cacheado para 46 de las 63 consultas de validación; los vectores no se
-guardaban, así que el resto se completa en la próxima corrida:
-`python scripts/evaluate_retrieval.py` (retoma desde los cachés). Los números de la sección anterior siguen siendo de calibración.
+Los parámetros se eligieron con las 126 consultas de calibración y se aplicaron sin reajustar a 63 consultas nuevas
+(35 con cobertura y 28 sin ella, redactadas de forma coloquial y parafraseada):
+
+| Estrategia | AUC calibración | AUC validación | Falsos positivos validación (umbral de mejor F1) | F1 validación |
+|---|---|---|---|---|
+| Coseno (actual) | 0.983 | **0.912** | 9/28 | 0.84 |
+| Híbrido α=0.8 | 0.988 | 0.941 | 5/28 | 0.87 |
+| Re-ranking solo | 0.976 | 0.976 | 1/28 | 0.94 |
+| **Re-ranking + coseno** | 0.994 | **0.986** | **3/28 (1/28 con recall ≥ 95 %)** | **0.93 (0.96)** |
+
+Lectura: **la calibración sobreestimaba el coseno** —las preguntas coloquiales lo castigan más (AUC 0.983 → 0.912)— y la mejora
+del híbrido se reduce a la mitad. El re-ranking prácticamente no pierde: juzga si el fragmento contesta, y eso no depende de cómo
+se redacte la pregunta. Es lo único que se sostiene fuera de muestra.
+
+### Código de producción medido (D100)
+
+`scripts/measure_retrieval.py` ejecuta `RagRetriever.retrieve()` real (umbral de re-ranking 0.40, coseno 0.64):
+
+| Conjunto / estrategia | Recall | Perdidas | Falsos positivos | F1 | Mediana | p95 |
+|---|---|---|---|---|---|---|
+| Calibración / coseno | 1.00 | 0/77 | 10/49 | 0.94 | 1 ms | 2 ms |
+| Calibración / re-ranking | 0.97 | 2/77 | 1/49 | 0.98 | 893 ms | 1087 ms |
+| Validación / coseno | 0.91 | 3/35 | **13/28** | 0.80 | 2 ms | 3 ms |
+| Validación / re-ranking | 0.94 | 2/35 | **1/28** | 0.96 | 881 ms | 977 ms |
+
+189 llamadas al re-ranker, ninguna fallida. El costo es **~0.9 s más por consulta documental**. Quedan 2 perdidas en cada set
+(«qué son los code smells», «who wrote One Hundred Years of Solitude?», «qué es un apercibimiento», «batalla de los Campos del
+Pelennor»: el fragmento está en el top-5 pero el modelo no lo puntúa como respuesta) y 1 falso positivo en cada uno («descuentos
+en las multas para docentes», «los docentes pagan la mitad de multa»), que son los casos donde el reglamento sí dice que la
+multa es igual para todos, así que la etiqueta es discutible.
+
+15. **Se adopta el re-ranking (D100).** `retrieve()` usa por defecto `RAG_STRATEGY=rerank`: el modelo puntúa los 5 candidatos del
+    coseno y el corte usa el puntaje combinado (umbral 0.40). Devuelve los fragmentos con relevancia ≥ 1 ordenados por relevancia
+    y similitud. Si la llamada falla, la consulta vuelve al coseno. `RAG_STRATEGY=dense` conserva el comportamiento anterior.
 
 ## Risks / Trade-offs
 
 - **El set refleja los 6 documentos actuales** → al cambiar el corpus hay que recalibrar; los tests avisan si una etiqueta deja de ser válida.
 - **126 consultas siguen siendo pocas para fijar un decimal** → se informa la meseta de umbrales empatados, no un único valor, y el criterio de cada candidato.
-- **α, el rango de normalización y el umbral de cada estrategia se eligieron sobre este mismo set** → los números están optimistas; adoptar una estrategia exige confirmarla con consultas no vistas.
-- **El re-ranking suma una llamada al modelo por consulta** (latencia y cuota) y su calidad depende de un prompt y de un modelo → hay que decidir si el costo vale la mejora; el híbrido no cuesta llamadas.
+- **α, el rango de normalización y el umbral se eligieron con el set de calibración** → se confirmaron fuera de muestra (D99): el coseno se degradó y el re-ranking no. El 0.40 sale de la calibración y se mantuvo para la validación.
+- **El re-ranking suma ~0.9 s y una llamada al modelo por consulta documental** y depende de la cuota → si falla, esa consulta vuelve al coseno (R-4.11); `RAG_STRATEGY=dense` lo desactiva. El prompt y el modelo se midieron juntos: cambiar de modelo exige repetir `measure_retrieval.py`.
 - **Los negativos «difíciles» los elegimos nosotros** → pueden ser más fáciles o más difíciles que las preguntas reales; los registros de `agent_runs` son la fuente para ampliar el set.

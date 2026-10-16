@@ -1741,5 +1741,166 @@
   0,
   0,
   0
+ ],
+ "¿Hay un buzón para devolver libros fuera de horario?|15,16,12,9,5": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca organiza ferias del libro o actividades culturales?|15,3,1,16,7": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca organiza ferias del libro o actividades culturales?|15,3,16,1,7": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo rendir un examen en la sala de lectura?|4,14,2,1,3": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Me dan una constancia de que no adeudo libros?|2,5,3,10,16": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Me dan una constancia de que no adeudo libros?|2,5,10,3,16": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo fumar en el patio de la biblioteca?|1,4,3,2,15": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Los docentes pagan la mitad de multa por atraso?|12,9,10,5,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿De qué se trata Harry Potter y el prisionero de Azkaban?|36,17,18,40,42": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Quién es Batman en The Dark Knight Returns?|42,21,40,24,22": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿De qué trata Introduction to Algorithms?|24,21,22,23,1": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuál es la trama de Sandman?|17,18,38,34,33": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué cuenta El león, la bruja y el ropero?|36,17,18,38,42": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué cuenta El león, la bruja y el ropero?|36,17,18,33,38": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo está el dólar hoy?|12,18,9,19,17": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuál es la receta de las empanadas tucumanas?|26,28,32,12,25": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿A qué hora juega la selección?|15,16,18,17,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Ayudame a escribir un mail a mi profesor|7,5,12,9,21": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Ayudame a escribir un mail a mi profesor|21,7,5,12,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Can I print my thesis at the library?|1,3,2,7,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Do you have a wifi password for guests?|6,1,2,3,21": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "What is Dragon Ball Z about?|17,36,18,38,25": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "What is Dragon Ball Z about?|36,25,30,32,26": [
+  0,
+  0,
+  0,
+  0,
+  0
  ]
 }

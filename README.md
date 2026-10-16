@@ -119,6 +119,7 @@ bash scripts/replicate_neon.sh --check   # versión y objetos de Neon; sin --che
 python -m pytest -m integration          # permisos por rol, esquema vs whitelist, flujo con datos reales
 python scripts/measure_golden.py --db    # golden set contra la base local (registra en agent_runs)
 python scripts/measure_golden.py --db --rag-mock   # + recuperación simulada: contenido de los 13 casos, sin PDFs
+docker compose run --rm --entrypoint python agent scripts/measure_golden.py --db --rag-real   # + RAG real (pgvector + re-ranking); gasta cuota de Gemini
 python scripts/measure_golden.py --db --rag-mock --bilingual   # + 2 casos en inglés (no cuentan para R-2.1)
 python scripts/export_runs.py --last 15  # agent_runs -> TP/evidencia/ (antes de pytest -m integration, que la trunca)
 uvicorn api.app:app --port 8000          # API del agente (único acceso); el frontend apunta a http://127.0.0.1:8000
