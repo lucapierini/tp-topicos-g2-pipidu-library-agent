@@ -39,8 +39,8 @@
 ## 5. Documentación y specs
 
 - [x] 5.1 Reformular R-7.0 en `consulta-por-api` y actualizar las docs que excluían la interfaz, registrando D93 en `TP/CHANGELOG.md`; verificado con `openspec validate --strict` en ambos changes
-- [ ] 5.2 Actualizar `README.md` (arranque con `docker compose up -d --wait`, puertos, `npm run dev`, criterio "Interfaz gráfica") y `.env.example` (`WEB_PORT`, `API_PORT`, `API_ALLOWED_ORIGINS` para desarrollo); verificar siguiendo el README desde un checkout limpio
-  *El contenido ya está escrito en `README.md` y `.env.example`; falta el recorrido del README desde un checkout limpio, que hace el revisor. El criterio "Interfaz gráfica" de `TP/01` §8 sigue sin tildar hasta esa verificación.*
+- [x] 5.2 Actualizar `README.md` (arranque con `docker compose up -d --wait`, puertos, `npm run dev`, criterio "Interfaz gráfica") y `.env.example` (`WEB_PORT`, `API_PORT`, `API_ALLOWED_ORIGINS` para desarrollo); verificar siguiendo el README desde un checkout limpio
+  *Verificado el 2026-10-16 siguiendo el README desde un clon limpio del repositorio (`.env` con las cuatro variables): `docker compose up -d --build --wait` dejó `db`, `api` y `web` sanos e `ingest` en `Exited (0)` con «En la base: 6 documentos, 44 fragmentos»; `/health` respondió `ok`; las tres consultas del README respondieron por `/api/ask` de la web (SQL: 10 cómics de Marvel; RAG: `resenas_tolkien.pdf`; RAG: reglamento, 14 días). Camino de desarrollo: `pip install -r requirements-dev.txt`, 455 tests y ruff en verde, `uvicorn` en 8000, `npm install`, `npm run dev` (el proxy `/api` respondió) y 46 tests de vitest. Se usaron otros puertos y se quitó `container_name` en la copia de prueba porque había un `pipidu-db` en marcha. El criterio "Interfaz gráfica" de `TP/01` §8 sigue sin tildar hasta la prueba en navegador de 4.3.*
 - [x] 5.3 Ejecutar `python -m pytest -q`, `python -m ruff check .`, `npm test` y `npm run build` en `web/`; verificar que todo pasa
 
 ## Workflow follow-up
