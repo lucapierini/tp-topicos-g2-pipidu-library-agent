@@ -63,11 +63,11 @@ el registro con un rol que solo puede insertar. La herramienta SQL SHALL NO pode
 - **GIVEN** una consulta resuelta correctamente y la base de trazabilidad caída
 - **WHEN** el sistema intenta registrarla
 - **THEN** la respuesta se entrega igual, con su fuente y su evidencia
-- **AND** la respuesta consigna que el registro falló, y no se afirma que quedó registrada
+- **AND** la evidencia consigna que el registro falló, y no se afirma que quedó registrada
 
 #### Scenario: el rol de registro solo inserta
 - **GIVEN** el rol con el que se escribe `agent_runs`
-- **WHEN** intenta leer, modificar o borrar filas, o leer las tablas del dominio
+- **WHEN** intenta leer columnas que no sean `id`, modificar o borrar filas, o leer las tablas del dominio
 - **THEN** la base rechaza la operación por falta de permisos
 
 #### Scenario: la herramienta SQL no ve la trazabilidad
