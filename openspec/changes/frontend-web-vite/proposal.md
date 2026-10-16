@@ -14,7 +14,7 @@ cliente que lo consuma. Además, el sistema solo corre en local (D81) y hoy `doc
   `npx shadcn@latest init --preset b1Vq8M9Q --template vite` (estilo `base-luma`, color base `neutral`, tema
   `sky`, íconos `hugeicons`, fuente Inter) desde dentro de `web/`.
 - La SPA permite escribir una consulta, ver el progreso en vivo (`classified`, `tool_call`, `tool_result`,
-  `step`, `composing`, `heartbeat`), y mostrar la respuesta final con su fuente (`sources`), el tipo
+  `composing`, `heartbeat`), y mostrar la respuesta final con su fuente (`sources`), el tipo
   (`answer_kind`) y la evidencia (`evidence`: SQL y filas, o fragmentos citados). Permite cancelar una consulta en curso.
 - `docker-compose.yml` pasa a levantar todo junto con `docker compose up -d --wait`: `db`, `ingest` (la ingesta
   del RAG), `api` (imagen `runtime` existente) y `web` (build de la SPA servida por nginx), con healthchecks y

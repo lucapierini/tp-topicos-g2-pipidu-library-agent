@@ -49,7 +49,7 @@ el sistema corre en el entorno local de `docker compose`. Neon queda solo para l
 
 ## Decisions
 
-Las decisiones de este change se numeran `D-DB1…D-DB10` para no colisionar con `D1…D100` de
+Las decisiones de este change se numeran `D-DB1…D-DB10` para no colisionar con `D1…D101` de
 `TP/CHANGELOG.md`, que es el registro canónico; allí se asientan con alternativa descartada y motivo
 (entrada del 2026-10-13).
 

@@ -136,6 +136,7 @@ del mismo contenido.
 | D98 | La clave de idempotencia es el `sha256` del PDF en `documentos`; el unique del fragmento es `(documento_id, chunk_index)` (precisa D11) | R-4.5, D66 |
 | D99 | R-7.9 se cumple en la herramienta SQL (whitelist), no en los permisos del rol | R-7.9, R-3.4, D63 |
 | D100 | La fuente no aparece en ninguna forma dentro del texto de `answer` (ni línea ni cita entre paréntesis ni nombre de documento) | R-5.2, D84 |
+| D101 | La interfaz no muestra `step` ni ofrece reintento ante un `answer_kind` `error`; las specs R-8.2 y R-8.3 se ajustan | R-8.2, R-8.3, R-8.6 |
 
 ## Risks / Trade-offs
 
