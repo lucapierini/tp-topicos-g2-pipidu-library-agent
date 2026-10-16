@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-16T20:36:44+00:00",
+  "model": "gemini/gemini-3.1-flash-lite",
+  "api_base": null,
+  "config": {
+    "max_steps": 6,
+    "temperature": 0.0,
+    "max_sql_attempts": 2,
+    "api_max_retries": 3
+  },
+  "backends": {
+    "sql": "PostgreSQL local (rol agent_ro)",
+    "rag": "RagRetriever real: embeddings de Gemini sobre documentos_chunks (pgvector)",
+    "content_evaluated_for": [
+      "sql",
+      "rag",
+      "hybrid",
+      "none"
+    ]
+  },
+  "summary": {
+    "classification_correct": "1/1",
+    "acceptance_min": 11,
+    "hybrids_with_both_tools": "0/0",
+    "none_without_tools": "0/0",
+    "classified_before_tools": "1/1",
+    "classifier_errors": 0,
+    "valid_answers": "1/1",
+    "sql_content_ok": "no evaluado",
+    "content_ok": "1/1",
+    "content_ok_by_expected": {
+      "sql": "no evaluado",
+      "rag": "1/1",
+      "hybrid": "no evaluado",
+      "none": "no evaluado"
+    },
+    "runs_recorded": "1/1",
+    "cases_with_sql_rejected": "0/0",
+    "seconds_total": 8.1
+  },
+  "cases": [
+    {
+      "case_id": "G9",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 8.1,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 61,
+      "rows": 0,
+      "content_ok": true,
+      "language": "es"
+    }
+  ]
+}

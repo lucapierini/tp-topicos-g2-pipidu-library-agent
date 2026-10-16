@@ -10,7 +10,7 @@ contenido de cada caso se evalúa solo si sus fuentes no son falsas.
 
 Uso (desde la raíz del repo, con GEMINI_API_KEY en .env):
 
-    .venv/Scripts/python scripts/measure_golden.py [--out evidencia.json] [--only G1,G6] [--db] [--rag-mock] [--bilingual]
+    .venv/Scripts/python scripts/measure_golden.py [--out evidencia.json] [--only G1,G6] [--db] [--rag-mock | --rag-real] [--bilingual]
 """
 from __future__ import annotations
 
@@ -29,6 +29,7 @@ from agent.classifier import build_classifier  # noqa: E402
 from agent.config import load_config  # noqa: E402
 from agent.contracts import AgentAnswer, RagResult  # noqa: E402
 from agent.runs import InMemoryRunRecorder, PgRunRecorder  # noqa: E402
+from agent.tools.rag_tool import GeminiEmbedder, PgVectorStore, RagRetriever  # noqa: E402
 from agent.tools.sql_tool import SqlExecutor  # noqa: E402
 from tests.fakes import FakeConn, FakeRetriever, make_chunk  # noqa: E402
 from tests.golden_set import ACCEPTANCE_MIN, BILINGUAL_SET, GOLDEN_SET  # noqa: E402
@@ -63,16 +64,21 @@ class CaseReport:
         return self.got == self.expected
 
 
-def build_agent(use_db: bool = False, rag_mock: bool = False) -> LibraryAgent:
+def build_agent(use_db: bool = False, rag_mock: bool = False, rag_real: bool = False) -> LibraryAgent:
     """`use_db=True`: ejecuta el SQL contra la base local (rol `agent_ro`) y registra en `agent_runs`.
 
     `rag_mock=True`: la recuperación usa el corpus simulado de `tests/rag_fixture.py` (un `RagRetriever`
     real con embedder léxico); permite evaluar el contenido de los casos RAG e híbridos sin PDFs. Sin
     él, la recuperación devuelve siempre el mismo fragmento falso.
+
+    `rag_real=True`: la recuperación es la del sistema (embeddings de Gemini sobre `documentos_chunks`, que
+    debe estar ingestada).
     """
     cfg = load_config()
     conn = FakeConn(rows=CANNED_ROWS, columns=CANNED_COLUMNS)
-    if rag_mock:
+    if rag_real:
+        retriever = RagRetriever(GeminiEmbedder(cfg), PgVectorStore(cfg), cfg)
+    elif rag_mock:
         retriever = build_mock_retriever(cfg)
     else:
         retriever = FakeRetriever(RagResult(
@@ -190,6 +196,9 @@ def main() -> int:
     parser.add_argument("--rag-mock", action="store_true",
                         help="recuperación sobre el corpus simulado de tests/rag_fixture.py (sin PDFs); "
                              "evalúa el contenido de los casos RAG; no calibra ni mide retrieval real")
+    parser.add_argument("--rag-real", action="store_true",
+                        help="recuperación real (Gemini + pgvector sobre los PDFs ingestados); evalúa el "
+                             "contenido de los casos RAG e híbridos")
     parser.add_argument("--bilingual", action="store_true",
                         help="agrega los casos en inglés (B1, B2); no cuentan para el criterio R-2.1")
     args = parser.parse_args()
@@ -198,14 +207,15 @@ def main() -> int:
     pool = [*GOLDEN_SET, *(BILINGUAL_SET if args.bilingual else [])]
     cases = [c for c in pool if selected is None or c.id in selected]
 
-    agent = build_agent(use_db=args.db, rag_mock=args.rag_mock)
+    rag_available = args.rag_mock or args.rag_real
+    agent = build_agent(use_db=args.db, rag_mock=args.rag_mock, rag_real=args.rag_real)
     reports: list[CaseReport] = []
     print(f"modelo: {agent.cfg.llm_model} | api_base={agent.cfg.llm_api_base or '-'} | "
           f"max_steps={agent.cfg.max_steps} | temperature={agent.cfg.temperature}\n")
     for case in cases:
         report = run_case(
             agent, case,
-            with_content=content_evaluable(case.expected_classification, args.db, args.rag_mock),
+            with_content=content_evaluable(case.expected_classification, args.db, rag_available),
         )
         reports.append(report)
         mark = "OK " if report.classified_ok else "ERR"
@@ -235,14 +245,16 @@ def main() -> int:
             "config": {"max_steps": cfg.max_steps, "temperature": cfg.temperature,
                        "max_sql_attempts": cfg.max_sql_attempts, "api_max_retries": cfg.api_max_retries},
             "backends": {
-                "sql": ("PostgreSQL local (rol agent_ro, dev_seed.sql)" if args.db
+                "sql": ("PostgreSQL local (rol agent_ro)" if args.db
                         else "FakeConn (validador real)"),
-                "rag": ("corpus simulado tests/rag_fixture.py (RagRetriever real, embedder léxico; no "
+                "rag": ("RagRetriever real: embeddings de Gemini sobre documentos_chunks (pgvector)"
+                        if args.rag_real else
+                        "corpus simulado tests/rag_fixture.py (RagRetriever real, embedder léxico; no "
                         "mide retrieval semántico ni calibra el umbral)" if args.rag_mock
                         else "FakeRetriever (un fragmento fijo)"),
                 "content_evaluated_for": [
                     kind for kind in ("sql", "rag", "hybrid", "none")
-                    if content_evaluable(kind, args.db, args.rag_mock)
+                    if content_evaluable(kind, args.db, rag_available)
                 ],
             },
             "summary": summary,

@@ -27,6 +27,7 @@ La API (`POST /ask` con streaming SSE, `GET /health`) es el único acceso al age
 
 ```
 TP/            artefactos SDD (constitución, especificación funcional y técnica, validación, changelog, evidencia, enunciado)
+informe/       informe técnico (informe-tecnico.md y su PDF)
 openspec/      raíz operativa de SDD (project.md, config.yaml, changes/)
 db/            schema.sql, seed.sql (catálogo completo), dev_seed.sql (seed mínimo), migrations/, init/ (roles y carga inicial)
 rag/           documentos fuente (.md y pdf/), ingest.py (ingesta a pgvector) y build_pdfs.py
@@ -264,6 +265,7 @@ curl -N -X POST http://localhost:8080/ask -H "content-type: application/json" -d
 ```bash
 python scripts/measure_golden.py --out TP/evidencia/<corrida>.json   # mide R-2.1 con el modelo configurado
 python scripts/measure_golden.py --db --rag-mock                      # golden set contra la base local, recuperación simulada
+python scripts/measure_golden.py --db --rag-real                      # golden set contra la base y la recuperación reales (PDFs ingestados)
 python scripts/export_runs.py --last 15                               # agent_runs -> TP/evidencia/
 docker build -f docker/Dockerfile --target measure -t pipidu-measure . # imagen con los scripts de medición
 ```
@@ -276,7 +278,7 @@ Las variables de entorno están documentadas una por una en `.env.example`.
 ## Estado
 
 Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`): todas las tareas de los cuatro changes están terminadas. El agente, la API con streaming y cancelación, y la
-interfaz web (D93) están implementados. La clasificación con el modelo definitivo (`gemini-3.1-flash-lite`, D71) midió 13/13 casos correctos el 2026-10-10 y el 2026-10-11, sobre el
-mínimo de 11 (R-2.1); las dos corridas, la exportación de `agent_runs` y la calibración del umbral están en `TP/evidencia/`. Las specs se validan con
+interfaz web (D93) están implementados. La clasificación con el modelo definitivo (`gemini-3.1-flash-lite`, D71) midió 13/13 casos correctos el 2026-10-10 y el 2026-10-11 y 12/13 el 2026-10-16 (con la base y la recuperación reales; el caso fallido fue un 503 de la API y repetido solo clasificó bien), sobre el
+mínimo de 11 (R-2.1); las corridas, la exportación de `agent_runs` y la calibración del umbral están en `TP/evidencia/`. Las specs se validan con
 `openspec validate --all --strict` y los cuatro changes están en [`openspec/changes/`](openspec/changes/): `agente-y-tools`, `base-de-datos-neon`,
 `frontend-web-vite` y `frontend-markdown-answer`.

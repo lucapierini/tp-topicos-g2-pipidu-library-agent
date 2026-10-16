@@ -537,7 +537,7 @@ Estado real, verificada con `git ls-files`.
 tp-topicos-g2-pipidu-library-agent/
 ├── README.md
 ├── requirements.txt              # dependencias de ejecución
-├── requirements-dev.txt          # pytest, faker, ruff
+├── requirements-dev.txt          # pytest, ruff
 ├── pyproject.toml                # configuración de ruff
 ├── pytest.ini                    # marcadores `integration` y `llm` (D34)
 ├── .env.example
@@ -576,6 +576,7 @@ tp-topicos-g2-pipidu-library-agent/
 ├── web/                          # SPA Vite + shadcn/ui: cliente de la API (D93)
 ├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 ├── TP/                           # artefactos SDD legibles para la entrega
+├── informe/                      # informe técnico (informe-tecnico.md y su PDF)
 └── tests/
     ├── golden_set.py             # fixtures compartidas (D16)
     ├── fakes.py, rag_fixture.py, conftest.py
