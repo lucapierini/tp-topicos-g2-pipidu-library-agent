@@ -5,7 +5,7 @@
 > requiere acuerdo del grupo y queda registrado en `CHANGELOG.md`.
 >
 > **Versión:** 1.0 · **Fecha:** 2026-10-08
-> Art. 8 y 9 alineados con la ejecución local (D81, 2026-10-13).
+> Art. 8 y 9 alineados con la ejecución local (D81, 2026-10-13); Art. 8 con el arranque único de compose (D92, D93).
 
 ---
 
@@ -59,9 +59,9 @@ parámetro de configuración debe revalidarse contra el golden set.
 
 ## Art. 8 — Reproducibilidad
 
-Cualquier evaluador debe poder: `git clone` → `docker compose up` → `python -m rag.ingest` →
-`uvicorn api.app:app` (la API del agente; el frontend se levanta aparte). Si algo requiere una acción manual no documentada en el README, el
-criterio de aprobación está en riesgo.
+Cualquier evaluador debe poder: `git clone` → completar `.env` → `docker compose up -d --build --wait`, que
+levanta la base con el catálogo, ingesta el RAG (servicio `ingest`, D92) y arranca la API y la interfaz web (D93).
+Si algo requiere una acción manual no documentada en el README, el criterio de aprobación está en riesgo.
 
 ## Art. 9 — Sin secretos en el repositorio
 

@@ -16,7 +16,7 @@
 - **Fecha de entrega:** 16/10/2026 23:59 (GMT-03)
 - **Coloquio:** 23/10/2026 o 30/10/2026
 - **Objetivo de calificación:** Promoción directa
-- **Repositorio:** GitHub — `pipidu-library-agent`
+- **Repositorio:** GitHub — `tp-topicos-g2-pipidu-library-agent`
 
 ## 2. Dominio elegido
 
@@ -98,10 +98,10 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 ## 6. Requisitos no funcionales
 
-- **Reproducibilidad:** cualquier evaluador debe poder clonar el repo, seguir el README y levantar el sistema completo (BD + agente + API); el frontend se levanta aparte y apunta a la API.
+- **Reproducibilidad:** cualquier evaluador debe poder clonar el repo, seguir el README y levantar el sistema completo (BD + ingesta del RAG + API + interfaz web) con `docker compose up -d --build --wait` (D91, D92, D93).
 - **Documentación:** código comentado donde sea necesario, README claro con instrucciones de instalación y ejecución.
-- **Despliegue en entorno local:** el sistema se prepara para ejecutarse en entorno local (Docker con
-  Postgres + pgvector, `uvicorn api.app:app`), sin ningún servicio de nube (D81, que reemplaza a D18).
+- **Despliegue en entorno local:** el sistema se prepara para ejecutarse en entorno local (Docker Compose con
+  Postgres + pgvector, API del agente e interfaz web; la API también corre con `uvicorn api.app:app`), sin ningún servicio de nube (D81, que reemplaza a D18).
   El enunciado del curso pedía despliegue en la nube (GCP): el informe debe justificar la desviación y que
   el criterio de promoción 1 deja de estar cubierto.
 - **Trazabilidad SDD:** se documentará el proceso de desarrollo siguiendo Spec Driven Development (specs funcionales y técnicas, versionadas, previas a la implementación).
