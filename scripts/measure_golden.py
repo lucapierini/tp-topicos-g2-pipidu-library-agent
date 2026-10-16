@@ -1,6 +1,6 @@
-"""Mide el criterio de aceptación R-2.1 contra la API real, sin base ni PDFs (T6.3, T9.1).
+"""Mide el criterio de aceptación R-2.1 con el modelo real (Gemini o LiteLLM), sin base ni PDFs (T6.3, T9.1).
 
-Qué es real: el clasificador (Gemini), el loop del agente (smolagents + LiteLLM), el system prompt, el
+Qué es real: el clasificador (Gemini o LiteLLM según `LLM_MODEL`), el loop del agente (smolagents + LiteLLM), el system prompt, el
 validador estático de SQL y la composición de la respuesta.
 Qué es falso por defecto: las filas que devuelve la base y los fragmentos que devuelve la recuperación.
 Por eso **no** se evalúa el contenido, sino lo que el orquestador sí controla: clasificación,
@@ -10,7 +10,7 @@ contenido de cada caso se evalúa solo si sus fuentes no son falsas.
 
 Uso (desde la raíz del repo, con GEMINI_API_KEY en .env):
 
-    .venv/Scripts/python scripts/measure_golden.py [--out evidencia.json] [--only G1,G6] [--db] [--rag-mock]
+    .venv/Scripts/python scripts/measure_golden.py [--out evidencia.json] [--only G1,G6] [--db] [--rag-mock] [--bilingual]
 """
 from __future__ import annotations
 

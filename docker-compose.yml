@@ -67,7 +67,8 @@ services:
       INGEST_DATABASE_URL: ""   # fuerza PG*: nunca la URL de Neon que pueda haber en .env
       NEON_DATABASE_URL: ""
 
-  # El agente real (Gemini + SQL + RAG) contra la base local. Sin UI todavía (tarea 8.1): una pregunta por corrida.
+  # El agente real (Gemini + SQL + RAG) contra la base local, una pregunta por corrida. Perfil `tools`: no
+  # entra en `up`; la interfaz gráfica está en el servicio `web` (D93) y la API en `api` (D80).
   agent:
     profiles: ["tools"]
     image: pipidu-local   # la construye `ingest` (docker compose --profile tools build ingest)

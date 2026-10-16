@@ -1,3 +1,12 @@
+"""Prueba qué modelos de Gemini aceptan la clasificación con esquema JSON forzado (D50, D71).
+
+Llama a la API real una vez por modelo con una pregunta del dominio y un `response_schema`
+`{classification, question}`; imprime el JSON devuelto o el error. No escribe archivos ni abre base.
+
+Requiere `GEMINI_API_KEY`: `.env` se carga con `load_dotenv` al importar `agent.config`.
+
+    .venv/Scripts/python scripts/probe_llm.py
+"""
 import json
 import os
 

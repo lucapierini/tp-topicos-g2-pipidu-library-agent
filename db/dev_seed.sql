@@ -6,8 +6,9 @@
 -- hoy, truncar las tablas del dominio y recargar este archivo (no asertar días de atraso literales).
 -- Contiene las entidades que nombra el golden set (`tests/golden_set.py::SEED_ENTITIES`).
 --
--- El volumen exigido (>= 15 por tabla, T2.5) y la semilla fija los entrega `db/seed_data.py`: esto
--- solo existe para poder correr `pytest -m integration` y `scripts/measure_golden.py --db`.
+-- El volumen exigido (>= 15 por tabla, T2.5) y la semilla fija los entrega `db/seed_data.py` (pendiente, T2.4):
+-- este archivo llega a 3-11 filas por tabla, así que 2.5 sigue abierta. Esto solo existe para poder correr
+-- `pytest -m integration` y `scripts/measure_golden.py --db`.
 
 INSERT INTO categorias (nombre, descripcion) VALUES
   ('Ciencias de la Computación', 'Informática, sistemas y redes'),

@@ -1,13 +1,14 @@
 """Calibra el umbral de similitud con los documentos reales (T3.6, R-4.8, D12).
 
-El 0.35 inicial era una **hipótesis**; la calibración lo fijó en 0.67 (D85). Este script mide, contra los PDFs ya
-indexados en `documentos_embeddings`, la similitud máxima de cada prueba de retrieval:
+El 0.35 inicial era una **hipótesis**; la calibración lo fijó en 0.67 (D85) y D88 lo bajó a 0.64 (valor provisorio). Este script mide, contra los PDFs ya
+indexados en `documentos_chunks`, la similitud máxima de cada caso:
 
-- R1–R3 (consultas con cobertura): la similitud máxima debe quedar **por encima** del umbral.
-- R4 (sin cobertura): la similitud máxima debe quedar **por debajo**.
+- Casos con cobertura (`rag`): `RETRIEVAL_TESTS` (R1–R3), `CALIBRATION_EXTRA` (R9–R15) y las preguntas `rag` del
+  golden set y del set bilingüe. Su similitud máxima debe quedar **por encima** del umbral.
+- Casos sin cobertura (`none`): R4, R5–R8 y R16. Su similitud máxima debe quedar **por debajo**.
 
-Si la mayor similitud de R4 es menor que la menor de R1–R3, cualquier umbral entre las dos las separa y
-se propone el punto medio. Si se solapan, el umbral no puede separar los casos y se informa: hace
+Si la mayor similitud de los negativos es menor que la menor de los positivos, cualquier umbral entre las dos las
+separa y se propone el punto medio. Si se solapan, el umbral no puede separar los casos y se informa: hace
 falta otro modelo de embeddings, otro chunking o más casos negativos.
 
 El valor medido y esta salida se registran en `TP/CHANGELOG.md` (R-4.8).

@@ -4,6 +4,11 @@ Los PDFs generados se versionan en el repo (el enunciado exige PDFs), así que
 este script solo hace falta si se edita algún .md.
 Soporta el subconjunto de Markdown usado en los documentos: títulos (#, ##),
 listas (-, 1.), tablas simples, negritas (**x**) y párrafos.
+
+Requiere `fpdf2` (`rag/requirements.txt`) y una fuente TrueType Unicode del sistema (Arial en Windows,
+DejaVu Sans en Linux). Escribe un `.pdf` por cada `.md` y sobrescribe el anterior.
+
+    python rag/build_pdfs.py
 """
 import re
 import sys
