@@ -2,11 +2,10 @@
 
 ## Why
 
-El agente responde en Markdown (listas con `*`, **negritas**, *cursivas*, notas, a veces tablas), pero la SPA
-mostraba `answer` como texto plano con `whitespace-pre-wrap` (`AnswerView`). La persona ve los asteriscos
-literales y las listas sin formato, como en las consultas "libros con reseña", "reseña de Tolkien" y "libros
-agrupados por editorial". La interfaz es el criterio de promoción "Interfaz gráfica" (D93): una respuesta
-ilegible lo debilita.
+El agente responde en Markdown (listas con `*`, **negritas**, *cursivas*, notas, a veces tablas). Si la
+respuesta se mostrara como texto plano, la persona vería los asteriscos literales y las listas sin formato,
+como en las consultas "libros con reseña", "reseña de Tolkien" y "libros agrupados por editorial". La
+interfaz es el criterio de promoción "Interfaz gráfica" (D93): una respuesta ilegible lo debilita.
 
 ## What Changes
 
@@ -30,5 +29,5 @@ ilegible lo debilita.
 
 - `web/src/components/ask/answer-view.tsx` y un componente nuevo `web/src/components/ask/markdown.tsx`.
 - Dependencias de `web/`: `react-markdown`, `remark-gfm` y `remark-breaks`.
-- Tests de `web/` (`answer-view.test.tsx`); `README.md` y `TP/CHANGELOG.md` (decisión nueva) y `TP/05-validacion.md` si cita R-8.3.
+- Tests de `web/` (`answer-view.test.tsx`); `README.md` y `TP/CHANGELOG.md` (D95).
 - Sin cambios en `api/`, `agent/`, `db/` ni en Docker (la imagen `web` solo suma código estático).

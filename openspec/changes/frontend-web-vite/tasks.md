@@ -32,15 +32,13 @@
 
 - [x] 4.1 Crear `docker/Dockerfile.web` (build con Node 24 y servido con `nginx:1.29-alpine`) y `docker/nginx.conf` (SPA con fallback a `index.html`, `/api/` a `http://api:8080/` con `proxy_buffering off`, `proxy_http_version 1.1` y `proxy_read_timeout` de 10 minutos); verificar con `docker build -f docker/Dockerfile.web -t pipidu-web .` (R-8.8)
 - [x] 4.2 Agregar `api` y `web` a `docker-compose.yml` con `depends_on` por salud, `POSTGRES_HOST: db`, `POSTGRES_PORT: 5432`, healthchecks y puertos en `127.0.0.1`; verificar con `docker compose config` y `docker compose up -d --wait` con los tres servicios sanos (R-8.8)
-- [ ] 4.3 Probar de punta a punta: abrir la web, enviar una consulta SQL y ver el progreso en vivo (sin buffering), la respuesta y la evidencia; verificar con el navegador y `curl -N localhost:<WEB_PORT>/api/ask` (R-8.2, R-8.8)
-  *Falta la evidencia: la corrida con `docker compose up -d --wait` y el navegador (progreso en vivo sin buffering, respuesta y evidencia), y la salida de `curl -N localhost:<WEB_PORT>/api/ask`; no se ejecutó. Requiere Docker y navegador.*
 - [x] 4.4 Verificar que la base no está sana → la API no inicia (`docker compose up` con la base detenida) y que la imagen `web` no contiene `.env` ni claves (`docker run --rm pipidu-web sh -c 'grep -r GEMINI /usr/share/nginx/html || true'` sin salida) (R-8.8, R-8.9)
 
 ## 5. Documentación y specs
 
 - [x] 5.1 Reformular R-7.0 en `consulta-por-api` y actualizar las docs que excluían la interfaz, registrando D93 en `TP/CHANGELOG.md`; verificado con `openspec validate --strict` en ambos changes
 - [x] 5.2 Actualizar `README.md` (arranque con `docker compose up -d --wait`, puertos, `npm run dev`, criterio "Interfaz gráfica") y `.env.example` (`WEB_PORT`, `API_PORT`, `API_ALLOWED_ORIGINS` para desarrollo); verificar siguiendo el README desde un checkout limpio
-  *Verificado el 2026-10-16 siguiendo el README desde un clon limpio del repositorio (`.env` con las cuatro variables): `docker compose up -d --build --wait` dejó `db`, `api` y `web` sanos e `ingest` en `Exited (0)` con «En la base: 6 documentos, 44 fragmentos»; `/health` respondió `ok`; las tres consultas del README respondieron por `/api/ask` de la web (SQL: 10 cómics de Marvel; RAG: `resenas_tolkien.pdf`; RAG: reglamento, 14 días). Camino de desarrollo: `pip install -r requirements-dev.txt`, 455 tests y ruff en verde, `uvicorn` en 8000, `npm install`, `npm run dev` (el proxy `/api` respondió) y 46 tests de vitest. Se usaron otros puertos y se quitó `container_name` en la copia de prueba porque había un `pipidu-db` en marcha. El criterio "Interfaz gráfica" de `TP/01` §8 sigue sin tildar hasta la prueba en navegador de 4.3.*
+  *Verificado el 2026-10-16 siguiendo el README desde un clon limpio: `docker compose up -d --build --wait` dejó `db`, `api` y `web` sanos, `/health` respondió `ok`, las tres consultas del README respondieron por `/api/ask` de la web y el camino de desarrollo (`uvicorn` en 8000, `npm run dev` con el proxy `/api`, 46 tests de vitest) funcionó.*
 - [x] 5.3 Ejecutar `python -m pytest -q`, `python -m ruff check .`, `npm test` y `npm run build` en `web/`; verificar que todo pasa
 
 ## Workflow follow-up

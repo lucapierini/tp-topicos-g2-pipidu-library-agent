@@ -2,11 +2,12 @@
 
 ## Context
 
-`AnswerView` ponía `result.answer` en un `BubbleContent` con `whitespace-pre-wrap`. El modelo responde en
-Markdown, así que se veían `*` y `**` literales. shadcn/ui no trae un componente de Markdown: las guías del skill
+`AnswerView` muestra `result.answer` en un `BubbleContent` de la `Bubble`; el Markdown se interpreta con
+`react-markdown` para que los marcadores `*` y `**` no se vean como texto. shadcn/ui no trae un componente de
+Markdown: las guías del skill
 piden componer con los componentes existentes (`Table`, `Separator`, `Badge`), tokens semánticos (`text-muted-foreground`, `bg-muted`),
-`gap-*` en vez de `space-y-*` y `size-*`, y nada de HTML o estilos a mano que dupliquen un componente. Ya están
-instalados `Table` y `Separator`, y los íconos son de `hugeicons`. `web/` usa React 19, Vite y Tailwind v4 sin `@tailwindcss/typography`.
+`gap-*` en vez de `space-y-*` y `size-*`, y nada de HTML o estilos a mano que dupliquen un componente. `Table`
+y `Separator` están instalados, y los íconos son de `hugeicons`. `web/` usa React 19, Vite y Tailwind v4 sin `@tailwindcss/typography`.
 
 ## Goals / Non-Goals
 
@@ -32,13 +33,14 @@ instalados `Table` y `Separator`, y los íconos son de `hugeicons`. `web/` usa R
 3. **Se usa dentro de la `Bubble` actual** (variante `muted`), sin `whitespace-pre-wrap` y con `max-w-full` en la burbuja si hay tabla, para que
    la tabla haga scroll horizontal dentro de `Table` en vez de desbordar. Si sigue la regla de chat del skill, la burbuja no se reimplementa.
 4. **Solo `answer_kind: answer`.** `no_coverage` y `error` quedan en `Alert` como texto, y la evidencia no se toca (R-8.4).
-5. **Spec como delta de `interfaz-web`.** No hay spec principal todavía (los changes no están archivados): se agrega R-8.11 y se
-   archiva `frontend-web-vite` primero. Se registra en `TP/CHANGELOG.md` como D95 (D93 ya es la SPA).
+5. **Spec como delta de `interfaz-web`.** La capability no tiene spec principal: `frontend-web-vite` y este change
+   viven como deltas, y `frontend-web-vite` se archiva primero. Se agrega R-8.11 y se registra en
+   `TP/CHANGELOG.md` como D95 (D93 fija la SPA).
 
 ## Risks / Trade-offs
 
-- **Dependencias nuevas** (~40 KB gzip) → aceptable para una SPA local; versiones fijadas por `package-lock.json`.
-- **Texto plano con saltos simples**: Markdown junta líneas contiguas en un párrafo → se agregó `remark-breaks`
-  (D95): el test de la tarea 3.1 verifica que un `answer` en texto plano conserva sus saltos de línea.
+- **Dependencias nuevas** → aceptable para una SPA local; las versiones las fija `package-lock.json`.
+- **Texto plano con saltos simples**: Markdown junta líneas contiguas en un párrafo, así que
+  `remark-breaks` (D95) conserva los saltos de línea del `answer`; el test de la tarea 3.1 lo verifica.
 - **XSS**: sin `rehype-raw`, el HTML crudo se escapa; se cubre con un test (R-8.11) y los enlaces `javascript:` los neutraliza `react-markdown` por defecto.
 - **Respuestas largas** (como la agrupación por editorial) → la lista crece dentro de la burbuja; el scroll lo da `MessageScroller`.

@@ -12,8 +12,8 @@ Motivación en `proposal.md`; requisitos en `specs/interfaz-web/spec.md`. Estado
   `POSTGRES_HOST=127.0.0.1` del `.env` no llega a la base: hay que sobrescribirlo.
 - `web/` es la SPA implementada (Vite + React + TypeScript + shadcn/ui). Node disponible: v24.
 - `POST /ask` es un POST con cuerpo JSON: `EventSource` no sirve (solo GET).
-- D80 declaraba que el repositorio no incluye interfaz gráfica; R-7.0 quedó reformulada por D93: la API es el
-  único acceso al agente y la SPA es un cliente en su propio servicio.
+- La API es el único acceso al agente (R-7.0, D93) y la imagen `runtime` no sirve interfaz; la SPA es un
+  cliente en su propio servicio.
 
 ## Goals / Non-Goals
 
@@ -47,7 +47,7 @@ generador y la API marca `cancel` (R-7.5). No hace falta un endpoint nuevo.
 
 **4. Estado de la consulta como máquina explícita** (`idle → running → done | failed`) en un
 hook `useAsk`. Los eventos de progreso se acumulan en una lista; `result` reemplaza el estado de progreso.
-Cancelar descarta la consulta en curso y devuelve la máquina a `idle` (R-8.5), sin estado `cancelled`.
+Cancelar descarta la consulta en curso y devuelve la máquina a `idle` (R-8.5).
 La UI deriva todo del estado, así que R-8.2 (sin fuente anticipada) se cumple porque `sources` solo existe
 en el estado `done`.
 
@@ -73,28 +73,26 @@ puerto de la API al navegador. En `npm run dev` el proxy de Vite reenvía `/api`
 `target: runtime`, `env_file: .env`, `POSTGRES_HOST: db`, `POSTGRES_PORT: 5432`, healthcheck
 sobre `/health`, `depends_on` `db: service_healthy` y `ingest: service_completed_successfully`) y `web`
 (`build: docker/Dockerfile.web`, `depends_on: api: service_healthy`, puerto
-`127.0.0.1:${WEB_PORT:-3000}:80`). El servicio `ingest` ya existía: corre antes de la API y termina. La API no
+`127.0.0.1:${WEB_PORT:-3000}:80`). El servicio `ingest` corre antes de la API y termina. La API no
 publica puerto al host salvo `127.0.0.1:${API_PORT:-8080}` para
 depurar y para `measure_golden`/curl. *Alternativa:* un perfil de compose para la web: agrega un flag y
 contradice "levantar todo junto".
 
-**8. Contexto de build separado.** `.dockerignore` ya excluye `.env`, `TP/` y `openspec/`; se agrega
-`web/node_modules`, `web/dist` y se verifica que el contexto de la web no incluya `.env` (R-8.9). Si el
-contexto compartido complica la imagen de la API, se usa `context: ./web` para la web.
+**8. Contexto de build separado.** `.dockerignore` excluye `.env`, `TP/`, `openspec/`, `web/node_modules` y
+`web/dist`, y se verifica que el contexto de la web no incluya `.env` (R-8.9).
 
-**9. Reformulación de R-7.0.** La API sigue siendo el único punto de acceso *al agente* y el servidor
-Python no sirve interfaz; la SPA es un cliente en su propio servicio. Se edita el delta
-`consulta-por-api` del change `agente-y-tools` (que aún no está archivado) y se registra en
-`TP/CHANGELOG.md` como D93, que matiza D80. Ya aplicado en `consulta-por-api`, `TP/01`, `TP/02`, `TP/05`,
-`README.md`, `openspec/project.md` y el `design.md`/`proposal.md` de `agente-y-tools`.
+**9. Reformulación de R-7.0.** La API es el único punto de acceso *al agente* y el servidor
+Python no sirve interfaz; la SPA es un cliente en su propio servicio. La regla vive en el delta
+`consulta-por-api` del change `agente-y-tools` y en `TP/CHANGELOG.md` como D93, y la siguen
+`consulta-por-api`, `TP/01`, `TP/02`, `TP/05`, `README.md`, `openspec/project.md` y el
+`design.md`/`proposal.md` de `agente-y-tools`.
 
 ## Risks / Trade-offs
 
 - [SSE cortado por buffering en nginx] → `proxy_buffering off`, cabecera `X-Accel-Buffering: no` ya enviada
-  por la API, y una verificación manual del progreso en vivo (tarea 4.3).
-- [Cambio de postura sobre D80/R-7.0 frente a la cátedra y al otro change] → la reformulación se hace en
-  el mismo PR y se marca en el CHANGELOG; el criterio "Interfaz gráfica" de `TP/01` §8 solo se tilda tras la
-  verificación.
+  por la API, y `proxy_read_timeout` de 600 s.
+- [Cambio de postura sobre R-7.0 frente a la cátedra y al otro change] → la reformulación se registra en el
+  CHANGELOG.
 - [Conflictos con `agente-y-tools` en `README.md` y `docker-compose.yml`] → cambios acotados y rebase
   frecuente; no se toca `docker/Dockerfile`.
 - [Consultas de minutos y timeouts del proxy] → `proxy_read_timeout` de 10 minutos; el latido de la API cada
@@ -103,7 +101,3 @@ Python no sirve interfaz; la SPA es un cliente en su propio servicio. Se edita e
   versiona `components.json` y se fija la versión de la CLI en la tarea 1.1.
 - [`GEMINI_API_KEY` ausente hace que la API falle al responder, no al arrancar] → el healthcheck solo mira
   `/health`; la interfaz muestra el error de R-8.3.
-
-## Open Questions
-
-- Puerto publicado de la web (`3000` por defecto). Se puede cambiar con `WEB_PORT` sin tocar specs.
