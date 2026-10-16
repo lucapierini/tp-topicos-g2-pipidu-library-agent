@@ -16,6 +16,13 @@
 - [x] 3.1 Crear `scripts/evaluate_retrieval.py`: tokenización, cobertura IDF, combinación híbrida, re-ranking con el modelo (caché, validación de la salida, reintento ante 5xx) y resumen por estrategia con AUC, F1, falsos positivos y documento correcto; verificar con `pytest tests/test_evaluate_retrieval.py` sobre dobles (R-4.10)
 - [x] 3.2 Correr la evaluación contra la base local y guardar `TP/evidencia/busqueda_hibrida_rerank.json` y el caché `rerank_scores.json` (R-4.10)
 
+## 3b. Validación fuera de muestra
+
+- [x] 3b.1 Crear `tests/validation_set.py` con 63 consultas nuevas (35 con cobertura, 28 sin ella) y `tests/test_validation_set.py`: términos verificables en los documentos y ninguna pregunta repetida con calibración ni con el golden set; verificar con `pytest tests/test_validation_set.py` (R-4.10)
+- [x] 3b.2 Congelar los parámetros con la calibración y aplicarlos al set de validación (`frozen_thresholds`, `validate`, `choose_alpha`) con tests (R-4.10)
+- [x] 3b.3 Agregar `CachedEmbedder` (vectores de consulta en `.cache/`, con el modelo y la dimensión en la clave) para no gastar cuota al repetir la medición (R-4.10)
+- [ ] 3b.4 Ejecutar `python scripts/evaluate_retrieval.py` con la cuota diaria de Gemini renovada y guardar la sección `validation` de `TP/evidencia/busqueda_hibrida_rerank.json`; completar los resultados fuera de muestra en `design.md` y en D99 (R-4.10)
+
 ## 4. Documentación
 
 - [x] 4.1 Registrar D97 en `TP/CHANGELOG.md` con los resultados (AUC 0.983, recall y falsos positivos por umbral) y la decisión de mantener 0.64; verificar con `openspec validate calibracion-umbral-rag --strict`
@@ -24,7 +31,7 @@
 ## 5. Seguimiento
 
 - [ ] 5.1 Decidir con el equipo si se mantiene 0.64 o se pasa a 0.655 (recall 96 %, 6 falsos positivos en lugar de 10) (R-4.8)
-- [ ] 5.2 Confirmar con consultas no vistas (≥ 40 nuevas, de preferencia reales de `agent_runs`) la mejora del re-ranking + coseno (AUC 0.994, 1 falso positivo) y del híbrido α=0.8 (3 falsos positivos), porque α, el rango y los umbrales se eligieron sobre este set (R-4.10)
+- [ ] 5.2 Revisar los resultados fuera de muestra (3b.4) contra los de calibración (re-ranking + coseno: AUC 0.994, 1 falso positivo; híbrido α=0.8: 3 falsos positivos) y decidir si la mejora se sostiene (R-4.10)
 - [ ] 5.3 Si se confirma, implementar la estrategia elegida en `retrieve()` detrás de una variable de configuración, con tests y la latencia extra medida; decidir entre re-ranking (1 llamada más por consulta) e híbrido (sin llamadas) (R-4.4, R-4.10)
 - [ ] 5.4 Ampliar los negativos con consultas reales de `agent_runs` clasificadas `rag` sin documento relevante (R-4.9)
 

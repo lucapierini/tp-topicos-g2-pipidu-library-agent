@@ -46,6 +46,24 @@ Antes de cambiar la estrategia de recuperación (búsqueda híbrida o re-ranking
 - **AND** informa en cuántas consultas cubiertas el primer fragmento es del documento esperado
 - **AND** guarda la evidencia en `TP/evidencia/busqueda_hibrida_rerank.json`
 
+#### Scenario: validación fuera de muestra
+- **GIVEN** un set de validación con al menos 25 consultas con cobertura y 25 sin cobertura, distinto del de calibración y sin preguntas en común
+- **WHEN** se ejecuta `scripts/evaluate_retrieval.py`
+- **THEN** los parámetros de cada estrategia (peso del híbrido, rango de normalización y umbrales) se eligen solo con el set de calibración
+- **AND** se aplican sin reajustarse al set de validación
+- **AND** se informan el AUC, el recall y los falsos positivos de cada estrategia sobre el set de validación junto a los de calibración
+
+#### Scenario: set de validación verificable
+- **WHEN** se ejecutan los tests del set de validación
+- **THEN** cada positivo contiene su término en su documento y cada negativo no lo contiene en ninguno
+- **AND** ninguna pregunta se repite con el set de calibración ni con el golden set
+
+#### Scenario: repetir la medición sin gastar cuota
+- **GIVEN** una evaluación ya ejecutada
+- **WHEN** se vuelve a ejecutar
+- **THEN** los vectores de las consultas y los puntajes del re-ranking salen de un caché local y no se vuelve a llamar a la API
+- **AND** un caché de otro modelo de embeddings o de otra dimensión no se reutiliza
+
 #### Scenario: puntaje léxico
 - **GIVEN** una consulta con un término que no existe en ningún documento
 - **WHEN** se calcula la cobertura léxica

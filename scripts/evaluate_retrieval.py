@@ -36,6 +36,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.calibrate_threshold import auc, build_cases, pick_thresholds, sweep  # noqa: E402
 
+def build_validation_cases():
+    """Las consultas del set de validación, con el mismo formato que `build_cases()`."""
+    from scripts.calibrate_threshold import Case
+    from tests.validation_set import VALIDATION_SET
+
+    return [Case(c.id, c.question, c.covered, c.group, c.document) for c in VALIDATION_SET]
+
+
 TOP_K = 5
 ALPHAS = (0.5, 0.6, 0.7, 0.8, 0.9)
 DENSE_LOW, DENSE_HIGH = 0.50, 0.85   # rango observado de la similitud de coseno: se lleva a [0, 1]
@@ -152,7 +160,7 @@ def summarize(name: str, rows: list[dict], score_key: str, doc_key: str | None =
     table = sweep(pos, neg, low=0.0, high=1.0, step=0.005)
     picks = pick_thresholds(table, 0.95)
     out = {
-        "strategy": name, "auc": auc(pos, neg),
+        "strategy": name, "score_key": score_key, "auc": auc(pos, neg),
         "best_f1": picks.get("best_f1"), "min_recall_95": picks.get("min_recall"),
         "no_false_positive": picks.get("no_false_positive"),
         "model_calls_per_query": model_calls,  # llamadas al modelo de generación, además de la del embedding
@@ -164,12 +172,74 @@ def summarize(name: str, rows: list[dict], score_key: str, doc_key: str | None =
     return out
 
 
+def frozen_thresholds(summary: list[dict]) -> dict[str, dict]:
+    """Por estrategia: clave del puntaje y los dos umbrales elegidos sobre la calibración (mejor F1 y recall ≥ 95 %)."""
+    out = {}
+    for s_ in summary:
+        out[s_["strategy"]] = {
+            "score_key": s_["score_key"],
+            "best_f1": s_["best_f1"]["threshold"],
+            "min_recall_95": (s_["min_recall_95"] or {}).get("threshold"),
+        }
+    return out
+
+
+def validate(frozen: dict[str, dict], rows: list[dict]) -> list[dict]:
+    """Aplica los umbrales congelados a filas que NO se usaron para elegirlos: la medición fuera de muestra."""
+    from scripts.calibrate_threshold import confusion
+
+    out = []
+    for name, f in frozen.items():
+        key = f["score_key"]
+        if not rows or key not in rows[0]:
+            continue
+        pos = [r[key] for r in rows if r["covered"]]
+        neg = [r[key] for r in rows if not r["covered"]]
+        entry = {"strategy": name, "auc": auc(pos, neg)}
+        for label in ("best_f1", "min_recall_95"):
+            if f[label] is not None:
+                entry[label] = confusion(pos, neg, f[label])
+        out.append(entry)
+    return out
+
+
 def group_means(rows: list[dict], score_key: str) -> dict:
     groups: dict[str, list[float]] = {}
     for r in rows:
         groups.setdefault(r["group"], []).append(r[score_key])
     return {g: {"n": len(v), "min": round(min(v), 3), "mean": round(sum(v) / len(v), 3), "max": round(max(v), 3)}
             for g, v in sorted(groups.items())}
+
+
+# --------------------------------------------------------------------------- caché de embeddings
+
+
+class CachedEmbedder:
+    """Guarda el vector de cada consulta en disco: repetir la evaluación no vuelve a gastar la cuota de embeddings.
+
+    La cuota gratuita (1.000 pedidos por día) se agotó con corridas repetidas de ~190 consultas cada una. La clave
+    incluye el modelo y la dimensión, así que un cambio de embeddings no reutiliza vectores viejos.
+    """
+
+    def __init__(self, inner, cache_path: Path | None, model: str = "", dim: int = 0) -> None:
+        self.inner, self.cache_path, self.prefix = inner, cache_path, f"{model}|{dim}|"
+        self.cache: dict[str, list[float]] = {}
+        self.hits = self.misses = 0
+        if cache_path and cache_path.exists():
+            self.cache = json.loads(cache_path.read_text(encoding="utf-8"))
+
+    def embed_query(self, text: str) -> list[float]:
+        key = self.prefix + text
+        if key in self.cache:
+            self.hits += 1
+            return self.cache[key]
+        vector = self.inner.embed_query(text)
+        self.misses += 1
+        self.cache[key] = vector
+        if self.cache_path:  # se persiste en cada consulta: si la cuota se corta, lo hecho no se pierde
+            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+            self.cache_path.write_text(json.dumps(self.cache), encoding="utf-8")
+        return vector
 
 
 # --------------------------------------------------------------------------- re-ranking con el modelo
@@ -249,8 +319,17 @@ class GeminiReranker:
 # --------------------------------------------------------------------------- ejecución
 
 
-def evaluate(cases, embedder, store, reranker, cfg) -> tuple[list[dict], list[dict]]:
-    """Calcula los puntajes de cada estrategia para cada consulta. Devuelve (filas, resumen)."""
+def choose_alpha(rows: list[dict]) -> float:
+    """El α de mayor AUC sobre estas filas. Solo se elige con el set de calibración; la validación lo recibe fijo."""
+    return max(ALPHAS, key=lambda a: auc([r[f"hibrido_{a}"] for r in rows if r["covered"]],
+                                         [r[f"hibrido_{a}"] for r in rows if not r["covered"]]) or 0)
+
+
+def evaluate(cases, embedder, store, reranker, cfg, alpha: float | None = None) -> tuple[list[dict], list[dict]]:
+    """Calcula los puntajes de cada estrategia para cada consulta. Devuelve (filas, resumen).
+
+    `alpha` fija el peso del híbrido que se combina con el re-ranking; sin él se elige el mejor sobre estas filas.
+    """
     prepared = []
     chunk_tokens: list[set[str]] | None = None
     for case in cases:
@@ -296,8 +375,7 @@ def evaluate(cases, embedder, store, reranker, cfg) -> tuple[list[dict], list[di
         *(summarize(f"híbrido α={a}", rows, f"hibrido_{a}", f"hibrido_{a}_doc") for a in ALPHAS),
     ]
     if reranker is not None:
-        best_alpha = max(ALPHAS, key=lambda a: auc([r[f"hibrido_{a}"] for r in rows if r["covered"]],
-                                                   [r[f"hibrido_{a}"] for r in rows if not r["covered"]]) or 0)
+        best_alpha = alpha if alpha is not None else choose_alpha(rows)
         for r in rows:
             top = r["_dense_top"]
             rel = reranker.relevances(r["query"], top)
@@ -327,11 +405,34 @@ def _fmt(point: dict | None) -> str:
     return f"u={point['threshold']:.3f} recall={point.get('recall', 0):.2f} fp={point.get('fp', point.get('fn', '?'))}"
 
 
+def _print_table(title: str, summary: list[dict], n_pos: int, n_neg: int) -> None:
+    print(f"\n{title}: {n_pos} cubiertas · {n_neg} sin cobertura\n")
+    print(f"{'estrategia':<38}{'AUC':>7}  {'doc 1º':>6}   mejor F1 / recall ≥ 95 %")
+    for s_ in summary:
+        doc = s_.get("top1_document_accuracy")
+        print(f"{s_['strategy']:<38}{s_['auc']:>7.3f}  {('' if doc is None else f'{doc:.2f}'):>6}   "
+              f"F1={s_['best_f1']['f1']:.3f} {_fmt(s_['best_f1'])}  |  {_fmt(s_['min_recall_95'])}")
+
+
+def _print_validation(validation: list[dict], n_pos: int, n_neg: int) -> None:
+    print(f"\nVALIDACIÓN fuera de muestra (umbrales congelados): {n_pos} cubiertas · {n_neg} sin cobertura\n")
+    print(f"{'estrategia':<38}{'AUC':>7}   al umbral de mejor F1            | al umbral de recall ≥ 95 %")
+    for v in validation:
+        def cell(c):
+            if not c:
+                return "—".ljust(32)
+            return f"u={c['threshold']:.3f} recall={c['recall']:.2f} fp={c['fp']:>2}/{n_neg} F1={c['f1']:.2f}"
+        print(f"{v['strategy']:<38}{v['auc']:>7.3f}   {cell(v.get('best_f1')):<32} | {cell(v.get('min_recall_95'))}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--out", default="TP/evidencia/busqueda_hibrida_rerank.json")
     parser.add_argument("--cache", default="TP/evidencia/rerank_scores.json")
+    parser.add_argument("--embeddings-cache", default=".cache/query_embeddings.json",
+                        help="caché local (fuera de git) de los vectores de las consultas")
     parser.add_argument("--no-rerank", action="store_true", help="solo denso, léxico e híbrido (sin llamadas al modelo)")
+    parser.add_argument("--no-validation", action="store_true", help="omite el set de validación")
     args = parser.parse_args()
 
     from agent.config import load_config
@@ -339,25 +440,32 @@ def main() -> int:
 
     cfg = load_config()
     store = PgVectorStore(cfg)
+    embedder = CachedEmbedder(GeminiEmbedder(cfg), Path(args.embeddings_cache), cfg.embedding_model, cfg.embedding_dim)
     reranker = None if args.no_rerank else GeminiReranker(cfg, Path(args.cache))
+    validation_rows: list[dict] = []
+    validation: list[dict] = []
     try:
-        rows, summary = evaluate(build_cases(), GeminiEmbedder(cfg), store, reranker, cfg)
+        rows, summary = evaluate(build_cases(), embedder, store, reranker, cfg)
+        alpha = choose_alpha(rows)
+        if not args.no_validation:
+            validation_rows, _ = evaluate(build_validation_cases(), embedder, store, reranker, cfg, alpha=alpha)
+            validation = validate(frozen_thresholds(summary), validation_rows)
     finally:
         store.close()
 
     n_pos = sum(r["covered"] for r in rows)
-    print(f"\ncubiertas: {n_pos} · sin cobertura: {len(rows) - n_pos}\n")
-    print(f"{'estrategia':<38}{'AUC':>7}  {'doc 1º':>6}   mejor F1 / recall ≥ 95 %")
-    for s in summary:
-        doc = s.get("top1_document_accuracy")
-        print(f"{s['strategy']:<38}{s['auc']:>7.3f}  {('' if doc is None else f'{doc:.2f}'):>6}   "
-              f"F1={s['best_f1']['f1']:.3f} {_fmt(s['best_f1'])}  |  {_fmt(s['min_recall_95'])}")
+    _print_table("CALIBRACIÓN (con estos datos se eligieron α, el rango y los umbrales)", summary, n_pos, len(rows) - n_pos)
+    if validation:
+        v_pos = sum(r["covered"] for r in validation_rows)
+        _print_validation(validation, v_pos, len(validation_rows) - v_pos)
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({"embedding_model": cfg.embedding_model, "model": cfg.model, "alphas": list(ALPHAS),
-                               "dense_range": [DENSE_LOW, DENSE_HIGH], "summary": summary, "cases": rows},
-                              ensure_ascii=False, indent=2), encoding="utf-8")
+    out.write_text(json.dumps({
+        "embedding_model": cfg.embedding_model, "model": cfg.model, "alphas": list(ALPHAS), "alpha_chosen": alpha,
+        "dense_range": [DENSE_LOW, DENSE_HIGH], "summary": summary, "cases": rows,
+        "frozen_thresholds": frozen_thresholds(summary), "validation": validation, "validation_cases": validation_rows,
+    }, ensure_ascii=False, indent=2), encoding="utf-8")
     return 0
 
 

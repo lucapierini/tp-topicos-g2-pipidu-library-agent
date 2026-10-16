@@ -231,3 +231,106 @@ def test_reranker_does_not_retry_a_client_error(monkeypatch) -> None:
         GeminiReranker(_cfg(), None, client=client).relevances(
             "q", [{"id": 1, "document": "d", "location": "l", "text": "t"}])
     assert client.calls == 1
+
+
+# --------------------------------------------------------------------------- umbrales congelados
+
+
+def test_frozen_thresholds_come_from_the_calibration_summary() -> None:
+    from scripts.evaluate_retrieval import frozen_thresholds
+
+    summary = [{"strategy": "x", "score_key": "k", "best_f1": {"threshold": 0.4}, "min_recall_95": {"threshold": 0.3}},
+               {"strategy": "y", "score_key": "j", "best_f1": {"threshold": 0.5}, "min_recall_95": None}]
+    frozen = frozen_thresholds(summary)
+    assert frozen["x"] == {"score_key": "k", "best_f1": 0.4, "min_recall_95": 0.3}
+    assert frozen["y"]["min_recall_95"] is None
+
+
+def test_validate_applies_the_calibration_threshold_to_unseen_rows() -> None:
+    from scripts.evaluate_retrieval import validate
+
+    frozen = {"x": {"score_key": "k", "best_f1": 0.5, "min_recall_95": None}}
+    rows = [{"covered": True, "k": 0.9}, {"covered": True, "k": 0.4}, {"covered": False, "k": 0.6},
+            {"covered": False, "k": 0.1}]
+    (result,) = validate(frozen, rows)
+    at = result["best_f1"]
+    assert (at["tp"], at["fn"], at["fp"], at["tn"]) == (1, 1, 1, 1)  # el umbral NO se reajusta a estas filas
+    assert "min_recall_95" not in result and result["auc"] == 0.75
+
+
+def test_validate_skips_strategies_without_scores() -> None:
+    from scripts.evaluate_retrieval import validate
+
+    assert validate({"x": {"score_key": "ausente", "best_f1": 0.5, "min_recall_95": None}}, [{"covered": True, "k": 1}]) == []
+
+
+def test_choose_alpha_picks_the_weight_with_the_best_auc() -> None:
+    from scripts.evaluate_retrieval import ALPHAS, choose_alpha
+
+    rows = []
+    for a in ALPHAS:
+        good = a == 0.7  # solo con α=0.7 los positivos puntúan por encima de los negativos
+        rows += [{"covered": True, f"hibrido_{a}": 0.9 if good else 0.4}, {"covered": False, f"hibrido_{a}": 0.5}]
+    merged = [{"covered": c, **{k: v for r in rows if r["covered"] == c for k, v in r.items() if k != "covered"}}
+              for c in (True, False)]
+    assert choose_alpha(merged) == 0.7
+
+
+def test_the_validation_cases_have_the_same_shape_as_the_calibration_cases() -> None:
+    from scripts.evaluate_retrieval import build_validation_cases
+
+    cases = build_validation_cases()
+    assert len(cases) >= 50 and all(c.id.startswith("V") for c in cases)
+    assert {c.covered for c in cases} == {True, False}
+
+
+# --------------------------------------------------------------------------- caché de embeddings
+
+
+class CountingEmbedder:
+    def __init__(self):
+        self.calls = 0
+
+    def embed_query(self, text: str):
+        self.calls += 1
+        return [float(len(text)), 1.0]
+
+
+def test_cached_embedder_does_not_repeat_a_query_even_across_runs(tmp_path) -> None:
+    from scripts.evaluate_retrieval import CachedEmbedder
+
+    path = tmp_path / "emb.json"
+    inner = CountingEmbedder()
+    first = CachedEmbedder(inner, path, "modelo", 768)
+    assert first.embed_query("hola") == first.embed_query("hola")
+    assert inner.calls == 1 and first.hits == 1 and first.misses == 1
+    second_inner = CountingEmbedder()
+    second = CachedEmbedder(second_inner, path, "modelo", 768)
+    assert second.embed_query("hola") == [4.0, 1.0] and second_inner.calls == 0
+
+
+def test_cached_embedder_does_not_reuse_vectors_of_another_model(tmp_path) -> None:
+    from scripts.evaluate_retrieval import CachedEmbedder
+
+    path = tmp_path / "emb.json"
+    CachedEmbedder(CountingEmbedder(), path, "modelo-a", 768).embed_query("hola")
+    other_inner = CountingEmbedder()
+    CachedEmbedder(other_inner, path, "modelo-b", 768).embed_query("hola")
+    assert other_inner.calls == 1
+
+
+def test_cached_embedder_persists_each_query_so_a_quota_cut_loses_nothing(tmp_path) -> None:
+    from scripts.evaluate_retrieval import CachedEmbedder
+
+    class Flaky(CountingEmbedder):
+        def embed_query(self, text):
+            if text == "falla":
+                raise RuntimeError("429")
+            return super().embed_query(text)
+
+    path = tmp_path / "emb.json"
+    emb = CachedEmbedder(Flaky(), path, "m", 1)
+    emb.embed_query("uno")
+    with pytest.raises(RuntimeError):
+        emb.embed_query("falla")
+    assert any("uno" in k for k in json.loads(path.read_text(encoding="utf-8")))

@@ -52,6 +52,14 @@ elegir el valor es una decisión de compromiso que necesita datos.
     prueba solo, combinado con el coseno (el coseno desempata) y sobre los candidatos del híbrido.
 11. **Reintento ante 5xx.** `call_with_retry` solo cubre la cuota (429); la medición cayó por un 503 de alta demanda, así que
     el re-ranker reintenta 5xx con backoff y no reintenta errores de cliente.
+12. **Validación fuera de muestra (D99).** `tests/validation_set.py` suma 63 consultas nuevas (35 con cobertura y 28 sin ella), escritas
+    como las escribe un socio (coloquiales, con contexto personal, parafraseadas) y verificables con la misma regla de términos.
+    Los parámetros se congelan con el set de calibración (`alpha` de mayor AUC, rango de normalización y los umbrales de mejor F1
+    y de recall ≥ 95 %) y se aplican **sin reajustar** al de validación; la diferencia entre los dos mide cuánto sobreestimaba la
+    calibración. Un test impide que una pregunta esté en los dos sets.
+13. **Caché local de vectores de consulta.** Cada corrida repetía ~190 llamadas de embedding y agotó la cuota gratuita diaria
+    (1.000 por día) junto con la de generación (500 por día). `CachedEmbedder` guarda cada vector en `.cache/` (fuera de git) apenas
+    se obtiene, con el modelo y la dimensión en la clave, así que un corte de cuota no pierde lo hecho.
 
 ## Results (D98)
 
@@ -71,6 +79,13 @@ combinado baja los falsos positivos a la mitad sin costo de modelo. El re-rankin
 fondo —juzgar si el fragmento *contesta*—: 41 de 49 consultas sin cobertura reciben 0 y solo una recibe 3. Solo, empata
 mucho (4 valores), y por eso el coseno como desempate lo lleva a AUC 0.994. Los pocos errores que quedan son dos consultas
 en inglés y una definición; el falso positivo («descuentos en las multas para docentes») tiene una etiqueta discutible.
+
+### Validación fuera de muestra (D99)
+
+**Pendiente de la cuota diaria.** La corrida se cortó con 429 (`generate_content` 500/día y `embed_content` 1.000/día
+agotadas; se renuevan en unas 23 h). Hay re-ranking cacheado para 46 de las 63 consultas de validación; los vectores no se
+guardaban, así que el resto se completa en la próxima corrida:
+`python scripts/evaluate_retrieval.py` (retoma desde los cachés). Los números de la sección anterior siguen siendo de calibración.
 
 ## Risks / Trade-offs
 
