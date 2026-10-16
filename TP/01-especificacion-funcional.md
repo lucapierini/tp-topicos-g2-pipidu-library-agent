@@ -1,7 +1,5 @@
 # Especificación Funcional — Pipidu Library Agent
 
-> Documento incremental. Se irá completando/ajustando a medida que avance el diseño.
->
 > **Nivel en el ciclo SDD:** Spec (WHAT). Las capacidades detalladas del agente y sus tools están en
 > `openspec/changes/agente-y-tools/specs/<capacidad>/spec.md`; las tareas en
 > `openspec/changes/agente-y-tools/tasks.md`; la validación en `05-validacion.md`; los principios en
@@ -12,7 +10,6 @@
 - **Proyecto:** Pipidu Library Agent
 - **Materia:** Tópicos Avanzados de IA — Trabajo Práctico Integrador (AI Engineering)
 - **Modalidad:** Grupal (hasta 3 integrantes)
-- **Integrantes:** _(completar)_
 - **Fecha de entrega:** 16/10/2026 23:59 (GMT-03)
 - **Coloquio:** 23/10/2026 o 30/10/2026
 - **Objetivo de calificación:** Promoción directa
@@ -49,7 +46,7 @@ Desarrollar un **SQL AI Agent** capaz de:
   6. Editoriales
   7. `libros_autores` (relación N:M libros-autores; no existe `libros.autor_id`, D64)
 - El repositorio documental (`documentos` y `documentos_chunks`) es el índice RAG, no una tabla del modelo
-  relacional: se describe en la especificación técnica (§3.2.1) y su volumen se decide en T2.9.
+  relacional: se describe en la especificación técnica (§3.2.1).
 - Cada tabla poblada con **15-20 registros sintéticos** como mínimo (cumple el mínimo de 15 exigido).
 - Los datos deben ser coherentes y permitir consultas significativas (joins, agregaciones, filtros, rankings).
 
@@ -100,43 +97,28 @@ El agente debe poder combinar ambas fuentes cuando la consulta lo requiera, por 
 
 - **Reproducibilidad:** cualquier evaluador debe poder clonar el repo, seguir el README y levantar el sistema completo (BD + ingesta del RAG + API + interfaz web) con `docker compose up -d --build --wait` (D91, D92, D93).
 - **Documentación:** código comentado donde sea necesario, README claro con instrucciones de instalación y ejecución.
-- **Despliegue en entorno local:** el sistema se prepara para ejecutarse en entorno local (Docker Compose con
-  Postgres + pgvector, API del agente e interfaz web; la API también corre con `uvicorn api.app:app`), sin ningún servicio de nube (D81, que reemplaza a D18).
-  El enunciado del curso pedía despliegue en la nube (GCP): el informe debe justificar la desviación y que
-  el criterio de promoción 1 deja de estar cubierto.
-- **Trazabilidad SDD:** se documentará el proceso de desarrollo siguiendo Spec Driven Development (specs funcionales y técnicas, versionadas, previas a la implementación).
+- **Despliegue en entorno local:** el sistema se ejecuta en entorno local (Docker Compose con
+  Postgres + pgvector, API del agente e interfaz web; la API también corre con `uvicorn api.app:app`), sin ningún
+  servicio de nube (D81).
+- **Trazabilidad SDD:** el proceso de desarrollo sigue Spec Driven Development (specs funcionales y técnicas, versionadas, previas a la implementación).
 
 ## 7. Criterios de aceptación (según enunciado)
 
-- [ ] Modelo relacional con ≥5 tablas y ≥15 registros por tabla
-- [ ] El agente interpreta lenguaje natural y responde usando la base de datos
-- [ ] El agente responde usando contenido de ≥2 PDFs vía RAG
-- [ ] Código documentado y reproducible
-- [ ] Informe técnico (máx. 10 páginas)
-- [ ] Coloquio de exposición
+- [x] Modelo relacional con ≥5 tablas y ≥15 registros por tabla (`db/schema.sql`, `db/seed.sql`)
+- [x] El agente interpreta lenguaje natural y responde usando la base de datos (`tests/test_golden_set.py`, `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json`)
+- [x] El agente responde usando contenido de ≥2 PDFs vía RAG (`rag/documents/pdf/`, 6 PDFs)
+- [x] Código documentado y reproducible (`README.md`, `docker-compose.yml`)
 
-## 8. Criterios de promoción directa (2+ de 5, elegidos 4)
+## 8. Criterios de promoción directa cubiertos (2+ de 5)
 
-- [ ] Despliegue en la nube (GCP): **descartado por D81** (2026-10-13): el sistema se prepara para correr en entorno local. Quedan cubiertos `framework agéntico` y `SDD`; hay que confirmarlo con la cátedra (T9.13, riesgo D83)
-- [ ] Interfaz gráfica: SPA en `web/` que consume la API (D80, D93); queda tildada al verificar el change `frontend-web-vite`
+- [x] Interfaz gráfica: SPA en `web/` que consume la API (D80, D93)
 - [x] Framework agéntico (Smolagents)
 - [x] SDD (artefactos de esta carpeta `TP/`)
-- [ ] Observabilidad (LangSmith) — no incluido
 
 ## 9. Entregables
 
 - Repositorio GitHub con código fuente completo
-- Scripts de generación de datos sintéticos + dump de la base de datos
+- Datos de prueba de la base (`db/seed.sql`, `db/dev_seed.sql`)
 - Carpeta con los PDFs utilizados para RAG
 - README de instalación y ejecución
-- Informe técnico (máx. 10 páginas)
 - Artefactos SDD (specs funcional y técnica, este mismo documento y su par técnico)
-
-## 10. Preguntas abiertas / pendientes de definir
-
-Las preguntas de diseño se cerraron el 2026-10-10 (D1–D20 en `CHANGELOG.md`). Quedan estas, que no son
-de diseño:
-
-- Nombres de los integrantes del grupo
-- Listado final y definitivo de las 4-6 preguntas de ejemplo para el informe
-- Definición final del modelo de datos detallado (ver especificación técnica)

@@ -1,6 +1,5 @@
 # Especificación Técnica — Pipidu Library Agent
 
-> Documento incremental. Se irá completando/ajustando a medida que avance el diseño e implementación.
 >
 > **Nivel en el ciclo SDD:** Plan (HOW). Los requisitos verificables del agente y sus tools están en
 > `openspec/changes/agente-y-tools/specs/<capacidad>/spec.md`; la división en tareas en
@@ -40,7 +39,7 @@ flowchart TB
 | Framework agéntico | Smolagents |
 | Acceso al agente | API HTTP con FastAPI + uvicorn y respuesta en streaming SSE (D75, D80, `consulta-por-api`). El servidor del agente no sirve interfaz: la SPA de `web/` (D93) es un cliente de la API |
 | Embeddings | Gemini Embeddings API, `gemini-embedding-001` con `output_dimensionality = 768` (D5) |
-| Despliegue | **Entorno local** (Docker + `uvicorn`), D81. La alternativa de nube queda registrada en §7 |
+| Despliegue | **Entorno local** (Docker + `uvicorn`), D81. |
 | Control de versiones | GitHub |
 | ORM / acceso a datos | psycopg2 directo, sin ORM (D9) |
 
@@ -171,7 +170,7 @@ respuesta, pero tampoco se finge que se registró.
 
 ### 3.2.3 Entorno local con Docker
 
-`docker compose up -d --wait` levanta PostgreSQL + pgvector (`db`), ingesta el RAG (`ingest`, D92) y arranca la
+`docker compose up -d --build --wait` levanta PostgreSQL + pgvector (`db`), ingesta el RAG (`ingest`, D92) y arranca la
 API y la web. `db` ejecuta `db/init/10-roles.sh` al crear el volumen: crea los roles `agent_ro` y
 `agent_logger`, aplica `db/schema.sql`, `db/migrations/001_agent_runs.sql`, los permisos (`db/post_restore.sql`) y
 el seed que elige `DEV_SEED`: `full` (por defecto, D91) = `db/seed.sql`, el catálogo completo; `1` =
@@ -181,13 +180,13 @@ integración); `0` = base vacía. `scripts/replicate_neon.sh` trae el esquema y 
 
 ### 3.3 Datos sintéticos
 
-- Generación programática (ej. con `Faker` para nombres/fechas + reglas de negocio simples para consistencia de disponibilidad de ejemplares).
-- Volumen objetivo: **15-20 registros por tabla** (mínimo exigido: 15).
-- Script de seed versionado en el repo (`db/seed_data.py`, pendiente: T2.4).
+- Catálogo real (títulos, autores, editoriales e ISBN verificados en Open Library) con socios y préstamos sintéticos.
+- Volumen objetivo: **≥15 registros por tabla** del dominio, verificado por `tests/test_seed_contract.py`.
+- Seed versionado en el repo: `db/seed.sql` (catálogo completo, lo carga `docker compose up`) y `db/dev_seed.sql` (datos de desarrollo, `DEV_SEED=1`).
 
 ### 3.4 Contrato de datos que lee el agente
 
-Lo que el agente lee, verificado contra el código (no contra la propuesta inicial). Es el único lugar donde
+Lo que el agente lee, verificado contra el código. Es el único lugar donde
 se enuncia este contrato: el DDL no se copia acá, vive en `db/schema.sql`; la lista vinculante de tablas y
 columnas para la herramienta SQL es `agent/config/schema_whitelist.py` (R-3.4).
 
@@ -215,10 +214,6 @@ El rol `agent_ro` necesita `GRANT SELECT` sobre los diez objetos (`db/post_resto
 tablas documentales: la herramienta de recuperación las lee por una conexión propia y necesita el JOIN
 `documentos` ↔ `documentos_chunks` para el nombre del PDF y el `sha256` del documento.
 
-Pendiente para la parte de datos: el comentario de `db/post_restore.sql` dice que `documentos` queda fuera de
-los permisos, pero la lista de `GRANT` lo incluye. El comportamiento correcto es el que necesita
-`agent/tools/rag_tool.py` (SELECT concedido); el comentario está desalineado y lo corrige el integrante de BD.
-
 #### 3.4.2 Lo que los casos G1–G5 y la semántica temporal necesitan del seed
 
 Las entidades son las de `tests/golden_set.py::SEED_ENTITIES`; las filas nombradas son las de
@@ -227,7 +222,7 @@ Las entidades son las de `tests/golden_set.py::SEED_ENTITIES`; las filas nombrad
 | Caso | Qué necesita del seed | Entidades / filas de las que depende |
 |---|---|---|
 | G1 | un socio con al menos un préstamo | `socios` Juan Pérez (`A-1001`) y sus `prestamos` |
-| G2 | al menos un préstamo con `fecha_prestamo` dentro del rango configurado (`CUATRIMESTRE_START` / `CUATRIMESTRE_END`, D6, R-3.11); el ranking no puede quedar vacío | los 11 `prestamos` de `dev_seed.sql` caen en el rango solo mientras `CURRENT_DATE` esté dentro de él: el seed entregable debe fijar fechas dentro del rango, no solo relativas a `CURRENT_DATE` |
+| G2 | al menos un préstamo con `fecha_prestamo` dentro del rango configurado (`CUATRIMESTRE_START` / `CUATRIMESTRE_END`, D6, R-3.11); el ranking no puede quedar vacío | los 11 `prestamos` de `dev_seed.sql` tienen fechas relativas a `CURRENT_DATE` |
 | G3 | al menos una fila con `estado_calculado = 'vencido'` en `v_prestamos_estado`; el seed **no** escribe `vencido` (D7, R-3.12) | `A-1001` (préstamo de hace 20 días) y `A-1003` (hace 35 días) |
 | G4 | la categoría con libros y `ejemplares_disponibles > 0` | `categorias` Ciencias de la Computación; `libros` Sistemas Operativos Modernos y Redes de Computadoras |
 | G5 | la editorial con libros vinculados a autores por `libros_autores` (no existe `libros.autor_id`, D64) | `editoriales` Sudamericana; `libros_autores` |
@@ -238,8 +233,8 @@ Reglas de consistencia que el seed debe cumplir (T2.7): `ejemplares_disponibles 
 `libros`, y todo préstamo vencido satisface `fecha_devolucion_real IS NULL AND CURRENT_DATE >
 fecha_devolucion_prevista`, resuelto por la vista y no por un valor escrito.
 
-Volumen (T2.5): >= 15 filas en cada una de las 7 tablas del dominio de la tabla de §3.4.1 (la vista no
-cuenta). El caso de `documentos` se resuelve en 2.9. Los conteos medidos se registran en `tasks.md` 2.5.
+Volumen: >= 15 filas en cada una de las 7 tablas del dominio de la tabla de §3.4.1 (la vista no
+cuenta), verificado por `tests/test_seed_contract.py` contra la base real con el rol `agent_ro`.
 
 #### 3.4.3 Lo que la recuperación necesita de la ingesta
 
@@ -249,11 +244,8 @@ cuenta). El caso de `documentos` se resuelve en 2.9. Los conteos medidos se regi
 | Ubicación citable | `metadata` con `seccion`, `ubicacion` o `pagina`; si la ingesta no la guarda, la cita queda como "fragmento N" (R-4.7, D66) |
 | Vector | `embedding vector(768)` con `gemini-embedding-001` y `output_dimensionality = 768` (D5); documentos con `task_type = RETRIEVAL_DOCUMENT` y la consulta con `RETRIEVAL_QUERY` |
 | Distancia | coseno (`<=>`), similitud = 1 − distancia; índice HNSW declarado con `vector_cosine_ops` (D13) |
-| Idempotencia | `sha256` es la clave de idempotencia (D11, R-4.5). En `db/schema.sql` el UNIQUE está sobre `nombre_archivo` y sobre `(documento_id, chunk_index)`, **no** sobre `sha256`: la ingesta debe hacer upsert por `nombre_archivo` (o se agrega el UNIQUE, lo define la parte de BD). Reejecutar la ingesta no cambia el conteo de chunks |
+| Idempotencia | `sha256` es la clave de idempotencia (D11, R-4.5). En `db/schema.sql` el UNIQUE está sobre `nombre_archivo` y sobre `(documento_id, chunk_index)`, **no** sobre `sha256`: la ingesta hace upsert por `nombre_archivo` y salta un documento cuyo `sha256` no cambió (`rag/ingest.py`). Reejecutar la ingesta no cambia el conteo de chunks |
 | Identidad del fragmento | el `Chunk` que devuelve la tool lleva `document` = `nombre_archivo` y `content_hash` = `sha256` + `:` + `chunk_index` (D66) |
-
-Resuelto (D87): el nombre almacenado en `documentos.nombre_archivo` es el del PDF real (`resenas_tolkien.pdf`, etc.) y
-el golden set compara por prefijo (`resenas_`, o el de la saga cuando el caso la nombra).
 
 ## 4. Repositorio documental para RAG
 
@@ -270,7 +262,7 @@ Total: entre 4 y 6 PDFs (mínimo exigido: 2).
 1. Lectura del texto fuente: `rag/documents/*.md` (el PDF de `rag/documents/pdf/` se genera con el mismo texto,
    `rag/build_pdfs.py`, y aporta el `sha256` de idempotencia).
 2. Chunking por sección `## ` (un fragmento por artículo o paso numerado, con el título del documento antepuesto),
-   sin tope de tokens ni solapamiento (D97, que reemplaza a D10 en este punto).
+   sin tope de tokens ni solapamiento (D10).
 3. Generación de embeddings (Gemini Embeddings API).
 4. Almacenamiento en `pgvector`: un registro en `documentos` y un fragmento por fila en
    `documentos_chunks` (`embedding vector(768)`, `metadata jsonb` con la ubicación citable). Ver §3.2.1.
@@ -393,7 +385,7 @@ class AgentAnswer:
     question: str
     classification: str      # sql | rag | hybrid | none
     sources: list[str]       # fuentes efectivamente usadas
-    answer: str              # texto sin mención de la fuente: la fuente va en `sources` (R-5.2, D84, D100)
+    answer: str              # texto sin mención de la fuente: la fuente va en `sources` (R-5.2, D84)
     evidence: dict           # model (id, endpoint), language, sql, sql_original, rows, truncated, attempts,
                              # chunks, sql_attempts, sql_errors, error (code, detail), write_request,
                              # inconsistency, run_recording_error
@@ -417,7 +409,7 @@ declare explícitamente la ausencia de información.
 El agente se consulta **solo** por HTTP (D80, capacidad `consulta-por-api`). La interfaz gráfica
 (`web/`, D93) es un cliente de esta API en su propio servicio: se ocupa de presentar la respuesta, la
 evidencia y el historial. En Docker llega por un proxy del mismo origen; un frontend en otro origen (por
-ejemplo `npm run dev`) necesita `API_ALLOWED_ORIGINS` (tarea 9.12).
+ejemplo `npm run dev`) necesita `API_ALLOWED_ORIGINS`.
 
 ### 6.1 Contrato HTTP
 
@@ -444,7 +436,7 @@ R-7.4).
 
 **Cómo debe consumirlo el frontend** (a partir del evento `result`, que es un `AgentAnswer`):
 
-- `answer`: texto final, sin mención de la fuente (D84, D100): mostrar la fuente a partir de `sources` y de `evidence`, no del texto.
+- `answer`: texto final, sin mención de la fuente (D84): mostrar la fuente a partir de `sources` y de `evidence`, no del texto.
 - `answer_kind`: `answer`, `no_coverage` o `error`; conviene mostrarlos distinto.
 - `sources`: `sql`, `rag` o ambas; vacío cuando se declara ausencia de información o un error.
 - `title`: `null` en una respuesta normal; frase corta en los mensajes fijos de ausencia o error (R-5.9).
@@ -476,14 +468,14 @@ de otra y la segunda espera la latencia completa de la primera.
 - Una excepción inesperada produce `error` y cierra el flujo sin `result` (R-7.6).
 - Fechas y valores decimales de las filas se serializan como texto.
 
-**Qué no hay:** streaming de tokens del modelo (D75) ni autenticación (D81, D82). El CORS está implementado: los orígenes del frontend se declaran en `API_ALLOWED_ORIGINS` (R-7.8, D82); lo pendiente es la llamada desde el frontend real (9.12). El procedimiento de integración está en §6.2. Con la ejecución local (D81) el servicio no queda expuesto; exponerlo públicamente exigiría un control de acceso como condición previa, porque un endpoint público consume la cuota de la API del modelo.
+**Qué no hay:** streaming de tokens del modelo (D75) ni autenticación (D81, D82). El CORS está implementado: los orígenes del frontend se declaran en `API_ALLOWED_ORIGINS` (R-7.8, D82). El procedimiento de integración está en §6.2. Con la ejecución local (D81) el servicio no queda expuesto; exponerlo públicamente exigiría un control de acceso como condición previa, porque un endpoint público consume la cuota de la API del modelo.
 
 **Despliegue:** la imagen `runtime` sirve la API con `uvicorn` en `$PORT` (8080 por defecto, D80); no hay otro proceso en la imagen.
 
 ### 6.2 Integración del frontend: CORS y origen
 
 Lugar canónico del procedimiento de acceso del frontend. El requisito es R-7.8 y la decisión D82; acá no se
-repite su texto, solo cómo se aplica. Comprobado contra `uvicorn` local y `tests/test_api_cors.py` (2026-10-13).
+repite su texto, solo cómo se aplica. Verificado con `tests/test_api_cors.py` (casos O1–O7 de `TP/05` §7).
 
 | Situación | Hace falta declarar el origen |
 | --- | --- |
@@ -512,8 +504,8 @@ petición simple: siempre dispara preflight. Una petición simple (GET sin ese h
 `Access-Control-Allow-Origin`. Un origen no declarado recibe 400 en el preflight; en una petición simple la
 respuesta llega normal (200) pero sin el header, y el navegador impide leerla. No es un bug del servidor.
 
-**Comprobación mínima sin el frontend** (corrida real, 2026-10-13, `uvicorn` en `127.0.0.1:8000` con
-`API_ALLOWED_ORIGINS=http://localhost:5173`):
+**Comprobación mínima sin el frontend**, con `uvicorn` en `127.0.0.1:8000` y
+`API_ALLOWED_ORIGINS=http://localhost:5173`:
 
 ```bash
 curl -s -i -X OPTIONS http://127.0.0.1:8000/ask \
@@ -524,10 +516,6 @@ Salida: `200` con `access-control-allow-origin: http://localhost:5173`. Con un o
 (`Disallowed CORS origin`) y sin ese header.
 
 **Sin autenticación** (D81, D82): el servicio se ejecuta en entorno local.
-
-**Pendiente (9.12):** falta la llamada real desde el frontend. La cierra una corrida desde el frontend con su
-origen declarado que muestre el preflight 200 con el header y el rechazo de un origen no declarado, registrada
-en `TP/05`.
 
 ## 7. Despliegue
 
@@ -541,12 +529,9 @@ local.
 - La imagen `runtime` no incluye interfaz gráfica (D80); la SPA corre en el servicio `web` (D93). La etapa `measure` agrega
   los scripts de medición y no forma parte del servicio.
 
-**Alternativa no ejecutada (D81):** Cloud Run para el servicio y Cloud SQL (PostgreSQL con pgvector) para la
-base.
-
 ## 8. Estructura de repositorio
 
-Estado real, verificada con `git ls-files`. Lo marcado *pendiente* no existe todavía.
+Estado real, verificada con `git ls-files`.
 
 ```
 tp-topicos-g2-pipidu-library-agent/
@@ -567,9 +552,7 @@ tp-topicos-g2-pipidu-library-agent/
 │   ├── init/                     # roles agent_ro / agent_logger y orden de inicialización (Docker)
 │   ├── post_restore.sql          # permisos de agent_ro tras crear o restaurar el esquema
 │   ├── seed.sql                  # catálogo completo: lo carga `docker compose up` (DEV_SEED=full, D91)
-│   ├── dev_seed.sql              # seed mínimo de pruebas (DEV_SEED=1)
-│   ├── seed_data.py              # pendiente (T2.4)
-│   └── dump.sql                  # pendiente (T2.8)
+│   └── dev_seed.sql              # seed mínimo de pruebas (DEV_SEED=1)
 ├── rag/
 │   ├── documents/                # fuente .md y pdf/ (6 documentos)
 │   ├── build_pdfs.py             # genera los PDF desde los .md
@@ -593,7 +576,6 @@ tp-topicos-g2-pipidu-library-agent/
 ├── web/                          # SPA Vite + shadcn/ui: cliente de la API (D93)
 ├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
 ├── TP/                           # artefactos SDD legibles para la entrega
-├── informe/                      # pendiente (T9.5)
 └── tests/
     ├── golden_set.py             # fixtures compartidas (D16)
     ├── fakes.py, rag_fixture.py, conftest.py
@@ -639,18 +621,6 @@ prueba cada archivo.
 
 ## 10. Metodología SDD (artefactos a entregar)
 
-1. Este documento + `01-especificacion-funcional.md` (versión inicial, previa a implementación)
-2. Actualizaciones incrementales de ambos documentos a medida que se tomen decisiones de diseño durante el desarrollo
-3. Changelog informal de decisiones relevantes (al final de cada documento o en un `CHANGELOG.md` dentro de `TP/`)
-
-## 11. Pendientes técnicos (cerrados el 2026-10-10)
-
-Los cuatro pendientes originales se cerraron en `CHANGELOG.md`:
-
-- Capa de acceso a datos: **psycopg2 directo** (D9).
-- Estrategia de chunking: **por sección `## `, sin tope ni solapamiento** (D97; D10 había fijado 800/150 tokens y no se implementó así).
-- Memoria conversacional: **single-turn**, historial solo visual (D17).
-- Despliegue: **entorno local** (Docker + `uvicorn`), D81, que reemplaza D18 para la parte del servicio. La base de trabajo es la local de Docker; el uso de Neon para los datos compartidos del equipo queda opcional en 9.7 (9.6 descartada por D81).
-
-Queda un pendiente numérico, no conceptual: el umbral de similitud definitivo (D12), que se cierra con
-la medición de T3.6.
+1. Este documento + `01-especificacion-funcional.md`
+2. Actualizaciones de ambos documentos a medida que se toman decisiones de diseño durante el desarrollo
+3. `TP/CHANGELOG.md` con las decisiones relevantes, fechadas y con su motivo

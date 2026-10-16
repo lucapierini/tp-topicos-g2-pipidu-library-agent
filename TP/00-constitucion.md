@@ -4,8 +4,6 @@
 > las tareas no pueden contradecirla. No se modifican durante la implementación; cualquier cambio
 > requiere acuerdo del grupo y queda registrado en `CHANGELOG.md`.
 >
-> **Versión:** 1.0 · **Fecha:** 2026-10-08
-> Art. 8 y 9 alineados con la ejecución local (D81, 2026-10-13); Art. 8 con el arranque único de compose (D92, D93).
 
 ---
 
@@ -100,7 +98,7 @@ privacidad. Si la consigna introdujera un requisito de privacidad, se trata como
 
 ## Herramienta SDD adoptada
 
-**OpenSpec** (`@fission-ai/openspec`) — ver comparativa en la respuesta del chat.
+**OpenSpec** (`@fission-ai/openspec`).
 Motivo: los artefactos son Markdown plano versionado en el repo, que es exactamente lo que el TP
 pide adjuntar; la ceremonia es baja y el formato de requisitos es verificable con
 `openspec validate`. Los archivos de esta carpeta ya respetan ese formato, por lo que adoptarlo
