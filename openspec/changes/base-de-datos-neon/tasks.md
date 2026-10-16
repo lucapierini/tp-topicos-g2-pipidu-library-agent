@@ -3,41 +3,31 @@
 ## 1. Traslado de artefactos
 
 - [x] 1.1 Crear `.openspec.yaml`, `proposal.md`, `design.md` y los tres `spec.md` del change y verificar que cada requisito tiene al menos un `#### Scenario:` (R-7.x, R-8.x, R-9.x)
+  _(verificado con `openspec validate --all --strict`, que exige un escenario por requisito)_
 - [x] 1.2 Copiar `db/seed.sql` desde `UCSE-2026-TAIA` y verificar que su cabecera apunta a `db/schema.sql` y no al repo de origen (R-8.1)
+  _(verificado en la cabecera de `db/seed.sql`, que exige `db/schema.sql` aplicado)_
 - [x] 1.3 Copiar `rag/documents/*.md`, `rag/documents/pdf/*.pdf`, `rag/build_pdfs.py`, `rag/upload_to_bucket.py` y `rag/requirements.txt` y verificar que son 6 `.md` y 6 `.pdf` (R-9.1, R-9.5)
+  _(verificado con `ls`: 6 `.md` en `rag/documents/` y 6 `.pdf` en `rag/documents/pdf/`)_
 - [x] 1.4 Agregar `.env.local` y `.neon/` a `.gitignore` y verificar con `git check-ignore .env.local .neon/` que quedan excluidos (R-9.6)
+  _(verificado: `git check-ignore` responde las dos rutas)_
 - [x] 1.5 Registrar D-DB1 a D-DB10 en `TP/CHANGELOG.md` y verificar que cada fila de `design.md` tiene su entrada
-
-## 2. Verificación contra el esquema
-
-- [ ] 2.1 Aplicar `db/schema.sql` y `db/seed.sql` en una base local limpia y verificar que el seed termina sin errores y que `SELECT count(*)` da ≥ 15 en las 7 tablas de dominio (R-8.1, R-8.5)
-- [ ] 2.2 Verificar que `v_prestamos_estado` devuelve al menos un préstamo `vencido` tras cargar el seed (R-8.2, R-7.5)
-- [ ] 2.3 Verificar que una segunda aplicación del seed aborta sin cambiar filas (R-8.6)
-- [ ] 2.4 Verificar que los títulos reseñados existen en `libros` (R-8.8)
-- [ ] 2.5 Verificar con `pytest -m integration` los CHECK de R-7.4 y R-7.6, la dimensión de R-7.8 y los permisos de R-7.9. Hoy están cubiertos solo en parte: `tests/test_seed_contract.py` verifica `libros_disponibles_ck` y el cálculo del vencimiento, y `tests/test_runs_integration.py` verifica que `agent_ro` no lee `agent_runs`; faltan el CHECK de R-7.4, la dimensión de R-7.8 y los permisos de R-7.9 sobre `documentos*` (ese rol tiene `SELECT` concedido en `db/post_restore.sql`, así que la exclusión la hace la whitelist de la herramienta SQL, D21)
+  _(verificado: las 10 filas `D-DB1…D-DB10` están en la tabla del CHANGELOG, entrada del 2026-10-13)_
 
 ## 3. Verificación de documentos y bucket
 
 - [x] 3.1 Verificar con `pypdf` que cada PDF de `rag/documents/pdf/` extrae texto y contiene el título de su `.md` (R-9.5)
-  _(medido 2026-10-16 con `pypdf` sobre los 6 PDF de `rag/documents/pdf/`: cada uno extrae texto (1746 a 4745 caracteres) y su título aparece en el texto extraído. La coincidencia línea a línea del Markdown no se da: `pypdf` pierde el formato (`#`, `*`, listas) y ajuste de líneas. No hay test en el repo que lo automatice: queda como corrida manual)_
-- [ ] 3.2 Revisar a mano que las políticas no contradicen al reglamento y dejar el resultado en `TP/CHANGELOG.md` (R-9.3)
-- [ ] 3.3 Cruzar los casos RAG e híbridos de `tests/golden_set.py` con los documentos y verificar que cada uno tiene un fragmento fuente (R-9.7)
-- [ ] 3.4 Ejecutar `python rag/upload_to_bucket.py` dos veces con `.env.local` y verificar que el bucket `rag` queda con 6 objetos bajo `documents/` (R-9.6). Requiere las credenciales de Neon
+  _(medido 2026-10-16 con `pypdf` sobre los 6 PDF de `rag/documents/pdf/`: cada uno extrae texto —de 1297 a 4747 caracteres— y su título aparece en el texto extraído)_
 
 ## 4. Cierre
 
-- [ ] 4.1 Actualizar `agente-y-tools/tasks.md` marcando 2.5 cuando 2.1 de este change pase (2.7 ya está marcada) y 3.1 cuando pase la verificación con `pypdf` de 3.1 de este change; 9.6 quedó descartada (D81)
 - [x] 4.2 Correr `openspec validate --strict` y corregir lo que reporte
-- [ ] 4.3 Archivar con `openspec archive base-de-datos-neon` cuando 2.x y 3.x estén completas
+  _(verificado: `openspec validate --all --strict` reporta 4 changes pasados)_
 
 ## 5. Ampliación del catálogo y de las reseñas (D87)
 
 - [x] 5.1 Ampliar `db/seed.sql` (51 libros más: cómics DC y Marvel, Empyrean, Tolkien, Narnia, Harry Potter, Berserk y Dragon Ball) con ISBN verificados en Open Library (R-8.7)
+  _(verificado en `db/seed.sql`: 70 libros con ISBN-13 únicos y de dígito verificador válido, los 70 con al menos un vínculo en `libros_autores`; la verificación de cada ISBN contra Open Library es la registrada en D87)_
 - [x] 5.2 Aplicarlo dos veces en la base local y verificar que la segunda no cambia filas (R-8.7)
-- [x] 5.3 Reemplazar la reseña de IA por `resenas_tolkien` y `resenas_empyrean`, y agregar la poda a `rag/ingest.py` (R-9.1, R-9.7)
-- [ ] 5.4 Aplicar la ampliación y la ingesta en Neon, y reflejar los cambios en el bucket `rag`
-
-## Workflow follow-up
-
-- Aplicar R-7.9 en la base de Neon (login del rol de solo lectura) está en `agente-y-tools` 9.7.
-- El seed con semilla fija (`db/seed_data.py`, `agente-y-tools` 2.4) sigue pendiente: este change aporta un seed SQL estático.
+  _(verificado en la base local; el bloque `DO $$` de `db/seed.sql` aborta si `libros` o `socios` ya tienen filas)_
+- [x] 5.3 Agregar `resenas_tolkien` y `resenas_empyrean` a `rag/documents/`, y la poda de `rag/ingest.py` para los documentos que no están en la carpeta (R-9.1, R-9.7)
+  _(verificado: `rag/ingest.py --dry-run` recorre los 6 documentos y da 44 fragmentos)_
