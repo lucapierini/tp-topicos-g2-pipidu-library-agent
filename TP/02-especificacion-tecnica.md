@@ -393,7 +393,7 @@ class AgentAnswer:
     question: str
     classification: str      # sql | rag | hybrid | none
     sources: list[str]       # fuentes efectivamente usadas
-    answer: str              # texto sin línea de fuente: la fuente va en `sources` (R-5.2, D84)
+    answer: str              # texto sin mención de la fuente: la fuente va en `sources` (R-5.2, D84, D100)
     evidence: dict           # model (id, endpoint), language, sql, sql_original, rows, truncated, attempts,
                              # chunks, sql_attempts, sql_errors, error (code, detail), write_request,
                              # inconsistency, run_recording_error
@@ -444,7 +444,7 @@ R-7.4).
 
 **Cómo debe consumirlo el frontend** (a partir del evento `result`, que es un `AgentAnswer`):
 
-- `answer`: texto final, sin línea de fuente (D84): mostrar la fuente a partir de `sources` y no del texto.
+- `answer`: texto final, sin mención de la fuente (D84, D100): mostrar la fuente a partir de `sources` y de `evidence`, no del texto.
 - `answer_kind`: `answer`, `no_coverage` o `error`; conviene mostrarlos distinto.
 - `sources`: `sql`, `rag` o ambas; vacío cuando se declara ausencia de información o un error.
 - `title`: `null` en una respuesta normal; frase corta en los mensajes fijos de ausencia o error (R-5.9).

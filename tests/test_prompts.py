@@ -26,6 +26,15 @@ def test_the_prompt_states_the_language_of_the_answer_explicitly() -> None:
     assert "Respondé en castellano" in spanish and "Answer in English" not in spanish
 
 
+def test_the_prompt_forbids_naming_the_source_in_the_answer() -> None:
+    # R-5.2, D100: la fuente va en `sources` y en la evidencia; ni la línea "Fuente" ni el nombre del documento
+    # deben llegar al texto, así que el prompt no puede pedir lo contrario.
+    prompt = system_prompt()
+
+    assert "No menciones la fuente en la respuesta" in prompt
+    assert "Citá el documento" not in prompt
+
+
 def test_the_language_defaults_to_spanish() -> None:
     assert "Respondé en castellano" in system_prompt()
 

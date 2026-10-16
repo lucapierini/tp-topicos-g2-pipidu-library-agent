@@ -57,13 +57,19 @@ TOOLS_BY_CLASSIFICATION = {
 }
 SOURCES_BY_CLASSIFICATION = {"sql": {"sql"}, "rag": {"rag"}, "hybrid": {"sql", "rag"}}
 
-# La fuente se declara en `AgentAnswer.sources` y no en el texto (R-5.2, D84). Si el modelo escribe de
-# todos modos una última línea "Fuente: …" / "Source: …", se retira del cuerpo.
+# La fuente se declara en `AgentAnswer.sources` y no en el texto (R-5.2, D84, D100). Si el modelo escribe de
+# todos modos una última línea "Fuente: …" / "Source: …", o una cita entre paréntesis que empieza con
+# "Fuente:" o nombra un documento (`reglamento_biblioteca.pdf`), se retira del cuerpo.
 _TRAILING_SOURCE_LINE = re.compile(r"(?:\n+|^)[ \t]*(?:Fuentes?|Sources?)[ \t]*:[^\n]*\s*$", re.IGNORECASE)
+_SOURCE_CITATION = re.compile(
+    r"[ \t]*\((?:[ \t]*\*?(?:Fuentes?|Sources?)[ \t]*:[^()]*|[^()]*\b[\w\-]+\.pdf\b[^()]*)\)", re.IGNORECASE
+)
 
 
 def _strip_source_line(text: str) -> str:
-    return _TRAILING_SOURCE_LINE.sub("", text).strip()
+    text = _SOURCE_CITATION.sub("", text)
+    text = _TRAILING_SOURCE_LINE.sub("", text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
 # El sistema agrega sus propias notas (límite de filas, dato faltante). Si el modelo ya escribió una al
