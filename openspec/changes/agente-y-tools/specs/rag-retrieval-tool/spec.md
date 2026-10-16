@@ -26,15 +26,15 @@ Cada fragmento SHALL conservar identificador, documento de origen, ubicación (p
 
 ### Requirement: R-4.3 — Chunking por sección, sin tope de tokens ni solapamiento
 El sistema SHALL dividir cada documento en un fragmento por sección (artículo o paso numerado), sin
-cortar una sección entre fragmentos, sin tope de tokens y sin solapamiento (D97).
+cortar una sección entre fragmentos, sin tope de tokens y sin solapamiento (D10).
 
 #### Scenario: reproducibilidad del chunking
-- **GIVEN** un documento partido por sección (D97)
+- **GIVEN** un documento partido por sección (D10)
 - **WHEN** se reejecuta la ingesta sobre el mismo documento
 - **THEN** la cantidad de fragmentos es la misma que en la corrida anterior
 - **AND** cada fragmento es una sección completa de ese documento
 
-#### Scenario: sección más larga que el tope hipotizado
+#### Scenario: sección extensa
 - **GIVEN** una sección extensa del reglamento
 - **WHEN** se divide el documento
 - **THEN** la sección queda completa en un único fragmento
@@ -62,7 +62,7 @@ La ingesta SHALL ser idempotente: reejecutarla sobre el mismo documento no dupli
 - **GIVEN** un documento cuyo archivo no cambió desde la última ingesta
 - **WHEN** se vuelve a ejecutar la ingesta
 - **THEN** el documento se saltea y su cantidad de fragmentos no cambia
-- **AND** cada fragmento queda identificado de forma única por su documento y su posición (D98)
+- **AND** cada fragmento queda identificado de forma única por su documento y su posición (D11)
 
 ### Requirement: R-4.6 — Reporte de ausencia de resultados relevantes
 La herramienta SHALL reportar "no se encontró información relevante" cuando la similitud máxima esté
@@ -84,9 +84,8 @@ Cada fragmento devuelto SHALL incluir el documento de origen, para permitir la c
 
 ### Requirement: R-4.8 — Top-k y umbral en configuración, calibrados
 El top-k (5) y el umbral de similitud de coseno SHALL estar en configuración y haberse calibrado
-contra los documentos reales antes de fijarse como valor de aceptación. El valor inicial (0.35) fue una
-hipótesis: la calibración (0.67, D85) y la corrida completa con el corpus ampliado lo dejaron en 0.64 como
-valor provisorio, que es el valor por defecto vigente (D12, D85, D88).
+contra los documentos reales antes de fijarse como valor de aceptación. El umbral vigente es 0,64, calibrado
+contra los documentos reales, y es el valor por defecto de configuración (D12).
 
 #### Scenario: calibración documentada
 - **WHEN** se fija el umbral de similitud

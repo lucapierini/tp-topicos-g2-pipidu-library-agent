@@ -45,8 +45,8 @@ _(ninguna — es el primer change del proyecto)_
 - Roles de base de datos: `agent_ro` (solo lectura) y `agent_logger` (solo `INSERT` en `agent_runs`, D63).
 - Nuevas dependencias de ejecución (`requirements.txt`): `smolagents[litellm]`, `psycopg2-binary`, `pypdf`,
   `google-genai`, `sqlglot`, `fastapi`, `uvicorn` (la API HTTP, D75) y `python-dotenv` (`.env`, Art. 9).
-  `pytest`, `faker` y `ruff` son de desarrollo (`requirements-dev.txt`) y no entran a la imagen (D54).
-  `rag/requirements.txt` es solo para el integrante de RAG: `fpdf2` (genera los PDFs versionados, D86) y `boto3` (el upload al bucket, fuera del alcance local de D81).
+  `pytest` y `ruff` son de desarrollo (`requirements-dev.txt`) y no entran a la imagen (D54).
+  `rag/requirements.txt` es solo para el integrante de RAG: `fpdf2` (genera los PDFs que se versionan en el repositorio, D19), `boto3` (el upload al bucket, fuera del alcance local de D81) y `python-dotenv`.
 - Contenedor en ejecución: la imagen `runtime` arranca `uvicorn api.app:app` en `PORT` (8080 por defecto, D80).
 - Nuevas variables de entorno (`.env.example`): `GEMINI_API_KEY`, credenciales de BD (`POSTGRES_HOST`,
   `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`/`POSTGRES_PASSWORD` para `agent_ro`,
@@ -54,13 +54,14 @@ _(ninguna — es el primer change del proyecto)_
   `POSTGRES_ADMIN_PASSWORD` solo para compose y `scripts/export_runs.py`, D65) y, para cambiar de proveedor sin
   tocar código, `LLM_MODEL`, `LLM_API_BASE` y `LLM_API_KEY` (R-2.8). El flujo se valida primero contra un
   modelo local y la aceptación se mide después con Gemini. `API_ALLOWED_ORIGINS` agrega la allowlist de
-  CORS del frontend (R-7.8, D82).
+  CORS del frontend (R-7.8, D82). `NEON_DATABASE_URL` es la cadena de conexión de la base compartida para
+  `scripts/replicate_neon.sh` (secreto, solo en `.env`).
 - Los valores de configuración salen de `Config` (D6, D12, D15): `GEMINI_MODEL` (el modelo definitivo, D71),
-  `GEMINI_EMBEDDING_MODEL` y `EMBEDDING_DIM` (D5), `RAG_TOP_K`, `RAG_SIMILARITY_THRESHOLD` (0,64 provisorio, D88),
+  `GEMINI_EMBEDDING_MODEL` y `EMBEDDING_DIM` (D5), `RAG_TOP_K`, `RAG_SIMILARITY_THRESHOLD` (0,64, D12),
   `SQL_MAX_ROWS`, `SQL_STATEMENT_TIMEOUT_MS`, `SQL_MAX_ATTEMPTS`, `SQL_MAX_TABLE_REFS`, `AGENT_TEMPERATURE`,
-  `AGENT_MAX_STEPS`, `AGENT_API_TIMEOUT_S`, `AGENT_RUNS_BACKEND`, `CUATRIMESTRE_START`, `CUATRIMESTRE_END`, `APP_TIMEZONE`.
+  `AGENT_MAX_STEPS`, `AGENT_API_TIMEOUT_S`, `AGENT_API_MAX_RETRIES`, `AGENT_RUNS_BACKEND`, `CUATRIMESTRE_START`, `CUATRIMESTRE_END`, `APP_TIMEZONE`.
 - Para `docker compose`: `PG_IMAGE` (imagen de la base, D65), `DEV_SEED` (`full` carga `db/seed.sql` por defecto,
   `1` el seed de pruebas, `0` base vacía; solo al crear el volumen, D91), `INGEST_DATABASE_URL` (destino de la
   ingesta, D92) y `WEB_PORT`/`API_PORT` (puertos publicados solo en loopback, D93).
-- Despliegue en **entorno local** (D81): el criterio de promoción 1 (nube) deja de estar cubierto. Sin
-  autenticación: el endpoint no queda expuesto a clientes externos (D82).
+- Despliegue en **entorno local** (D81): el criterio de promoción 1 (despliegue en la nube) no está
+  cubierto. Sin autenticación: el endpoint no queda expuesto a clientes externos (D82).
