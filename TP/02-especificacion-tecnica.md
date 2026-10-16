@@ -55,7 +55,7 @@ flowchart TB
 **`autores`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | nombre | VARCHAR(100) | |
 | apellido | VARCHAR(100) | |
 | nacionalidad | VARCHAR(50) | |
@@ -64,21 +64,21 @@ flowchart TB
 **`editoriales`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | nombre | VARCHAR(100) | |
 | pais | VARCHAR(50) | |
 
 **`categorias`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | nombre | VARCHAR(80) | ej. "Ciencias de la Computación", "Literatura" |
 | descripcion | TEXT | |
 
 **`libros`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | titulo | VARCHAR(200) | |
 | isbn | VARCHAR(20) | único |
 | editorial_id | FK → editoriales.id | |
@@ -97,7 +97,7 @@ flowchart TB
 **`socios`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | nombre | VARCHAR(100) | |
 | apellido | VARCHAR(100) | |
 | legajo | VARCHAR(20) | único, para alumnos |
@@ -108,7 +108,7 @@ flowchart TB
 **`prestamos`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | libro_id | FK → libros.id | |
 | socio_id | FK → socios.id | |
 | fecha_prestamo | DATE | |
@@ -149,7 +149,8 @@ como "fragmento N". El índice HNSW usa `vector_cosine_ops` (D13). La herramient
 ### 3.2.2 Trazabilidad `agent_runs` (R-6.x)
 
 Una fila por consulta, resuelta o no (`db/migrations/001_agent_runs.sql`). Se escribe con el rol
-`agent_logger`, que solo puede `INSERT`; `agent_ro` no la ve (D63).
+`agent_logger`, que solo puede `INSERT` y leer el id generado (`SELECT (id)` para `RETURNING`); `agent_ro`
+no la ve (D63).
 
 | Columna | Origen / requisito |
 |---|---|
@@ -173,15 +174,16 @@ respuesta, pero tampoco se finge que se registró.
 `docker compose up -d --build --wait` levanta PostgreSQL + pgvector (`db`), ingesta el RAG (`ingest`, D92) y arranca la
 API y la web. `db` ejecuta `db/init/10-roles.sh` al crear el volumen: crea los roles `agent_ro` y
 `agent_logger`, aplica `db/schema.sql`, `db/migrations/001_agent_runs.sql`, los permisos (`db/post_restore.sql`) y
-el seed que elige `DEV_SEED`: `full` (por defecto, D91) = `db/seed.sql`, el catálogo completo; `1` =
-`db/dev_seed.sql` (pocas filas deterministas con fechas relativas a `CURRENT_DATE`, lo que esperan los tests de
-integración); `0` = base vacía. `scripts/replicate_neon.sh` trae el esquema y los datos de Neon con
+el seed que elige `DEV_SEED`: `full` (por defecto, D91) = `db/seed.sql`, el catálogo completo, que es el
+seed que necesita el test de volumen de `tests/test_seed_contract.py`; `1` = `db/dev_seed.sql` (pocas filas
+deterministas con fechas relativas a `CURRENT_DATE`, la foto que esperan `tests/test_golden_seed.py` y
+`tests/test_runs_integration.py`); `0` = base vacía. `scripts/replicate_neon.sh` trae el esquema y los datos de Neon con
 `pg_dump` desde un contenedor, solo lectura y sin imprimir la connection string.
 
 ### 3.3 Datos sintéticos
 
 - Catálogo real (títulos, autores, editoriales e ISBN verificados en Open Library) con socios y préstamos sintéticos.
-- Volumen objetivo: **≥15 registros por tabla** del dominio, verificado por `tests/test_seed_contract.py`.
+- Volumen objetivo: **≥15 registros por tabla** del dominio. Lo verifica `tests/test_seed_contract.py` contra la base real con el seed completo (`db/seed.sql`, `DEV_SEED=full`); el seed mínimo (`db/dev_seed.sql`, `DEV_SEED=1`) no llega a 15 filas en todas las tablas.
 - Seed versionado en el repo: `db/seed.sql` (catálogo completo, lo carga `docker compose up`) y `db/dev_seed.sql` (datos de desarrollo, `DEV_SEED=1`).
 
 ### 3.4 Contrato de datos que lee el agente
@@ -234,7 +236,10 @@ Reglas de consistencia que el seed debe cumplir (T2.7): `ejemplares_disponibles 
 fecha_devolucion_prevista`, resuelto por la vista y no por un valor escrito.
 
 Volumen: >= 15 filas en cada una de las 7 tablas del dominio de la tabla de §3.4.1 (la vista no
-cuenta), verificado por `tests/test_seed_contract.py` contra la base real con el rol `agent_ro`.
+cuenta). El seed completo (`db/seed.sql`, `DEV_SEED=full`) carga entre 18 y 95 filas (libros 70, autores 57,
+editoriales 28, categorías 18, libros_autores 95, socios 20, préstamos 28) y
+`tests/test_seed_contract.py` lo verifica contra la base real con el rol `agent_ro` con ese seed; el seed
+mínimo (`db/dev_seed.sql`, `DEV_SEED=1`) no llega a 15 filas en todas las tablas.
 
 #### 3.4.3 Lo que la recuperación necesita de la ingesta
 
@@ -565,7 +570,7 @@ tp-topicos-g2-pipidu-library-agent/
 │   ├── retry.py                  # reintento ante 429 (D57)
 │   ├── runs.py                   # registro en agent_runs (R-6.x, D67)
 │   ├── contracts.py              # SqlResult, Chunk, RagResult, AgentAnswer
-│   ├── errors.py                 # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, COLUMN_NOT_ALLOWED, FUNCTION_NOT_ALLOWED, TIMEOUT, EXECUTION_ERROR
+│   ├── errors.py                 # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, COLUMN_NOT_ALLOWED, FUNCTION_NOT_ALLOWED, QUERY_TOO_COMPLEX, TIMEOUT, EXECUTION_ERROR, NO_RELEVANT_RESULTS, RETRIEVAL_ERROR
 │   ├── sql_validator.py          # validación estática con sqlglot (D4)
 │   ├── config/                   # Config desde entorno (D6, D12, D15) + schema_whitelist.py (R-3.4)
 │   ├── prompts/                  # system_prompt.md, classifier_prompt.md
@@ -575,6 +580,7 @@ tp-topicos-g2-pipidu-library-agent/
 │   └── app.py                    # FastAPI: POST /ask (SSE), GET /health; único acceso al agente (D75, D80)
 ├── web/                          # SPA Vite + shadcn/ui: cliente de la API (D93)
 ├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+├── openspec/                     # cambios con specs, design y tasks; `project.md`, `config.yaml`
 ├── TP/                           # artefactos SDD legibles para la entrega
 ├── informe/                      # informe técnico (informe-tecnico.md y su PDF)
 └── tests/

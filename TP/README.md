@@ -41,7 +41,7 @@ Change `agente-y-tools` (agente y tools; los IDs `R-1.x` a `R-7.x`):
 Change `base-de-datos-neon` (justificación del esquema, seed y documentos fuente del RAG):
 
 - `esquema-de-base-de-datos` (`R-7.1` a `R-7.10`)
-- `datos-de-prueba` (`R-8.1` a `R-8.7`)
+- `datos-de-prueba` (`R-8.1`, `R-8.2` y `R-8.4` a `R-8.8`)
 - `documentos-fuente-rag` (`R-9.1` a `R-9.7`)
 
 Changes `frontend-web-vite` y `frontend-markdown-answer` (interfaz web): capability `interfaz-web`

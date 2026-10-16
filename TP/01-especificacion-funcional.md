@@ -47,7 +47,7 @@ Desarrollar un **SQL AI Agent** capaz de:
   7. `libros_autores` (relación N:M libros-autores; no existe `libros.autor_id`, D64)
 - El repositorio documental (`documentos` y `documentos_chunks`) es el índice RAG, no una tabla del modelo
   relacional: se describe en la especificación técnica (§3.2.1).
-- Cada tabla poblada con **15-20 registros sintéticos** como mínimo (cumple el mínimo de 15 exigido).
+- Cada tabla con **al menos 15 registros** (el seed completo carga entre 18 y 95).
 - Los datos deben ser coherentes y permitir consultas significativas (joins, agregaciones, filtros, rankings).
 
 ### 5.2 Consultas en lenguaje natural → SQL

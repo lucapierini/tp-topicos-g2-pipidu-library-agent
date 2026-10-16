@@ -198,6 +198,9 @@ sin cobertura entre **0,597 y 0,649**. Las poblaciones **se solapan** (`separabl
 0,646 vs. mejor negativo 0,649), así que ningún umbral las separa: hace falta otro modelo de embeddings,
 otro chunking o más casos negativos (D12).
 
+El archivo de evidencia registra "threshold": 0.67 porque guarda el umbral configurado al momento de correr
+el script; el valor vigente es 0,64 (D12).
+
 ---
 
 ## 4. Prueba de clasificación de fuente (R-2.1)
@@ -427,5 +430,4 @@ conexión (`sql_backend`, `retriever`, `recorder`: tres por agente), el agente e
 **Recomendación:** para una demostración de 3 a 5 personas mantener la serialización (D77) — la espera
 típica es de 12 a 24 s y los latidos mantienen viva la conexión. Cambiar solo si la consigna exige
 consultas realmente simultáneas; en ese caso conviene la opción por sesión, que no exige reescribir el
-requisito de serialización. Como propuesta, no aplicada: un R-1.4 nuevo que fije el ámbito de la
-serialización (por sesión o por pool) y el máximo de conexiones.
+requisito de serialización.

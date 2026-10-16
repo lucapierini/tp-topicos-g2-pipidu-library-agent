@@ -203,8 +203,8 @@ cd web && npm test           # tests de la interfaz
 
 Los tests marcados `integration` necesitan la base en marcha; los de `tests/test_runs_integration.py` **truncan
 `agent_runs`**, así que no corras `pytest -m integration` completo sobre una base con historial que quieras conservar. Los `llm`
-llaman al modelo real. Ninguno corre por defecto. Para los de contrato del seed (solo lectura):
-`python -m pytest tests/test_seed_contract.py -m integration`.
+llaman al modelo real. Ninguno corre por defecto. Para los de contrato del seed (solo lectura), con el seed
+completo: `python -m pytest tests/test_seed_contract.py -m integration`.
 
 ### Problemas frecuentes
 
@@ -216,8 +216,9 @@ llaman al modelo real. Ninguno corre por defecto. Para los de contrato del seed 
 - **Cambié `DEV_SEED`**: solo aplica al crear el volumen; hay que hacer `docker compose down -v` y volver a levantar.
 - **Si `.env` apunta a Neon** (`NEON_DATABASE_URL` completo), `docker compose` igual usa la base local para `api`, `ingest` y `agent`.
 
-`DEV_SEED` (opcional, en `.env`): `full` (por defecto) carga el catálogo completo; `1` carga el seed mínimo de pruebas
-(`db/dev_seed.sql`, lo que esperan los tests de integración); `0` deja la base vacía.
+`DEV_SEED` (opcional, en `.env`): `full` (por defecto) carga el catálogo completo, que es el seed que necesita el
+test de volumen de `tests/test_seed_contract.py`; `1` carga el seed mínimo de pruebas (`db/dev_seed.sql`, la foto
+determinista que esperan `tests/test_golden_seed.py` y `tests/test_runs_integration.py`); `0` deja la base vacía.
 
 ## Interfaz web (D93)
 
