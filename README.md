@@ -26,7 +26,7 @@ La API (`POST /ask` con streaming SSE, `GET /health`) es el único acceso al age
 ## Estructura
 
 ```
-TP/            artefactos SDD (constitución, specs, validación, changelog, enunciado)
+TP/            artefactos SDD (constitución, especificación funcional y técnica, validación, changelog, evidencia, enunciado)
 openspec/      raíz operativa de SDD (project.md, config.yaml, changes/)
 db/            schema.sql, seed.sql (catálogo completo), dev_seed.sql (seed mínimo), migrations/, init/ (roles y carga inicial)
 rag/           documentos fuente (.md y pdf/), ingest.py (ingesta a pgvector) y build_pdfs.py
@@ -275,9 +275,8 @@ Las variables de entorno están documentadas una por una en `.env.example`.
 
 ## Estado
 
-Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`). El agente, la API con streaming y cancelación, y la
-interfaz web (D93) están implementados. La clasificación con el modelo definitivo se midió 13/13 el 2026-10-10 y el 2026-10-11 (`gemini-3.1-flash-lite`,
-`TP/evidencia/`); el prompt cambió después (D88, D94) y la corrida de aceptación no se repitió. Pendiente: el informe y la verificación final con el equipo; el detalle está en
-[`tasks.md`](openspec/changes/agente-y-tools/tasks.md). Las specs se validan con `openspec validate --all --strict` y los
-cuatro changes están en [`openspec/changes/`](openspec/changes/): `agente-y-tools`, `base-de-datos-neon`,
+Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`): todas las tareas de los cuatro changes están terminadas. El agente, la API con streaming y cancelación, y la
+interfaz web (D93) están implementados. La clasificación con el modelo definitivo (`gemini-3.1-flash-lite`, D71) midió 13/13 casos correctos el 2026-10-10 y el 2026-10-11, sobre el
+mínimo de 11 (R-2.1); las dos corridas, la exportación de `agent_runs` y la calibración del umbral están en `TP/evidencia/`. Las specs se validan con
+`openspec validate --all --strict` y los cuatro changes están en [`openspec/changes/`](openspec/changes/): `agente-y-tools`, `base-de-datos-neon`,
 `frontend-web-vite` y `frontend-markdown-answer`.

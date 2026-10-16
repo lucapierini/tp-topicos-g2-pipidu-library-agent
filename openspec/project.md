@@ -15,7 +15,7 @@ Entrega: 16/10/2026 23:59 (GMT-03). Coloquio: 23/10 o 30/10/2026.
 |---|---|
 | Lenguaje | Python 3.12+ (el código usa sintaxis de 3.12) |
 | Base de datos | PostgreSQL + pgvector |
-| LLM | Google Gemini (aceptación y ejecución del sistema, D81). En desarrollo puede apuntarse a un servidor local compatible con la API de OpenAI vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`): valida el flujo, no reemplaza la medición de aceptación (R-2.8) |
+| LLM | Google Gemini (aceptación y ejecución del sistema, D71). En desarrollo puede apuntarse a un servidor local compatible con la API de OpenAI vía LiteLLM (`LLM_MODEL`, `LLM_API_BASE`): valida el flujo, no reemplaza la medición de aceptación (R-2.8) |
 | Embeddings | Gemini Embeddings API |
 | Framework agéntico | Smolagents |
 | Acceso al agente | API HTTP con FastAPI + uvicorn (streaming SSE); el frontend (`web/`, Vite + shadcn/ui) es un cliente de la API (D80, D93) |
@@ -25,7 +25,7 @@ Entrega: 16/10/2026 23:59 (GMT-03). Coloquio: 23/10 o 30/10/2026.
 
 ```
 db/            schema.sql, seed.sql (catálogo completo), dev_seed.sql (seed mínimo), migrations/, init/ (roles y carga
-               inicial), post_restore.sql (seed_data.py y dump.sql: pendientes)
+               inicial), post_restore.sql
 rag/           documents/ (.md y pdf/), ingest.py, build_pdfs.py, upload_to_bucket.py, requirements.txt
 agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, smol_tools.py)

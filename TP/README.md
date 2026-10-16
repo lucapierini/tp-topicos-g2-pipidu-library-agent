@@ -10,7 +10,7 @@ Un artefacto vive en **un solo lugar**:
 |---|---|
 | Principios / gobernanza | `TP/00-constitucion.md` |
 | Contexto y alcance funcional | `TP/01-especificacion-funcional.md` |
-| Requirement / Spec (WHAT) | `openspec/changes/agente-y-tools/specs/<capacidad>/spec.md` — acá viven los IDs `R-x.y` |
+| Requirement / Spec (WHAT) | `openspec/changes/<change>/specs/<capacidad>/spec.md` — acá viven los IDs `R-x.y` |
 | Plan (HOW) | `TP/02-especificacion-tecnica.md` (arquitectura y contratos) + `design.md` (decisiones indexadas) |
 | Decisiones | `TP/CHANGELOG.md` |
 | Tasks | `openspec/changes/agente-y-tools/tasks.md` |
