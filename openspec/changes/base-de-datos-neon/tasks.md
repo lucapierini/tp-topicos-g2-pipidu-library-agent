@@ -21,7 +21,7 @@
 ## 4. Cierre
 
 - [x] 4.2 Correr `openspec validate --strict` y corregir lo que reporte
-  _(verificado: `openspec validate --all --strict` reporta 4 changes pasados)_
+  _(verificado: `openspec validate --all --strict` reporta 5 changes pasados)_
 
 ## 5. Ampliación del catálogo y de las reseñas (D87)
 

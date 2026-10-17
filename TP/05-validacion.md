@@ -153,53 +153,39 @@ deben lanzar excepción, y un test que verifica que cada función de la allowlis
 | R3 | "condiciones para renovar un préstamo" | top-1 pertenece a `reglamento_biblioteca.pdf` |
 | R4 | "precio del libro Rayuela" | similitud máxima < umbral → reporte de no-relevancia |
 
-### Casos extra de la calibración (`CALIBRATION_EXTRA`)
+### Calibración y evaluación del RAG (D97 a D100)
 
-`scripts/calibrate_threshold.py` suma 12 preguntas y usa además G6–G9 y B2: 21 casos en total.
+La recuperación se mide con tres conjuntos de consultas etiquetadas, verificables sin red ni base (cada consulta
+con cobertura lleva un término que su documento contiene y cada una sin cobertura, uno que ningún documento
+contiene; `tests/test_calibration_set.py` y `tests/test_validation_set.py`):
 
-| # | Pregunta | Cobertura esperada | Similitud top-1 medida |
-|---|---|---|---|
-| R5 | ¿Hay wifi disponible en la sala de lectura? | ninguna | 0,649 |
-| R6 | ¿La biblioteca tiene cafetería o estacionamiento? | ninguna | 0,644 |
-| R7 | ¿Puedo reservar una sala de estudio grupal? | ninguna | 0,597 |
-| R8 | ¿Cuánto cuesta imprimir o sacar fotocopias? | ninguna | 0,602 |
-| R9 | ¿cuánto es la multa por día de atraso? | RAG | 0,771 |
-| R10 | ¿hasta qué hora está abierta la biblioteca? | RAG | 0,735 |
-| R11 | ¿cuántos libros puedo tener prestados a la vez? | RAG | 0,765 |
-| R12 | ¿De qué trata El Hobbit? | RAG | 0,732 |
-| R13 | ¿En qué orden conviene leer los libros de Tolkien? | RAG | 0,737 |
-| R14 | ¿De qué trata la saga Alas de hierro? | RAG | 0,706 |
-| R15 | ¿Quién es Violet Sorrengail y qué le pasa en la academia? | RAG | 0,646 |
-| R16 | ¿De qué trata la saga Canción de hielo y fuego? | ninguna | 0,627 |
-| G6–G9 | plazos, reseña de Cien años de soledad, renovación, horario | RAG | 0,755 / 0,762 / 0,703 / 0,758 |
-| B2 | días antes de la multa (inglés) | RAG | 0,686 |
+| Conjunto | Consultas | Uso |
+|---|---|---|
+| Calibración (`tests/calibration_set.py` + casos RAG del golden set y `CALIBRATION_EXTRA`) | 126: 77 con cobertura y 49 sin ella (20 del dominio que comparten vocabulario, 10 de libros del catálogo sin reseña, 8 ajenas, 5 en inglés y otras) | Elegir umbrales y parámetros (D97, D98) |
+| Validación (`tests/validation_set.py`) | 63 nuevas: 35 con cobertura y 28 sin ella, sin preguntas en común con las anteriores | Confirmar fuera de muestra, sin reajustar (D99) |
+| Golden set (G1–G13, B1–B2) | 15 | Aceptación de punta a punta (R-2.1) |
 
-El valor vigente es top-k = 5 (`RAG_TOP_K`) y umbral de similitud de coseno = **0,64**
-(`RAG_SIMILARITY_THRESHOLD`, default en `agent/config/__init__.py` y `.env.example`).
+**Cómo se mide.** `scripts/calibrate_threshold.py --out TP/evidencia/calibracion_umbral.json` calcula, sobre la
+base ya ingestada, un barrido de umbrales (recall, falsos positivos, precisión y F1), el AUC, los umbrales
+candidatos, la similitud por grupo y si el fragmento de arriba es del documento esperado.
+`scripts/evaluate_retrieval.py` compara el coseno con el léxico, el híbrido y el re-ranking
+(`TP/evidencia/busqueda_hibrida_rerank.json`) y `scripts/measure_retrieval.py` mide el `retrieve()` de producción
+(`TP/evidencia/retrieval_produccion.json`).
 
-### Cómo se calibra el umbral
+**Resultado con coseno** (`gemini-embedding-001`, 126 consultas, `calibracion_umbral.json`): AUC 0,983 y el
+documento correcto sale primero en el 98,4 % de los casos. Al umbral 0,64: recall 100 %, 10 de 49 falsos
+positivos (F1 0,939). Los grupos se solapan (peor positivo 0,646, mejor negativo 0,704), así que ningún umbral de
+coseno acierta todo; el 0,64 prioriza no rechazar preguntas válidas. Fuera de muestra el coseno empeora: AUC 0,912
+y 13 de 28 falsos positivos en producción (D99, D100).
 
-El umbral no es un criterio de aceptación hasta estar medido. Calibrar = medir la distribución real de
-similitud de coseno sobre los chunks efectivamente ingesta dos y elegir el valor que separa las dos
-poblaciones:
+**Resultado con re-ranking** (estrategia por defecto, D100): el modelo puntúa de 0 a 3 si cada uno de los 5
+candidatos contiene la respuesta y el corte usa el puntaje combinado. En validación: recall 0,94 con 1 de 28
+falsos positivos (F1 0,96); en calibración, 1 de 49 (F1 0,98). Cuesta una llamada al modelo por consulta
+documental (unos 0,9 s).
 
-1. Correr los 21 casos (R1–R16, G6–G9, B2) contra la base ya ingesta y registrar la similitud top-1 de
-cada pregunta (`scripts/calibrate_threshold.py --out TP/evidencia/calibracion_umbral.json`).
-2. Separar dos poblaciones: preguntas **con** cobertura esperada (R1–R3, R9–R15, G6–G9, B2) y preguntas
-**sin** cobertura (R4–R8, R16).
-3. Elegir el umbral en el hueco entre ambas poblaciones, con un margen de seguridad de ~0,05.
-4. Si no hay hueco (las poblaciones se solapan), el problema no es el umbral: es el chunking o el modelo
-de embeddings. Se registra en `CHANGELOG.md` y se ajusta antes de fijar el número.
-5. Reejecutar los casos con el umbral elegido y dejar la tabla de similitudes como evidencia del informe.
-
-**Resultado medido** (2026-10-13, `gemini-embedding-001` sobre los chunks reales, 21 casos,
-`TP/evidencia/calibracion_umbral.json`): los 15 casos con cobertura quedan entre **0,646 y 0,802** y los 6
-sin cobertura entre **0,597 y 0,649**. Las poblaciones **se solapan** (`separable: false`, peor positivo
-0,646 vs. mejor negativo 0,649), así que ningún umbral las separa: hace falta otro modelo de embeddings,
-otro chunking o más casos negativos (D12).
-
-El archivo de evidencia registra "threshold": 0.67 porque guarda el umbral configurado al momento de correr
-el script; el valor vigente es 0,64 (D12).
+**Valores vigentes:** top-k = 5 (`RAG_TOP_K`), `RAG_STRATEGY=rerank` con `RAG_RERANK_THRESHOLD` = 0,40, y umbral
+de coseno `RAG_SIMILARITY_THRESHOLD` = **0,64** para `RAG_STRATEGY=dense` o cuando falla la llamada de
+re-ranking (defaults en `agent/config/__init__.py` y `.env.example`). Cambiar de modelo exige repetir la medición.
 
 ---
 
@@ -229,8 +215,8 @@ Reglas:
 3. El validador de SQL es el real; la base de desarrollo (`db/dev_seed.sql`) y el corpus simulado son los
    backends falsos: la corrida mide clasificación, herramientas invocadas, orden y SQL aceptado, **no** el
    contenido (D59). Los `check` de contenido corren con `--db` (casos SQL) y con `--rag-mock` (casos RAG;
-   D69); un híbrido se evalúa solo con ambos. Los PDFs existen y están ingesta dos: se usan en la calibración
-   (`scripts/calibrate_threshold.py`), no en la corrida del golden set.
+   D69) y con `--rag-real` (recuperación de producción sobre los PDFs ingestados, con re-ranking por defecto); un
+   híbrido se evalúa solo con la base y la recuperación a la vez (reales o simuladas).
 4. Un modelo local más débil puede clasificar bien y aun así generar peor SQL; que el validador rechace sus
    errores es el comportamiento esperado, no una falla de la prueba.
 5. Si el modelo definitivo cambia (p. ej. por cuota), la medición de aceptación se repite completa.
@@ -243,7 +229,8 @@ Corridas registradas:
 | 2026-10-10 | Strata `qwen3.8-flash-next-iq2_xs` (local) | 12/13 clasificados + 1 error del clasificador (G12) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-10.json` |
 | 2026-10-11 | Strata `qwen3.8-flash-next-iq2_xs` (local), base local + RAG simulado (`--db --rag-mock`, D69) | 12/13 clasificados + 1 error del clasificador (G12, timeout) | 2/3 | 1/1 | 12/13 | 0/7 | No: validación del flujo y del contenido. Evidencia: `TP/evidencia/golden_strata-qwen3.8-flash-next-iq2_xs_2026-10-11_db-mock.json` |
 | 2026-10-11 | `gemini-3.1-flash-lite`, base local + RAG simulado (`--db --rag-mock`, D69) | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí para R-2.1: es el modelo definitivo (D71); el retrieval es simulado. Más 2 casos en inglés (`B1`, `B2`, fuera de los 13): 2/2 con idioma y contenido. Evidencia: `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json` y export de `agent_runs` en `TP/evidencia/agent_runs_2026-10-11.json` |
-| 2026-10-16 | `gemini-3.1-flash-lite`, base local con el seed completo + recuperación real (`--db --rag-real`) | 12/13 clasificados + 1 error del clasificador (G9, 503 de la API) | 3/3 | 1/1 | 12/13 | 0/8 | Sí: modelo definitivo con base y recuperación reales. Contenido 12/13 (SQL 5/5, RAG 3/4, híbridos 3/3, `none` 1/1). G9 repetido solo: clasificó `rag` y el contenido es correcto. Casos en inglés 2/2. Evidencia: `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-16_db-rag.json`, `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-16_db-rag_G9.json` y `TP/evidencia/agent_runs_2026-10-16.json` |
+| 2026-10-16 | `gemini-3.1-flash-lite`, base local con el seed completo + recuperación real por coseno (`--db --rag-real`, umbral 0,64) | 12/13 clasificados + 1 error del clasificador (G9, 503 de la API) | 3/3 | 1/1 | 12/13 | 0/8 | Sí: modelo definitivo con base y recuperación reales. Contenido 12/13 (SQL 5/5, RAG 3/4, híbridos 3/3, `none` 1/1). G9 repetido solo: clasificó `rag` y el contenido es correcto. Casos en inglés 2/2. Evidencia: `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-16_db-rag.json`, `TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-16_db-rag_G9.json` y `TP/evidencia/agent_runs_2026-10-16.json` |
+| 2026-10-16 | `gemini-3.1-flash-lite`, base local (`dev_seed.sql`) + recuperación de producción con re-ranking (`--db --rag-real --bilingual`, D100) | 13/13 | 3/3 | 1/1 | 13/13 | 0/8 | Sí: modelo definitivo con base y recuperación reales. Contenido 13/13 (SQL 5/5, RAG 4/4, híbridos 3/3, `none` 1/1), 13 consultas en `agent_runs`, casos en inglés 2/2. Evidencia: `TP/evidencia/golden_rag_real_rerank.json` |
 
 Lectura de la corrida del 2026-10-11 (Strata, `--db --rag-mock`):
 
@@ -293,8 +280,8 @@ contenido de los 13 casos. Qué mide y qué no:
 | Que la composición declare fuente y evidencia en RAG e híbridos | Calibración del umbral (D12): el del mock es 0,15 y no es comparable |
 | El caso sin cobertura (G13/R4) con la política de no-relevancia | El contenido real del reglamento: los fragmentos son de prueba |
 
-Toda fila medida con `--rag-mock` debe decirlo en la columna "Cuenta como aceptación". Los PDFs existen (6
-en `rag/documents/pdf/`) y el umbral está medido.
+Toda fila medida con `--rag-mock` debe decirlo en la columna "Cuenta como aceptación". La recuperación real se
+mide con `--rag-real` sobre los 6 PDFs de `rag/documents/pdf/`.
 
 Lectura de la corrida local: el error de G12 fue técnico, no de clasificación: el modelo razona y con
 `max_tokens=1024` el servidor devolvió `finish_reason=length` con el JSON incompleto (3 de 3 intentos, D62).

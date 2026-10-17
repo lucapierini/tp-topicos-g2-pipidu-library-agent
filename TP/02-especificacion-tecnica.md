@@ -271,7 +271,11 @@ Total: entre 4 y 6 PDFs (mínimo exigido: 2).
 3. Generación de embeddings (Gemini Embeddings API).
 4. Almacenamiento en `pgvector`: un registro en `documentos` y un fragmento por fila en
    `documentos_chunks` (`embedding vector(768)`, `metadata jsonb` con la ubicación citable). Ver §3.2.1.
-5. Retrieval por similitud coseno (top-k) en tiempo de consulta.
+5. Retrieval en tiempo de consulta (R-4.4, R-4.11): los 5 fragmentos de mayor similitud de coseno son los candidatos.
+   Con `RAG_STRATEGY=rerank` (valor por defecto, D100) el modelo puntúa de 0 a 3 si cada candidato contiene la
+   respuesta y el corte usa el puntaje combinado `0.7·relevancia + 0.3·coseno normalizado ≥ RAG_RERANK_THRESHOLD`
+   (0.40); se devuelven los fragmentos con relevancia ≥ 1. Con `RAG_STRATEGY=dense`, o si la llamada de re-ranking
+   falla en esa consulta, el corte es el umbral de coseno `RAG_SIMILARITY_THRESHOLD` (0.64, D12).
 
 ## 5. Arquitectura del agente
 
@@ -302,9 +306,9 @@ con cualquier otro proveedor, validado contra el mismo vocabulario (`sql`, `rag`
 un límite de cuota (429) se reintenta con la espera que informa la API (D57).
 
 El LLM (Gemini) actúa como **orquestador**: clasifica la consulta mediante salida estructurada
-obligatoria (R-2.7), decide qué tool(s) invocar, genera el SQL y redacta la respuesta final. La
-diferencia con el diseño anterior es que **el SQL lo genera el agente, no la tool** (D1): así la tool
-puede testearse sin credenciales de API y el SQL queda atribuido al agente.
+obligatoria (R-2.7), decide qué tool(s) invocar, genera el SQL y redacta la respuesta final. **El SQL lo
+genera el agente, no la tool** (D1): así la tool puede testearse sin credenciales de API y el SQL queda
+atribuido al agente.
 
 ### 5.2 Seguridad en generación de SQL
 
@@ -574,21 +578,22 @@ tp-topicos-g2-pipidu-library-agent/
 │   ├── sql_validator.py          # validación estática con sqlglot (D4)
 │   ├── config/                   # Config desde entorno (D6, D12, D15) + schema_whitelist.py (R-3.4)
 │   ├── prompts/                  # system_prompt.md, classifier_prompt.md
-│   └── tools/                    # sql_tool.py (execute_sql, D1), rag_tool.py, smol_tools.py
+│   └── tools/                    # sql_tool.py (execute_sql, D1), rag_tool.py, reranker.py (D100), smol_tools.py
 ├── api/
 │   ├── __init__.py
 │   └── app.py                    # FastAPI: POST /ask (SSE), GET /health; único acceso al agente (D75, D80)
 ├── web/                          # SPA Vite + shadcn/ui: cliente de la API (D93)
-├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
+├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, evaluate_retrieval.py, measure_retrieval.py, probe_llm.py, replicate_neon.sh
 ├── openspec/                     # cambios con specs, design y tasks; `project.md`, `config.yaml`
 ├── TP/                           # artefactos SDD legibles para la entrega
 ├── informe/                      # informe técnico (informe-tecnico.md y su PDF)
 └── tests/
     ├── golden_set.py             # fixtures compartidas (D16)
+    ├── calibration_set.py, validation_set.py   # consultas etiquetadas del RAG (D97, D99)
     ├── fakes.py, rag_fixture.py, conftest.py
     ├── test_sql_validator.py y test_sql_validator_hardening.py (casos S1–S35)
     ├── test_sql_tool.py, test_sql_tool_offline.py
-    ├── test_rag_tool.py, test_rag_fixture.py
+    ├── test_rag_tool.py, test_rag_fixture.py, test_rerank_retrieval.py
     ├── test_golden_set.py, test_golden_seed.py, test_seed_contract.py
     ├── test_agent.py, test_agent_smolagents.py, test_classifier.py, test_retry.py
     ├── test_contracts.py, test_prompts.py, test_config.py, test_schema_whitelist.py
@@ -608,9 +613,13 @@ prueba cada archivo.
 - `execute_sql`: `tests/test_sql_tool_offline.py` (sanitización, límite de filas, regeneración, sin base ni
   credenciales) y `tests/test_sql_tool.py` (ejecución correcta de queries conocidas con el rol `agent_ro`,
   `integration`).
-- `rag_tool`: `tests/test_rag_tool.py` (top-k, umbral y no-relevancia con el embedder y el store como dobles)
+- `rag_tool`: `tests/test_rag_tool.py` (top-k, umbral y no-relevancia con el embedder y el store como dobles),
+  `tests/test_rerank_retrieval.py` (re-ranking, corte combinado y vuelta al coseno si la llamada falla, D100)
   y `tests/test_rag_fixture.py` (el corpus simulado responde a las preguntas del golden set; no mide
   semántica, D16).
+- Calibración y evaluación del RAG (D97–D100): `tests/calibration_set.py` y `tests/validation_set.py` (consultas
+  etiquetadas, verificables sin red ni base por `tests/test_calibration_set.py` y `tests/test_validation_set.py`),
+  `tests/test_calibrate_threshold.py`, `tests/test_evaluate_retrieval.py` y `tests/test_measure_retrieval.py`.
 - Golden set: `tests/golden_set.py` (fixtures compartidas, D16) y `tests/test_golden_set.py` (SQL puras, RAG
   puras, mixtas y no-cobertura, G1–G13); `tests/test_golden_seed.py` verifica que el seed contenga las
   entidades que las preguntas nombran (`integration`). La evidencia de las corridas medidas va en

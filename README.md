@@ -278,8 +278,8 @@ Las variables de entorno están documentadas una por una en `.env.example`.
 
 ## Estado
 
-Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`): todas las tareas de los cuatro changes están terminadas. El agente, la API con streaming y cancelación, y la
-interfaz web (D93) están implementados. La clasificación con el modelo definitivo (`gemini-3.1-flash-lite`, D71) midió 13/13 casos correctos el 2026-10-10 y el 2026-10-11 y 12/13 el 2026-10-16 (con la base y la recuperación reales; el caso fallido fue un 503 de la API y repetido solo clasificó bien), sobre el
+Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`): todas las tareas de los cinco changes están terminadas. El agente, la API con streaming y cancelación, y la
+interfaz web (D93) están implementados. La clasificación con el modelo definitivo (`gemini-3.1-flash-lite`, D71) midió 13/13 casos correctos el 2026-10-10 y el 2026-10-11 y 12/13 el 2026-10-16 con la recuperación real por coseno (el caso fallido fue un 503 de la API y repetido solo clasificó bien) y 13/13 con el re-ranking por defecto (D100), sobre el
 mínimo de 11 (R-2.1); las corridas, la exportación de `agent_runs` y la calibración del umbral están en `TP/evidencia/`. Las specs se validan con
-`openspec validate --all --strict` y los cuatro changes están en [`openspec/changes/`](openspec/changes/): `agente-y-tools`, `base-de-datos-neon`,
-`frontend-web-vite` y `frontend-markdown-answer`.
+`openspec validate --all --strict` y los cinco changes están en [`openspec/changes/`](openspec/changes/): `agente-y-tools`, `base-de-datos-neon`,
+`calibracion-umbral-rag`, `frontend-web-vite` y `frontend-markdown-answer`.

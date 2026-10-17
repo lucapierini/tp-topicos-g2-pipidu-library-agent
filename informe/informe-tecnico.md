@@ -17,11 +17,11 @@ El sistema cumple los cuatro criterios técnicos de aprobación del enunciado (l
 |---|---|
 | Modelo relacional, 5 tablas o más, más de 15 registros por tabla | 7 tablas del dominio con entre 18 y 95 filas cada una (sección 2) |
 | El agente interpreta lenguaje natural y responde con la base | Text-to-SQL con validación estática y rol de solo lectura (secciones 3 y 4) |
-| RAG sobre 2 PDF como mínimo | 6 PDF, 44 fragmentos, búsqueda vectorial con pgvector |
+| RAG sobre 2 PDF como mínimo | 6 PDF, 44 fragmentos, búsqueda vectorial con pgvector y re-ranking con el modelo |
 | Código documentado y reproducible | `README.md` con un único comando de arranque (`docker compose up -d --build --wait`) |
 | Promoción: framework agéntico | Smolagents (`ToolCallingAgent`) |
 | Promoción: interfaz gráfica | SPA (aplicación web de una sola página) propia en React con progreso en vivo, fuente y evidencia |
-| Promoción: SDD (Spec Driven Development) | OpenSpec con cuatro changes, constitución, especificaciones y registro de decisiones |
+| Promoción: SDD (Spec Driven Development) | OpenSpec con cinco changes, constitución, especificaciones y registro de decisiones |
 
 No se despliega en la nube ni se integra LangSmith: el sistema corre en entorno local (decisión D81), y la trazabilidad propia vive en la tabla `agent_runs`, que no se presenta como el criterio de observabilidad.
 
@@ -102,7 +102,7 @@ El contrato está invertido (D1): **el agente genera el SQL y la herramienta sol
 
 ## 3.4 Herramienta RAG
 
-La ingesta divide cada documento por sección (`## `): un fragmento por artículo o paso, con el título del documento antepuesto (D10). La clave de idempotencia es el hash `sha256` del PDF y la unicidad `(documento, posición)` (D11), de modo que reingestar no duplica. En consulta, se calculan los embeddings de la pregunta y se recuperan los 5 fragmentos más similares por coseno; si el mejor no supera el umbral de **0,64**, la herramienta informa que no hay resultados relevantes y el agente no responde con conocimiento propio (D12).
+La ingesta divide cada documento por sección (`## `): un fragmento por artículo o paso, con el título del documento antepuesto (D10). La clave de idempotencia es el hash `sha256` del PDF y la unicidad `(documento, posición)` (D11), de modo que reingestar no duplica. En consulta, se calculan los embeddings de la pregunta y se recuperan los 5 fragmentos más similares por coseno y el modelo puntúa de 0 a 3 si cada uno contiene la respuesta (re-ranking, D100). El corte usa el puntaje combinado `0,7·relevancia + 0,3·coseno normalizado ≥ 0,40` y se devuelven los fragmentos con relevancia 1 o más. Si ninguno pasa, la herramienta informa que no hay resultados relevantes y el agente no responde con conocimiento propio. Si la llamada de re-ranking falla en una consulta, esa consulta vuelve al corte por coseno con umbral **0,64** (D12), que también es la estrategia `RAG_STRATEGY=dense`.
 
 ## 3.5 Interfaz web
 
@@ -134,7 +134,8 @@ El registro completo, con fecha, alternativa considerada y motivo de cada decisi
 | D7 Vencimiento calculado en una vista | Guardar el estado `vencido` | Evita que la misma pregunta dé resultados distintos según el momento de ejecución: un valor almacenado se desactualiza |
 | D9 `psycopg2` directo | SQLAlchemy | Hay un único `SELECT` dinámico; un ORM entorpece la validación estática y el control del timeout |
 | D10 Fragmentos por sección | Cortes de largo fijo | Un fragmento por artículo permite citar la ubicación |
-| D12 Umbral 0,64 y top-k 5 | Valor arbitrario sin medir | Calibrado con 21 casos sobre los documentos reales |
+| D12 Umbral de coseno 0,64 y top-k 5 | Valor arbitrario sin medir | Calibrado con 126 consultas sobre los documentos reales; es el corte de respaldo |
+| D100 Re-ranking por defecto | Solo umbral de coseno; búsqueda híbrida | Fuera de muestra el coseno deja pasar 13 de 28 consultas sin cobertura y el re-ranking 1 de 28; cuesta una llamada al modelo por consulta documental |
 | D14 Rol de solo lectura propio | `SET ROLE` desde un usuario con más permisos | Defensa en profundidad |
 | D16 Pruebas sobre clasificación, SQL y filas | Comparar la prosa | El texto del modelo no es determinista |
 | D56 Proveedor configurable | Modelo fijo en el código | Se valida el flujo con un modelo local sin gastar cuota |
@@ -148,7 +149,7 @@ El registro completo, con fecha, alternativa considerada y motivo de cada decisi
 
 ## 6.1 Pruebas automáticas
 
-La suite tiene **460 pruebas** que corren sin base, sin credenciales y sin modelo (`pytest -q` termina con `460 passed, 38 deselected`); además hay pruebas de integración y con el modelo real que se ejecutan aparte. Cubren: la validación de SQL (más de 160 casos, entre sentencias que deben rechazarse y que deben aceptarse), la herramienta SQL, la recuperación, el clasificador, el orquestador, los contratos, la trazabilidad, la API (flujo SSE, cancelación, CORS) y la imagen de Docker. El frontend tiene sus propias pruebas con Vitest. Se agregan `ruff` para el estilo y `openspec validate --all --strict` para las especificaciones.
+La suite tiene **716 pruebas** que corren sin base, sin credenciales y sin modelo (`pytest -q` termina con `716 passed, 38 deselected`); además hay pruebas de integración y con el modelo real que se ejecutan aparte. Cubren: la validación de SQL (más de 160 casos, entre sentencias que deben rechazarse y que deben aceptarse), la herramienta SQL, la recuperación, el clasificador, el orquestador, los contratos, la trazabilidad, la API (flujo SSE, cancelación, CORS) y la imagen de Docker. El frontend tiene sus propias pruebas con Vitest. Se agregan `ruff` para el estilo y `openspec validate --all --strict` para las especificaciones.
 
 Las **pruebas de sanitización** son casos adversos con rechazo sin ejecución contra la base: `DELETE` y `DROP`, sentencias apiladas, comentarios, tablas fuera de la lista blanca (`agent_runs`, `pg_catalog`), columnas no documentadas, funciones de efecto (`pg_sleep`, `pg_read_file`, `dblink`), `FOR UPDATE`, CTE homónimas que ocultan una tabla prohibida, escrituras dentro de una CTE y cadenas mal formadas. Un mismo conjunto verifica que las consultas legítimas, incluidas las que usan `CASE`, `EXISTS` o `string_agg`, sí se acepten.
 
@@ -156,26 +157,37 @@ Las **pruebas de sanitización** son casos adversos con rechazo sin ejecución c
 
 Son 13 preguntas con respuesta esperada (5 SQL, 4 RAG, 3 híbridas y 1 sin cobertura) más 2 en inglés. Las afirmaciones van sobre la clasificación, el SQL y las filas, no sobre la prosa (D16). El criterio de aceptación es acertar **al menos 11 de 13** clasificaciones, con los híbridos invocando ambas herramientas.
 
-Medición de aceptación del 2026-10-16, con el modelo definitivo (`gemini-3.1-flash-lite`), la **base real** y la **recuperación real** (embeddings de Gemini sobre los 44 fragmentos):
+Mediciones de aceptación del 2026-10-16 con el modelo definitivo (`gemini-3.1-flash-lite`), la **base real** y la **recuperación real** (embeddings de Gemini sobre los 44 fragmentos), con las dos estrategias de recuperación:
 
-| Medida | Resultado |
-|---|---|
-| Clasificación correcta | **12 de 13** (mínimo 11) |
-| Híbridos que invocan ambas herramientas | 3 de 3 |
-| Pregunta sin cobertura sin invocar herramientas | 1 de 1 |
-| Clasificación emitida antes de las herramientas | 12 de 13 |
-| Contenido correcto (SQL, RAG, híbridos y sin cobertura) | 12 de 13 (5/5, 3/4, 3/3 y 1/1) |
-| Casos con alguna sentencia SQL rechazada por el validador | 0 de 8 |
-| Consultas registradas en `agent_runs` | 13 de 13 |
-| Casos en inglés (B1 y B2) | 2 de 2, con respuesta en inglés |
+| Medida | Coseno (umbral 0,64) | Re-ranking (por defecto, D100) |
+|---|---|---|
+| Clasificación correcta (mínimo 11) | **12 de 13** | **13 de 13** |
+| Híbridos que invocan ambas herramientas | 3 de 3 | 3 de 3 |
+| Pregunta sin cobertura sin invocar herramientas | 1 de 1 | 1 de 1 |
+| Clasificación emitida antes de las herramientas | 12 de 13 | 13 de 13 |
+| Contenido correcto (SQL, RAG, híbridos y sin cobertura) | 12 de 13 (5/5, 3/4, 3/3 y 1/1) | 13 de 13 (5/5, 4/4, 3/3 y 1/1) |
+| Casos con alguna sentencia SQL rechazada por el validador | 0 de 8 | 0 de 8 |
+| Consultas registradas en `agent_runs` | 13 de 13 | 13 de 13 |
+| Casos en inglés (B1 y B2) | 2 de 2, con respuesta en inglés | 2 de 2, con respuesta en inglés |
 
-El único caso fallido (G9, el horario de la biblioteca) no se debió a una clasificación equivocada: el servicio de Gemini devolvió un error 503 por alta demanda durante la llamada del clasificador. Repetido solo, G9 clasificó `rag`, recuperó el reglamento y respondió bien. Las otras mediciones versionadas del modelo definitivo (2026-10-10 y 2026-10-11) dieron 13 de 13 en la clasificación, pero con base y recuperación falsas o simuladas: miden la clasificación y no la calidad del contenido real. Sin contar la repetición de G9, el resultado formal de la corrida de aceptación es 12 de 13, por encima del mínimo de 11; es una única medición, con temperatura 0. Las corridas con un modelo local sirven para validar el flujo y no cuentan como aceptación (R-2.8).
+En la corrida con coseno, el único caso fallido (G9, el horario de la biblioteca) no se debió a una clasificación equivocada: el servicio de Gemini devolvió un error 503 por alta demanda durante la llamada del clasificador. Repetido solo, G9 clasificó `rag`, recuperó el reglamento y respondió bien. Las corridas del 2026-10-10 y 2026-10-11 dieron 13 de 13 en la clasificación, pero con base y recuperación falsas o simuladas: miden la clasificación y no la calidad del contenido real. Cada resultado es una única medición con temperatura 0, y las corridas con un modelo local sirven para validar el flujo y no cuentan como aceptación (R-2.8).
 
-**Latencia.** En esta corrida, la mediana por pregunta fue de 5,7 s. Diez de las quince preguntas (sin cobertura o de una sola fuente) tardaron entre 1,5 y 12,5 s y las tres híbridas entre 7 y 67 s, porque combinan varias llamadas. Las más lentas fueron G9 (30 s, con el error 503 de la API) y B2 (146 s, sin error). No se midió por separado cuánto de ese tiempo es espera de la API, aunque `TP/05-validacion.md` (sección 4.1) documenta esperas por cuota y reintentos en corridas anteriores.
+**Latencia.** En la corrida con coseno, la mediana por pregunta fue de 5,7 s. Diez de las quince preguntas (sin cobertura o de una sola fuente) tardaron entre 1,5 y 12,5 s y las tres híbridas entre 7 y 67 s, porque combinan varias llamadas. Las más lentas fueron G9 (30 s, con el error 503 de la API) y B2 (146 s, sin error). No se midió por separado cuánto de ese tiempo es espera de la API, aunque `TP/05-validacion.md` (sección 4.1) documenta esperas por cuota y reintentos en corridas anteriores.
 
-## 6.3 Calibración del umbral del RAG
+## 6.3 Calibración y evaluación del RAG
 
-El umbral se midió con 21 preguntas sobre los documentos reales: 15 con cobertura (similitud entre 0,646 y 0,802) y 6 sin cobertura (entre 0,597 y 0,649). El peor positivo (0,646) queda por debajo del mejor negativo (0,649): ningún umbral separa del todo ambas poblaciones. El archivo de calibración registra 0,67 como el valor probado en esa corrida; se fijó **0,64** para no perder el positivo más bajo (0,646). Dos de los seis negativos (0,649 y 0,644) superan ese umbral, así que es un filtro grueso y la segunda barrera es el clasificador junto con la regla de declarar la ausencia de información cuando los fragmentos no responden.
+La recuperación se midió con 126 consultas etiquetadas sobre los documentos reales (77 con cobertura y 49 sin ella: 20 del dominio que comparten vocabulario con los documentos, 10 de libros del catálogo sin reseña, 8 ajenas y 5 en inglés, entre otras). Las etiquetas son verificables sin red ni base: cada consulta con cobertura lleva un término que su documento contiene y cada una sin cobertura, uno que ningún documento contiene. Con el corte por coseno, el AUC (la probabilidad de que una consulta con cobertura puntúe más que una sin ella) es 0,983 y el fragmento correcto sale primero en el 98,4 % de los casos. Al umbral **0,64** el recall es 100 % y 10 de 49 consultas sin cobertura dejan pasar fragmentos (F1 0,939). Las poblaciones se solapan (peor positivo 0,646, mejor negativo 0,704), de modo que ningún umbral de coseno acierta todo.
+
+Para confirmar los resultados se usó un segundo conjunto de 63 consultas nuevas, con parámetros congelados. Fuera de muestra el coseno empeora (AUC 0,912) y el re-ranking no. Sobre el código de producción:
+
+| Estrategia | Conjunto | Recall | Falsos positivos | F1 |
+|---|---|---|---|---|
+| Coseno | Calibración | 1,00 | 10 de 49 | 0,94 |
+| Re-ranking | Calibración | 0,97 | 1 de 49 | 0,98 |
+| Coseno | Validación | 0,91 | 13 de 28 | 0,80 |
+| Re-ranking | Validación | 0,94 | 1 de 28 | 0,96 |
+
+Por eso el re-ranking es la estrategia por defecto (D100). Cuesta una llamada al modelo por consulta documental (unos 0,9 s) y, si falla, esa consulta vuelve al corte por coseno. La evidencia está en `TP/evidencia/` (`calibracion_umbral.json`, `busqueda_hibrida_rerank.json`, `retrieval_produccion.json`).
 
 ## 6.4 Ejemplos de consultas
 
@@ -227,7 +239,7 @@ El agente atiende las consultas **en serie** (D77): cada una espera a que termin
 
 - **Alcance de solo lectura.** El agente no crea, modifica ni borra datos; lo declara cuando se le pide.
 - **Un turno por consulta.** No recibe historial: la interfaz conserva la conversación solo en pantalla.
-- **Umbral del RAG grueso.** Las similitudes de los casos con y sin cobertura se solapan; la ausencia de información se apoya además en el clasificador y en la regla de no responder con conocimiento propio.
+- **Costo del re-ranking y respaldo grueso.** El re-ranking suma una llamada al modelo (unos 0,9 s) por consulta documental y depende de la cuota; cuando falla, el corte por coseno es un filtro grueso, porque las similitudes de los casos con y sin cobertura se solapan. La ausencia de información se apoya además en el clasificador y en la regla de no responder con conocimiento propio.
 - **Cuota de la API.** La latencia depende de la API de Gemini (cuota y picos de demanda, como el error 503 de G9); el sistema reintenta, pero una pregunta puede tardar minutos (B2 tardó 146 s).
 - **Sin autenticación.** El servicio corre en entorno local; exponerlo públicamente exigiría control de acceso.
 - **Cobertura documental.** El conocimiento del RAG se limita a los seis documentos incluidos.

@@ -16,7 +16,7 @@ elegir el valor es una decisión de compromiso que necesita datos.
 - Dejar el trade-off visible (recall contra falsos positivos) y la evidencia reproducible.
 
 **Non-Goals:**
-- Cambiar el valor del umbral (se mantiene 0.64, D88) ni el modelo de embeddings.
+- Cambiar el valor del umbral de coseno (0.64, D12) ni el modelo de embeddings.
 - La búsqueda híbrida no se adopta (queda medida): el re-ranking la supera fuera de muestra. La reformulación de la
   consulta sigue fuera.
 
@@ -33,9 +33,9 @@ elegir el valor es una decisión de compromiso que necesita datos.
 4. **Los positivos son solo consultas `rag`.** Los híbridos quedan fuera: su consulta documental la redacta el modelo.
 5. **`ranked()` público.** La calibración necesita el documento del primer fragmento, no solo los puntajes. Se agrega
    un método sin tocar `retrieve()`.
-6. **El valor no se cambia en este change.** Con 126 consultas: AUC 0.983, documento correcto primero 98.4 %, y a 0.64
+6. **El umbral de coseno no se cambia.** Con 126 consultas: AUC 0.983, documento correcto primero 98.4 %, y a 0.64
    recall 100 % con 10 de 49 falsos positivos. Mover el umbral cambia un tipo de error por otro; la decisión queda
-   registrada en D97 y abierta para el equipo.
+   registrada en D97.
 
 7. **Se evalúan puntajes alternativos, no una nueva arquitectura.** `scripts/evaluate_retrieval.py` calcula, sobre las
    mismas 126 consultas y con las mismas métricas, el puntaje de cada estrategia sobre *todos* los fragmentos (el
@@ -115,7 +115,7 @@ multa es igual para todos, así que la etiqueta es discutible.
 
 15. **Se adopta el re-ranking (D100).** `retrieve()` usa por defecto `RAG_STRATEGY=rerank`: el modelo puntúa los 5 candidatos del
     coseno y el corte usa el puntaje combinado (umbral 0.40). Devuelve los fragmentos con relevancia ≥ 1 ordenados por relevancia
-    y similitud. Si la llamada falla, la consulta vuelve al coseno. `RAG_STRATEGY=dense` conserva el comportamiento anterior.
+    y similitud. Si la llamada falla, la consulta vuelve al coseno. `RAG_STRATEGY=dense` conserva el corte por coseno.
 
 ## Risks / Trade-offs
 

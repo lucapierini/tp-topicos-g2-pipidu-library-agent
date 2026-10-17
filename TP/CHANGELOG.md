@@ -87,10 +87,10 @@ El agente puede regenerar una sentencia rechazada una vez; al segundo rechazo se
 `documentos.sha256` es el hash del archivo PDF completo; un documento se saltea cuando el hash no cambió y la base ya tiene esa cantidad de fragmentos. El unique del fragmento es `(documento_id, chunk_index)` (`documentos_chunks_uk`). `Chunk.content_hash` = `sha256` del documento + `:` + `chunk_index`.
 **Traza:** R-4.5.
 
-### D12 — top-k = 5, umbral de similitud 0.64
-Umbral calibrado contra los documentos reales con 21 casos (`TP/evidencia/calibracion_umbral.json`): peor positivo 0.646 (R15), mejor negativo 0.649 (R5, wifi). Las poblaciones se solapan, así que el umbral es un filtro grueso; la segunda barrera es el clasificador y que el modelo declare que no hay información (R-4.6). El umbral vive en configuración (`RAG_SIMILARITY_THRESHOLD`).
+### D12 — top-k = 5, umbral de similitud de coseno 0.64
+Umbral calibrado contra los documentos reales con 126 consultas (`TP/evidencia/calibracion_umbral.json`, D97): AUC 0.983 y, a 0.64, recall 100 % con 10 de 49 falsos positivos. Las poblaciones se solapan (peor positivo 0.646, mejor negativo 0.704), así que el umbral es un filtro grueso; la segunda barrera es el clasificador y que el modelo declare que no hay información (R-4.6). Es el corte de `RAG_STRATEGY=dense` y el respaldo cuando falla la llamada de re-ranking (D100). El umbral vive en configuración (`RAG_SIMILARITY_THRESHOLD`).
 **Motivo:** el umbral sin calibración convierte R-4.6 en un número arbitrario.
-**Traza:** R-4.4, R-4.8, R4 del set de retrieval.
+**Traza:** R-4.4, R-4.8, R-4.9, R4 del set de retrieval.
 
 ### D13 — Índice vectorial HNSW con `vector_cosine_ops`
 **Motivo:** con ~100 chunks el rendimiento es irrelevante; se mantiene porque es demostrable en el informe y coherente con la elección de pgvector.
