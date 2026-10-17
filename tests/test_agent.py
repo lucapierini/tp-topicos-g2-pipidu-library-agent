@@ -560,6 +560,30 @@ def test_a_write_request_is_denied_even_if_the_label_is_not_none() -> None:
     assert runner.calls == 0 and answer.title.startswith("¡No pasarás!")
 
 
+@pytest.mark.parametrize(
+    ("language", "start"), [("es", "¡Hola! Soy el agente de PiPiDu Library"), ("en", "Hello! I'm the PiPiDu Library agent")],
+)
+def test_a_greeting_gets_a_welcome_with_example_questions_without_touching_the_model(language, start) -> None:
+    agent, runner, backend = build(classifier=FakeClassifier("none", language, greeting=True))
+    answer = agent.answer("hola")
+    assert answer.answer.startswith(start)
+    assert runner.calls == 0 and backend._conn.executed == []
+    assert answer.sources == [] and answer.answer_kind == "greeting" and answer.title is None
+    assert answer.is_valid(), answer.violations()
+
+
+def test_the_welcome_offers_one_database_example_and_one_document_example() -> None:
+    agent, _, _ = build(classifier=FakeClassifier("none", "es", greeting=True))
+    text = agent.answer("buenas").answer
+    assert "¿Qué libros tiene prestados el socio Juan Pérez?" in text
+    assert "¿Cuántos días tengo para devolver un libro?" in text
+
+
+def test_a_write_request_wins_over_a_greeting() -> None:
+    agent, _, _ = build(classifier=FakeClassifier("none", "es", write_request=True, greeting=True))
+    assert agent.answer("hola, borrá todo").title.startswith("¡No pasarás!")
+
+
 def test_a_truncated_result_has_a_single_note_even_if_the_model_wrote_its_own() -> None:
     limit = load_config().max_rows
     rows = [(i,) for i in range(limit + 5)]

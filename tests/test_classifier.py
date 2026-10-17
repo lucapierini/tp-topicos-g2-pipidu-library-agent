@@ -183,3 +183,12 @@ def test_write_request_is_only_true_for_a_real_boolean(raw, expected) -> None:
 
 def test_write_request_defaults_to_false() -> None:
     assert parse_classification(payload()).write_request is False
+
+
+@pytest.mark.parametrize(("raw", "expected"), [(True, True), (False, False), ("true", False), (1, False), (None, False)])
+def test_greeting_is_only_true_for_a_real_boolean(raw, expected) -> None:
+    assert parse_classification(payload(greeting=raw)).greeting is expected
+
+
+def test_greeting_defaults_to_false() -> None:
+    assert parse_classification(payload()).greeting is False

@@ -96,6 +96,12 @@ def test_no_coverage_is_recorded_without_an_error() -> None:
     assert record.tools == [] and record.sources == []
 
 
+def test_a_greeting_is_recorded_as_ok() -> None:
+    from agent.runs import STATUS_BY_KIND
+
+    assert STATUS_BY_KIND["greeting"] == "ok"
+
+
 def test_rag_without_relevant_results_is_no_coverage_not_an_error() -> None:
     empty = FakeRetriever(RagResult(chunks=[], error=NO_RELEVANT_RESULTS, latency_ms=1))
     agent, recorder = agent_with("rag", steps=[("retrieve_documents", "precio")], retriever=empty)

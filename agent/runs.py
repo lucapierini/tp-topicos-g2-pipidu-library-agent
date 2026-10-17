@@ -26,6 +26,7 @@ from agent.config import Config, load_config
 from agent.contracts import (
     ANSWER_KIND_ANSWER,
     ANSWER_KIND_ERROR,
+    ANSWER_KIND_GREETING,
     ANSWER_KIND_NO_COVERAGE,
     TRACE_CLASSIFICATION,
     AgentAnswer,
@@ -35,6 +36,7 @@ logger = logging.getLogger("agent.runs")
 
 STATUS_BY_KIND = {
     ANSWER_KIND_ANSWER: "ok",
+    ANSWER_KIND_GREETING: "ok",
     ANSWER_KIND_NO_COVERAGE: "no_coverage",
     ANSWER_KIND_ERROR: "error",
 }

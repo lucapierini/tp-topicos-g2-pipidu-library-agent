@@ -115,6 +115,11 @@ def test_the_classifier_prompt_asks_for_the_structured_fields() -> None:
     assert "classification" in prompt and "language" in prompt
 
 
+def test_the_classifier_prompt_defines_the_greeting_flag() -> None:
+    prompt = render_classifier_prompt()
+    assert "`greeting`" in prompt and "únicamente un saludo" in prompt
+
+
 def test_reviews_are_steered_to_the_documents_not_to_sql() -> None:
     # D90: las consultas sobre reseñas no se resuelven con SQL.
     assert "reseñas" not in {t.lower() for t in ALLOWED_TABLES}
