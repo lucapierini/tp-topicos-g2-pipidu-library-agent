@@ -34,8 +34,6 @@ en el servidor (v1 de un solo turno).
   y permite cancelar; y su arranque conjunto con el resto del sistema por Docker Compose.
 
 ### Modified Capabilities
-<!-- `consulta-por-api` aún no está en `openspec/specs/`: vive como delta del change `agente-y-tools`.
-     Su R-7.0 se reformula editando ese delta (tarea 5.1), no con un delta de este change. -->
 
 ## Impact
 

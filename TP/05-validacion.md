@@ -273,8 +273,8 @@ Lectura de la corrida del 2026-10-11 con `gemini-3.1-flash-lite` (`--db --rag-mo
   de esta corrida (12 `ok`, 1 `no_coverage`), con los campos de R-6.1, el modelo y el endpoint `api`.
   Se generó con `scripts/export_runs.py` antes de correr la suite de integración, que trunca la tabla.
 
-Corrida con **base real** (PostgreSQL local con `db/dev_seed.sql`, rol `agent_ro`; recuperación todavía
-falsa), `gemini-3.1-flash-lite`, casos SQL G1–G5, con `scripts/measure_golden.py --db`:
+Corrida con **base real** (PostgreSQL local con `db/dev_seed.sql`, rol `agent_ro`; recuperación
+simulada), `gemini-3.1-flash-lite`, casos SQL G1–G5, con `scripts/measure_golden.py --db`:
 
 | Clasificación | Antes de tools | Contenido (`check` del golden set) | SQL rechazado | Consultas en `agent_runs` |
 |---|---|---|---|---|
@@ -417,7 +417,7 @@ Espera del último concurrente con la mediana de `agent_runs_2026-10-11.json` (6
 personas y 24,0 s para 5. Peor caso con las latencias mayores ya medidas: 271,7 s (suma de las 2 mayores,
 3 personas) y 296,4 s (suma de las 4 mayores, 5 personas).
 
-**Dos opciones (análisis, no implementado).** Verificado en código: cada backend guarda una sola
+**Opciones evaluadas para sesiones simultáneas.** Verificado en código: cada backend guarda una sola
 conexión (`sql_backend`, `retriever`, `recorder`: tres por agente), el agente es un singleton de módulo
 (`get_agent()`) con backends compartidos, y el estado por consulta no se comparte porque `ToolSession` y
 `ToolCallingAgent` se crean en cada consulta.
