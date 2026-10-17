@@ -1,0 +1,1906 @@
+{
+ "¿Cuántos días puedo tener un libro prestado siendo alumno?|9,11,10,2,16": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Cuántos días puedo tener un libro prestado siendo alumno?|9,11,10,12,2": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cuánto tiempo de préstamo tienen los docentes?|9,10,11,2,12": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cuántos libros puede llevarse un alumno al mismo tiempo?|10,9,2,3,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cuántos libros puede llevarse un alumno al mismo tiempo?|10,9,2,11,3": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Y cuántos puede tener un docente a la vez?|10,11,2,9,8": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Y cuántos puede tener un docente a la vez?|10,11,2,9,7": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Puedo renovar un préstamo más de una vez?|11,10,9,2,12": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuántos días extiende la renovación si soy docente?|11,9,10,2,12": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Cuántos días extiende la renovación si soy docente?|11,9,12,10,2": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "Si me atraso con un libro, ¿cuánto pago por día?|12,5,9,11,13": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "Si me atraso con un libro, ¿cuánto pago por día?|12,5,9,11,16": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Hasta qué hora está abierta la biblioteca los días de semana?|15,9,12,16,1": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Hasta qué hora está abierta la biblioteca los días de semana?|15,9,12,16,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿La biblioteca abre los sábados?|15,1,16,2,9": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Atienden los domingos y feriados?|15,2,9,12,16": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué pasa si pierdo un libro de la biblioteca?|5,13,12,3,16": [
+  3,
+  3,
+  1,
+  1,
+  0
+ ],
+ "¿Se pueden sacar los libros de consulta en sala?|14,4,3,10,2": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Se pueden sacar los libros de consulta en sala?|14,4,10,3,2": [
+  3,
+  0,
+  1,
+  1,
+  1
+ ],
+ "¿Puedo reservar un libro que no tiene ejemplares disponibles?|16,2,11,10,7": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Puedo reservar un libro que no tiene ejemplares disponibles?|16,11,2,12,13": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Cuánto tiempo me guardan el libro que reservé?|16,9,11,10,12": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cuánto tiempo me guardan el libro que reservé?|16,11,9,10,2": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué necesito para retirar libros por primera vez?|8,2,10,9,3": [
+  2,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Qué necesito para retirar libros por primera vez?|8,10,2,3,16": [
+  2,
+  0,
+  2,
+  0,
+  0
+ ],
+ "¿Puedo retirar libros si tengo uno vencido?|10,5,9,12,11": [
+  3,
+  1,
+  1,
+  2,
+  1
+ ],
+ "¿Puedo retirar libros si tengo uno vencido?|10,11,5,12,9": [
+  3,
+  0,
+  0,
+  2,
+  0
+ ],
+ "¿Desde cuándo se cuentan los días de atraso?|12,9,5,16,11": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Desde cuándo se cuentan los días de atraso?|12,9,5,11,16": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Dónde se paga una multa?|12,5,11,13,4": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo subrayar un libro de la biblioteca?|3,14,1,5,9": [
+  3,
+  0,
+  0,
+  1,
+  0
+ ],
+ "¿Puedo subrayar un libro de la biblioteca?|3,9,16,11,14": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo prestarle a un amigo el libro que retiré con mi legajo?|3,2,6,10,9": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Se puede comer en la sala de lectura?|4,14,1,3,15": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué sanción hay si me atraso más de 30 días varias veces?|5,12,11,9,10": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué sanción hay si me atraso más de 30 días varias veces?|5,12,9,11,10": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Qué pasa con mis préstamos si pierdo la regularidad como alumno?|2,13,5,9,11": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué pasa con mis préstamos si pierdo la regularidad como alumno?|2,9,13,5,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Qué hace la biblioteca con mis datos personales?|6,2,3,1,8": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cómo sugiero que compren un libro nuevo?|7,20,24,21,44": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo sugiero que compren un libro nuevo?|7,20,12,21,24": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cada cuánto evalúan las sugerencias de compra?|7,9,24,11,39": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cada cuánto evalúan las sugerencias de compra?|7,11,9,12,24": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo usar el celular en la sala de lectura?|4,14,2,1,3": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Se pueden fotocopiar libros de la biblioteca?|3,1,5,13,16": [
+  2,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Se pueden fotocopiar libros de la biblioteca?|3,10,1,5,13": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿De qué trata Cien años de soledad?|17,18,20,19,38": [
+  3,
+  2,
+  1,
+  1,
+  0
+ ],
+ "¿Quién escribió Cien años de soledad?|17,18,20,19,38": [
+  1,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Quién escribió Cien años de soledad?|17,18,20,19,21": [
+  1,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Cuáles son los temas principales de Cien años de soledad?|18,17,19,20,22": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Qué es el realismo mágico en la novela de Macondo?|18,17,19,20,38": [
+  3,
+  1,
+  1,
+  0,
+  0
+ ],
+ "¿Qué es el realismo mágico en la novela de Macondo?|18,17,19,20,36": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Es difícil seguir la trama de Cien años de soledad?|20,19,18,17,35": [
+  1,
+  3,
+  1,
+  1,
+  0
+ ],
+ "¿Es difícil seguir la trama de Cien años de soledad?|19,20,18,17,35": [
+  3,
+  2,
+  1,
+  1,
+  0
+ ],
+ "¿Para qué lectores se recomienda Cien años de soledad?|20,19,17,18,44": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿De qué trata Clean Code?|21,22,24,23,20": [
+  3,
+  2,
+  1,
+  1,
+  0
+ ],
+ "¿Quién es el autor de Clean Code?|21,22,23,24,26": [
+  1,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Quién es el autor de Clean Code?|21,22,23,24,34": [
+  1,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Qué dice Clean Code sobre los comentarios?|22,23,21,24,12": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿En qué lenguaje están los ejemplos de Clean Code?|23,21,22,24,12": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Qué son los code smells?|22,21,24,23,18": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Quién debería leer Clean Code?|24,23,21,22,20": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿De qué trata El Silmarillion?|34,35,33,44,38": [
+  3,
+  1,
+  2,
+  1,
+  0
+ ],
+ "¿Es difícil leer El Silmarillion?|35,44,34,33,39": [
+  3,
+  2,
+  1,
+  1,
+  0
+ ],
+ "¿Quién es Gollum en El Hobbit?|36,40,38,37,33": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Para qué tipo de lector está pensado El Hobbit?|37,44,36,33,38": [
+  3,
+  2,
+  1,
+  1,
+  0
+ ],
+ "¿Qué pasa en Las Dos Torres?|40,41,17,42,25": [
+  3,
+  2,
+  0,
+  0,
+  0
+ ],
+ "¿Qué pasa en Las Dos Torres?|40,41,17,34,42": [
+  3,
+  2,
+  0,
+  0,
+  0
+ ],
+ "¿Qué es la Comunidad del Anillo?|38,39,40,36,42": [
+  3,
+  1,
+  1,
+  0,
+  1
+ ],
+ "¿Qué es la Comunidad del Anillo?|38,39,40,42,36": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Cómo termina El Retorno del Rey?|42,43,40,38,36": [
+  1,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Por dónde empiezo a leer a Tolkien?|33,44,38,37,36": [
+  3,
+  1,
+  1,
+  2,
+  1
+ ],
+ "¿De qué trata Alas de sangre?|26,27,30,28,25": [
+  3,
+  2,
+  0,
+  0,
+  1
+ ],
+ "¿Cuál es el título original de Alas de ónix?|30,31,28,25,26": [
+  3,
+  0,
+  0,
+  3,
+  0
+ ],
+ "¿Cuál es el título original de Alas de ónix?|30,31,28,26,25": [
+  3,
+  0,
+  0,
+  0,
+  3
+ ],
+ "¿La saga Empyrean es para adolescentes?|32,25,27,31,26": [
+  3,
+  3,
+  1,
+  1,
+  1
+ ],
+ "¿Cómo es el ritmo de Alas de hierro?|29,28,27,30,25": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo es el ritmo de Alas de hierro?|29,28,27,30,26": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Quién es Xaden Riorson?|26,28,25,30,32": [
+  2,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Dónde transcurre la saga Empyrean?|25,32,26,30,28": [
+  3,
+  1,
+  2,
+  2,
+  2
+ ],
+ "How many days can a student keep a borrowed book?|9,10,11,16,12": [
+  3,
+  1,
+  1,
+  0,
+  1
+ ],
+ "What is the late fee per day?|12,5,9,11,10": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "What are the library opening hours on Saturdays?|15,1,16,9,2": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "Can I renew a loan more than once?|11,10,9,2,5": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "What is The Hobbit about?|36,37,33,38,44": [
+  3,
+  1,
+  1,
+  0,
+  1
+ ],
+ "Who wrote One Hundred Years of Solitude?|17,18,20,19,21": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Is Fourth Wing suitable for teenagers?|26,25,27,28,32": [
+  1,
+  3,
+  1,
+  1,
+  3
+ ],
+ "What does Clean Code say about small functions?|22,21,23,24,12": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Me puedo conectar al wifi de la biblioteca con mi legajo?|2,8,6,1,7": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Me puedo conectar al wifi de la biblioteca con mi legajo?|8,2,6,1,3": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca tiene cafetería?|4,1,15,2,5": [
+  1,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Hay estacionamiento para bicicletas en la biblioteca?|1,2,15,3,5": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo reservo una sala de estudio para mi grupo?|16,7,4,11,1": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo reservo una sala de estudio para mi grupo?|16,4,11,7,2": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuánto cuesta imprimir en la biblioteca?|3,12,1,5,2": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca presta notebooks?|3,2,1,9,11": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca presta notebooks?|3,2,9,11,10": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay préstamo interbibliotecario con otras universidades?|2,3,6,10,5": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo leer libros electrónicos desde mi casa?|3,1,2,10,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo leer libros electrónicos desde mi casa?|10,3,1,2,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Tienen casilleros para guardar las mochilas?|1,2,6,3,4": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca da talleres de búsqueda bibliográfica?|1,7,2,8,5": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuánto cuesta la cuota para hacerse socio?|8,12,11,13,10": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo donar libros a la biblioteca?|7,3,1,5,2": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo donar libros a la biblioteca?|7,3,10,1,5": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay servicio de escaneo de documentos?|3,2,1,8,5": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay servicio de escaneo de documentos?|3,2,1,5,8": [
+  2,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Me pueden enviar un libro a mi domicilio?|7,9,3,10,12": [
+  0,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Me pueden enviar un libro a mi domicilio?|9,3,7,12,21": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca tiene sala de computadoras?|1,14,4,15,2": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca tiene sala de computadoras?|14,4,1,15,2": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay descuentos en las multas para docentes?|12,10,2,11,5": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Hay descuentos en las multas para docentes?|12,10,5,2,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Se pueden pagar las multas con tarjeta?|12,5,11,10,3": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Quién es la directora de la biblioteca?|1,6,2,7,8": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuál es el teléfono de la biblioteca?|1,15,2,16,7": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Tienen una sección infantil?|44,20,32,37,24": [
+  0,
+  0,
+  0,
+  1,
+  0
+ ],
+ "¿De qué trata Harry Potter y la piedra filosofal?|38,36,17,18,40": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿De qué trata Dragon Ball?|36,17,18,25,21": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿De qué trata Dragon Ball?|36,17,25,18,32": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Quién es Goku?|24,17,36,21,20": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿De qué trata Berserk?|25,17,18,36,21": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué pasa en Las crónicas de Narnia?|36,34,33,17,38": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué pasa en Las crónicas de Narnia?|36,34,33,35,17": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuál es la trama de Watchmen?|17,18,21,40,34": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuál es la trama de Watchmen?|17,18,19,21,40": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿De qué trata Civil War de Marvel?|17,18,21,36,38": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿De qué trata Fluent Python?|24,21,22,23,20": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué explica Deep Learning sobre las redes neuronales?|22,21,24,23,11": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué explica Deep Learning sobre las redes neuronales?|22,21,24,25,23": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿De qué trata Rayuela?|17,18,20,12,16": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué tiempo hace hoy en Tucumán?|9,12,15,2,21": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué tiempo hace hoy en Tucumán?|9,12,15,10,18": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo se hace una tortilla de papas?|28,26,30,21,25": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Quién ganó el último mundial de fútbol?|42,17,28,18,26": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuál es la capital de Australia?|42,12,21,38,24": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo me inscribo a una materia de la facultad?|8,7,2,16,11": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo me inscribo a una materia de la facultad?|8,7,2,10,3": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuánto cuesta la cuota de la universidad?|12,10,9,8,7": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Recomendame una película para esta noche|18,20,32,17,44": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Escribime un poema sobre el mar|18,20,17,21,22": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Escribime un poema sobre el mar|18,21,20,17,26": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Is there wifi in the reading room?|4,1,2,14,15": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Can I book a group study room?|16,1,7,11,4": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "What is the weather like today?|20,12,9,18,25": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Does the library have a cafeteria?|4,1,15,2,5": [
+  1,
+  1,
+  1,
+  1,
+  1
+ ],
+ "What is Harry Potter about?|17,18,38,36,20": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "plazo de devolución y multas|12,9,5,11,10": [
+  3,
+  3,
+  1,
+  1,
+  1
+ ],
+ "plazo de devolución y multas|12,9,5,11,3": [
+  3,
+  3,
+  1,
+  1,
+  0
+ ],
+ "sinopsis del libro Cien años de soledad|17,18,20,19,21": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "condiciones para renovar un préstamo|11,9,2,12,10": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "precio del libro Rayuela|12,16,20,9,17": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "precio del libro Rayuela|12,16,9,11,20": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay wifi disponible en la sala de lectura?|4,1,14,2,15": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay wifi disponible en la sala de lectura?|4,14,1,2,16": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca tiene cafetería o estacionamiento?|1,2,15,16,4": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo reservar una sala de estudio grupal?|16,4,7,1,11": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo reservar una sala de estudio grupal?|16,4,11,7,1": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuánto cuesta imprimir o sacar fotocopias?|3,12,5,11,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿cuánto es la multa por día de atraso?|12,5,9,11,13": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿hasta qué hora está abierta la biblioteca?|15,16,9,1,12": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿hasta qué hora está abierta la biblioteca?|15,16,9,10,1": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿cuántos libros puedo tener prestados a la vez?|10,11,9,2,16": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿De qué trata El Hobbit?|36,37,33,38,44": [
+  3,
+  1,
+  1,
+  0,
+  1
+ ],
+ "¿En qué orden conviene leer los libros de Tolkien?|33,44,38,34,36": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿De qué trata la saga Alas de hierro?|28,29,30,25,26": [
+  3,
+  2,
+  1,
+  1,
+  0
+ ],
+ "¿Quién es Violet Sorrengail y qué le pasa en la academia?|26,28,30,25,27": [
+  3,
+  2,
+  1,
+  1,
+  1
+ ],
+ "¿De qué trata la saga Canción de hielo y fuego?|25,17,28,26,30": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuántos días tengo para devolver un libro antes de que me multen?|12,9,5,11,16": [
+  1,
+  3,
+  1,
+  1,
+  0
+ ],
+ "¿De qué trata el libro \"Cien años de soledad\"?|17,18,20,19,38": [
+  3,
+  2,
+  1,
+  1,
+  0
+ ],
+ "¿Cómo renuevo un préstamo desde el sistema?|11,9,2,12,10": [
+  1,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cuál es el horario de la biblioteca?|15,16,9,1,2": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "How many days do I have to return a book before I get fined?|12,9,5,11,16": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cuántos días puedo tener un libro prestado siendo alumno?|9,11,10,2,12": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cuántos días extiende la renovación si soy docente?|11,9,10,12,2": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Puedo reservar un libro que no tiene ejemplares disponibles?|16,2,11,13,10": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Qué necesito para retirar libros por primera vez?|8,10,2,9,3": [
+  3,
+  1,
+  2,
+  1,
+  1
+ ],
+ "¿Puedo retirar libros si tengo uno vencido?|10,5,11,12,9": [
+  3,
+  1,
+  1,
+  3,
+  1
+ ],
+ "¿Puedo subrayar un libro de la biblioteca?|3,14,1,9,16": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cada cuánto evalúan las sugerencias de compra?|7,11,9,24,39": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Se pueden fotocopiar libros de la biblioteca?|3,1,10,5,13": [
+  2,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca presta notebooks?|3,2,9,1,11": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo leer libros electrónicos desde mi casa?|3,1,10,2,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo donar libros a la biblioteca?|7,3,1,10,5": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Me pueden enviar un libro a mi domicilio?|7,9,3,12,10": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay descuentos en las multas para docentes?|12,10,2,5,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Qué explica Deep Learning sobre las redes neuronales?|22,21,24,23,25": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Escribime un poema sobre el mar|18,20,17,21,26": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "precio del libro Rayuela|12,16,9,20,11": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay wifi disponible en la sala de lectura?|4,14,1,2,15": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Soy docente, ¿por cuántos días me puedo llevar un libro?|9,10,11,2,3": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "Soy docente, ¿por cuántos días me puedo llevar un libro?|9,11,10,2,12": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "Me pasé 3 días con un libro, ¿cuánta plata tengo que pagar?|12,9,3,10,11": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hasta qué hora puedo ir a la biblioteca un viernes?|15,9,1,12,16": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "Quiero extender el préstamo de mi libro, ¿se puede y por cuántos días?|11,9,12,16,10": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Qué hago si el libro que busco está todo prestado?|16,2,3,7,10": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Qué hago si el libro que busco está todo prestado?|16,2,3,9,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "Reservé un libro y ya lo devolvieron, ¿hasta cuándo me lo guardan?|16,11,9,12,5": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "Reservé un libro y ya lo devolvieron, ¿hasta cuándo me lo guardan?|16,11,9,3,12": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "Rompí un libro sin querer, ¿qué me piden?|13,5,3,12,7": [
+  3,
+  3,
+  1,
+  0,
+  0
+ ],
+ "Rompí un libro sin querer, ¿qué me piden?|13,5,3,12,11": [
+  3,
+  3,
+  1,
+  0,
+  0
+ ],
+ "¿Puedo llevarme a casa un libro marcado como consulta en sala?|14,3,16,2,9": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cuál es el máximo de libros que puede retirar un profesor?|10,9,2,3,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cuál es el máximo de libros que puede retirar un profesor?|10,9,3,2,11": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Se renuevan los libros que ya están vencidos?|11,9,13,5,16": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Se renuevan los libros que ya están vencidos?|11,10,9,13,5": [
+  3,
+  1,
+  1,
+  0,
+  0
+ ],
+ "¿La biblioteca abre un domingo?|15,1,16,12,9": [
+  3,
+  1,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo escribir notas en los márgenes de un libro de la biblioteca?|3,1,14,5,16": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Puedo escribir notas en los márgenes de un libro de la biblioteca?|3,1,14,16,11": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Me pueden suspender el préstamo por devolver tarde muchas veces?|5,12,2,13,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Qué es un apercibimiento?|5,21,12,22,3": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Quién puede ver los datos de mis préstamos?|6,2,11,9,3": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo pido que la biblioteca compre un título?|7,16,1,2,3": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Está permitido hablar por teléfono en la sala de lectura?|4,14,1,2,3": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Si dejo de ser alumno regular, ¿puedo seguir sacando libros?|2,8,10,9,13": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "Contame de qué va Cien años de soledad|17,18,20,19,36": [
+  3,
+  2,
+  1,
+  1,
+  0
+ ],
+ "¿Cuántas generaciones abarca la novela de Macondo?|17,18,19,20,25": [
+  3,
+  1,
+  1,
+  0,
+  0
+ ],
+ "¿Vale la pena leer Clean Code si recién empiezo a programar?|24,23,21,22,20": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "¿Qué dice la reseña de Clean Code sobre las pruebas unitarias?|22,23,21,24,27": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Quién es Bilbo Bolsón?|36,38,37,33,44": [
+  3,
+  2,
+  0,
+  0,
+  0
+ ],
+ "¿Qué es el Anillo Único?|38,36,40,34,42": [
+  3,
+  1,
+  1,
+  0,
+  0
+ ],
+ "¿Qué es el Anillo Único?|38,36,40,42,34": [
+  3,
+  1,
+  1,
+  0,
+  0
+ ],
+ "¿En qué año se publicó El Silmarillion?|34,33,35,40,38": [
+  3,
+  3,
+  0,
+  0,
+  0
+ ],
+ "¿En qué año se publicó El Silmarillion?|34,33,35,44,40": [
+  3,
+  3,
+  1,
+  1,
+  0
+ ],
+ "¿Qué pasa en la batalla de los Campos del Pelennor?|42,40,43,38,34": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo se llama la academia de dragones de Alas de sangre?|27,26,25,30,28": [
+  1,
+  2,
+  3,
+  0,
+  2
+ ],
+ "¿Qué cuenta Alas de ónix? ¿Salen de Navarre?|30,25,31,28,26": [
+  3,
+  1,
+  1,
+  0,
+  0
+ ],
+ "¿Qué cuenta Alas de ónix? ¿Salen de Navarre?|30,31,25,28,26": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿La saga Empyrean tiene alguna advertencia de contenido?|25,32,31,27,28": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "How long can a teacher borrow a book for?|9,11,10,2,16": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "Is there a fine if I return a book late?|12,5,9,11,16": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "What time does the library close on weekdays?|15,9,16,12,1": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Who is Violet Sorrengail?|26,28,30,25,27": [
+  3,
+  1,
+  1,
+  1,
+  0
+ ],
+ "What is the Silmarillion about?|34,35,33,44,38": [
+  3,
+  1,
+  2,
+  1,
+  0
+ ],
+ "Can I write notes in a library book?|3,1,14,7,16": [
+  3,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay enchufes para cargar el celular en la sala de lectura?|4,14,1,11,2": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuánto es la multa si me llevo un libro sin registrarlo?|12,5,3,13,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuánto es la multa si me llevo un libro sin registrarlo?|12,5,3,9,13": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca tiene aire acondicionado?|4,1,15,2,14": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo llevar mi propia laptop a la sala de lectura?|4,3,14,2,1": [
+  1,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿Cada cuánto cambian los libros de la sección novedades?|11,16,7,9,28": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay bibliotecarios que ayuden a buscar bibliografía para mi tesis?|1,2,7,8,6": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Se puede pedir un libro prestado por WhatsApp?|3,10,9,16,6": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Se puede pedir un libro prestado por WhatsApp?|3,9,10,6,16": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Me prestan auriculares en la biblioteca?|1,2,4,3,7": [
+  0,
+  1,
+  0,
+  1,
+  0
+ ],
+ "¿Me prestan auriculares en la biblioteca?|2,1,3,4,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Tienen revistas científicas suscriptas?|7,8,5,11,13": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuánto tarda en llegar un libro que pedí a otra sede?|9,16,10,11,3": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay un buzón para devolver libros fuera de horario?|16,15,12,9,5": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Hay un buzón para devolver libros fuera de horario?|15,16,12,9,5": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca organiza ferias del libro o actividades culturales?|15,3,1,16,7": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿La biblioteca organiza ferias del libro o actividades culturales?|15,3,16,1,7": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo rendir un examen en la sala de lectura?|4,14,2,1,3": [
+  1,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Me dan una constancia de que no adeudo libros?|2,5,3,10,16": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Me dan una constancia de que no adeudo libros?|2,5,10,3,16": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Puedo fumar en el patio de la biblioteca?|1,4,3,2,15": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Los docentes pagan la mitad de multa por atraso?|12,9,10,5,11": [
+  3,
+  1,
+  1,
+  1,
+  1
+ ],
+ "¿De qué se trata Harry Potter y el prisionero de Azkaban?|36,17,18,40,42": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Quién es Batman en The Dark Knight Returns?|42,21,40,24,22": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿De qué trata Introduction to Algorithms?|24,21,22,23,1": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuál es la trama de Sandman?|17,18,38,34,33": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué cuenta El león, la bruja y el ropero?|36,17,18,38,42": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Qué cuenta El león, la bruja y el ropero?|36,17,18,33,38": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cómo está el dólar hoy?|12,18,9,19,17": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿Cuál es la receta de las empanadas tucumanas?|26,28,32,12,25": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "¿A qué hora juega la selección?|15,16,18,17,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Ayudame a escribir un mail a mi profesor|7,5,12,9,21": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Ayudame a escribir un mail a mi profesor|21,7,5,12,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Can I print my thesis at the library?|1,3,2,7,9": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "Do you have a wifi password for guests?|6,1,2,3,21": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "What is Dragon Ball Z about?|17,36,18,38,25": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ],
+ "What is Dragon Ball Z about?|36,25,30,32,26": [
+  0,
+  0,
+  0,
+  0,
+  0
+ ]
+}
