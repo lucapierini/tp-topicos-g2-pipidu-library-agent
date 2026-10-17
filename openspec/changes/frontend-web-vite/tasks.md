@@ -40,7 +40,3 @@
 - [x] 5.2 Actualizar `README.md` (arranque con `docker compose up -d --wait`, puertos, `npm run dev`, criterio "Interfaz gráfica") y `.env.example` (`WEB_PORT`, `API_PORT`, `API_ALLOWED_ORIGINS` para desarrollo); verificar siguiendo el README desde un checkout limpio
   *Verificado el 2026-10-16 siguiendo el README desde un clon limpio: `docker compose up -d --build --wait` dejó `db`, `api` y `web` sanos, `/health` respondió `ok`, las tres consultas del README respondieron por `/api/ask` de la web y el camino de desarrollo (`uvicorn` en 8000, `npm run dev` con el proxy `/api`, 46 tests de vitest) funcionó.*
 - [x] 5.3 Ejecutar `python -m pytest -q`, `python -m ruff check .`, `npm test` y `npm run build` en `web/`; verificar que todo pasa
-
-## Workflow follow-up
-
-- Archivar el change cuando se revise y se verifique con el equipo.

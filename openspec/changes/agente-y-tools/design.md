@@ -5,12 +5,11 @@
 El change cubre el agente, sus tools y la API HTTP. El estado de lo implementado se sigue en
 `tasks.md`, que es el lugar canónico. La motivación está en `proposal.md`. Las
 restricciones que condicionan el diseño son las de `TP/00-constitucion.md` (read-only por diseño,
-proveniencia obligatoria, trazabilidad de ejecución) y los criterios de promoción: framework agéntico y SDD
-cubiertos; el de interfaz gráfica lo provee la SPA de `web/`, un cliente de la API (D80, D93); el de
-despliegue en la nube no se cubre porque el sistema corre en entorno local (D81).
+proveniencia obligatoria, trazabilidad de ejecución). El agente usa un framework agéntico (Smolagents), la
+interfaz es la SPA de `web/`, un cliente de la API (D80, D93), y el sistema corre en entorno local (D81).
 
-Condición de contorno: tres integrantes trabajando en paralelo, lo que exige contratos de interfaz
-definidos antes de implementar, para que las tools se puedan desarrollar y testear de forma aislada.
+Tres integrantes trabajan en paralelo, lo que exige contratos de interfaz definidos antes de implementar, para
+que las tools se puedan desarrollar y testear de forma aislada.
 
 ## Goals / Non-Goals
 
@@ -30,9 +29,8 @@ definidos antes de implementar, para que las tools se puedan desarrollar y teste
 
 ## Decisions
 
-La justificación completa (alternativa descartada y motivo) vive en `TP/CHANGELOG.md`, que es el
-registro canónico y el entregable del informe. Acá queda solo el índice, para no mantener dos copias
-del mismo contenido.
+La justificación completa (alternativa descartada y motivo) vive en `TP/CHANGELOG.md`, que es el registro
+canónico. Acá queda solo el índice, para no mantener dos copias del mismo contenido.
 
 | ID | Decisión | Traza |
 |---|---|---|
@@ -53,7 +51,7 @@ del mismo contenido.
 | D15 | `max_steps = 6`, temperatura 0, timeout de API 30 s | Art. 7, R-6.2 |
 | D16 | Aserción sobre clasificación, SQL y filas; prosa con rúbrica manual | Art. 6, Art. 7 |
 | D17 | El historial no alimenta al agente (lo conserva el frontend; v1 es de un solo turno) | R-7.0 |
-| D19 | PDFs generados por el integrante de RAG y base de datos | G6–G9, R1–R3 |
+| D19 | PDFs generados por el equipo | G6–G9, R1–R3 |
 | D20 | Un artefacto, un solo lugar | `TP/README.md` |
 | D21 | Whitelist excluye `agent_runs`, `documentos` y `documentos_chunks` | R-3.4 |
 | D22 | La vista de estado calculado (`v_prestamos_estado`) en la whitelist | R-3.12 |
@@ -109,11 +107,10 @@ del mismo contenido.
 | D77 | `LibraryAgent.answer()` serializa las consultas con un lock | R-1.3 |
 | D79 | Correcciones al streaming: marcador de fin de agente y `duration_s` siempre numérico | R-7.3, R-7.2 |
 | D80 | Sin UI propia: el agente es accesible solo por la API HTTP y el frontend es un cliente externo; la imagen `runtime` sirve la API | R-7.0, D81 |
-| D81 | No se despliega en la nube: el sistema corre en entorno local (Docker + `uvicorn`) | criterio de promoción 1 |
+| D81 | No se despliega en la nube: el sistema corre en entorno local (Docker + `uvicorn`) | D80 |
 | D82 | CORS con allowlist `API_ALLOWED_ORIGINS`, sin wildcard y sin autenticación | R-7.8, D81 |
 | D93 | La interfaz gráfica es la SPA `web/` (change `frontend-web-vite`), cliente de la API; la API es el único acceso al agente y la imagen `runtime` no sirve interfaz | R-7.0, D80 |
-| D83 | Riesgo de promoción aceptado explícitamente: margen 2/5 y desviación del requisito de nube | criterios de promoción 1 y 3, D80, D81 |
-| D84 | La fuente no aparece en ninguna forma dentro del texto de `answer`; se declara solo en `sources` | R-5.2, R-2.6, D58 |
+| D84 | La fuente se declara en `sources`; el sistema retira del texto la línea «Fuente: …» y las citas con ese formato | R-5.2, R-2.6, D58 |
 | D86 | El corpus del RAG no incluye manual de uso; G8, R3 y R11 verifican el reglamento | R-4.6, D16, D12 |
 | D87 | Ampliación del catálogo y de las reseñas | D12 |
 | D89 | Un solo seed y prompt de editoriales genérico | T2.4, T6.1, D87 |
@@ -135,7 +132,6 @@ del mismo contenido.
 - **[Text-to-SQL poco preciso]** → mitigación: few-shot de 9 ejemplos en el prompt + golden set de 5 casos SQL, medido con `pytest -m llm` contra el modelo definitivo y con los datos del seed verificados por `tests/test_golden_seed.py` (`pytest -m integration`).
 - **[Clasificación de fuente inestable por no determinismo]** → mitigación: temperatura 0, golden set de 13 casos, umbral de aceptación ≥11/13 documentado en `TP/05-validacion.md`.
 - **[Retrieval devuelve fragmentos irrelevantes y el agente alucina]** → mitigación: umbral de similitud mínimo (R-4.6) obliga a declarar "no se encontró información relevante". Con los documentos reales el margen es angosto y las poblaciones de casos con y sin cobertura se solapan (D87, D12): el umbral es solo un filtro grueso y la segunda barrera es el clasificador.
-- **[Margen mínimo de promoción: 2 de 5 sin nube]** → mitigación: el tercer criterio es la interfaz gráfica, la SPA de `web/` sobre la API (D80, D93); registrado en D83.
 - **[Un modelo local valida el flujo pero no es el modelo definitivo]** → mitigación: R-2.8 separa
   "validación del flujo" de "aceptación"; la evidencia consigna el modelo (R-6.5) y R-2.1 se mide con Gemini. Un modelo local más débil genera SQL peor (medido: inventó una
   columna) pero eso lo frena el validador, no cambia el criterio.

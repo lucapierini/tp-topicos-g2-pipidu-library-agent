@@ -1,11 +1,11 @@
 # Pipidu Library Agent
 
-SQL AI Agent para un dominio de biblioteca universitaria. Recibe consultas en lenguaje natural
-(castellano o inglés) y responde usando una base de datos relacional (SQL) y un repositorio documental
-vía RAG, decidiendo autónomamente qué fuente consultar en cada caso.
+Agente de IA para una biblioteca universitaria. Recibe consultas en lenguaje natural (castellano o inglés) y las
+responde con dos fuentes: una base de datos relacional, consultada con SQL, y un repositorio de documentos PDF,
+consultado con RAG (recuperación aumentada por generación). En cada consulta decide qué fuente usar, o si usa las dos.
 
-**Materia:** Tópicos Avanzados de IA — Trabajo Práctico Integrador (AI Engineering), UCSE.
-**Entrega:** 16/10/2026 23:59 (GMT-03) · **Coloquio:** 23/10 o 30/10/2026.
+Proyecto de la materia Tópicos Avanzados de IA (UCSE, Ingeniería en Informática).
+**Integrantes:** Duelli, Agustín · Pierini, Luca · Pistarino, Bruno.
 
 ## Stack
 
@@ -20,13 +20,14 @@ navegador ──► web (nginx, :3000) ──/api/──► api (FastAPI, :8080)
 ```
 
 Cada consulta se clasifica (`sql`, `rag`, `hybrid` o `none`), se resuelve con las herramientas que corresponden y
-se registra en la tabla `agent_runs`. La respuesta declara su fuente en el campo `sources`, no en el texto.
-La API (`POST /ask` con streaming SSE, `GET /health`) es el único acceso al agente (D80).
+se registra en la tabla `agent_runs`. La respuesta declara su fuente en el campo `sources`.
+Si la consulta es solo un saludo, el agente responde con una bienvenida y dos consultas de ejemplo, sin invocar
+herramientas. La API (`POST /ask` con streaming SSE, `GET /health`) es el único acceso al agente (D80).
 
 ## Estructura
 
 ```
-TP/            artefactos SDD (constitución, especificación funcional y técnica, validación, changelog, evidencia, enunciado)
+TP/            artefactos SDD (constitución, especificación funcional y técnica, validación, registro de decisiones y evidencia)
 informe/       informe técnico (informe-tecnico.md y su PDF)
 openspec/      raíz operativa de SDD (project.md, config.yaml, changes/)
 db/            schema.sql, seed.sql (catálogo completo), dev_seed.sql (seed mínimo), migrations/, init/ (roles y carga inicial)
@@ -44,7 +45,7 @@ El detalle de cada archivo está en `TP/02` §8 (D20).
 
 ## Guía paso a paso: levantar el proyecto desde cero
 
-Hay dos caminos. El **A (todo con Docker)** es el que debe usar quien evalúe el trabajo: no hace falta instalar
+Hay dos caminos. El **A (todo con Docker)** es el recomendado para probar el sistema: no hace falta instalar
 Python, Node ni PostgreSQL. El **B (desarrollo local)** es para modificar el código con recarga en caliente.
 
 ### Camino A — Todo con Docker
@@ -231,7 +232,8 @@ el historial (D17).
 - **Progreso en vivo** (R-8.2): clasificación, herramienta invocada y su resultado a medida que llegan los eventos SSE, con indicador
   *shimmer* y segundos de espera por `heartbeat`. No muestra ninguna fuente antes del evento `result`.
 - **Respuesta con proveniencia** (R-8.3, R-8.11): `answer` como Markdown (listas, énfasis, tablas, código; el HTML no se interpreta)
-  con las fuentes declaradas como `Badge`. `no_coverage` y `error` se muestran aparte, como `Alert`.
+  con las fuentes declaradas como `Badge`. `no_coverage` y `error` se muestran aparte, como `Alert`; el saludo
+  (`greeting`) se muestra como una respuesta sin fuentes.
 - **Evidencia** (R-8.4): botón «Ver evidencia» con la sentencia SQL, las filas en una tabla y los fragmentos citados, tal como llegan.
 - **Cancelación y fallas** (R-8.5, R-8.6): corta la conexión para cancelar al agente; distingue «API no disponible», consulta
   rechazada y corte antes del resultado, con reintento.
@@ -264,7 +266,7 @@ curl -N -X POST http://localhost:8080/ask -H "content-type: application/json" -d
 ## Medición y evidencia
 
 ```bash
-python scripts/measure_golden.py --out TP/evidencia/<corrida>.json   # mide R-2.1 con el modelo configurado
+python scripts/measure_golden.py --out TP/evidencia/<corrida>.json   # mide el golden set con el modelo configurado
 python scripts/measure_golden.py --db --rag-mock                      # golden set contra la base local, recuperación simulada
 python scripts/measure_golden.py --db --rag-real                      # golden set contra la base y la recuperación de producción (PDFs ingestados, re-ranking por defecto; gasta cuota de Gemini)
 python scripts/export_runs.py --last 15                               # agent_runs -> TP/evidencia/
@@ -272,14 +274,27 @@ docker build -f docker/Dockerfile --target measure -t pipidu-measure . # imagen 
 ```
 
 Desarrollo sin cuota: apuntar a un servidor local OpenAI-compatible con `LLM_MODEL=openai/<id>` y
-`LLM_API_BASE=http://127.0.0.1:<puerto>/v1` (R-2.8); valida el flujo pero no cuenta como aceptación.
+`LLM_API_BASE=http://127.0.0.1:<puerto>/v1` (R-2.8); valida el flujo, pero la medición de referencia se hace con Gemini.
 Opcional: traer la base compartida de Neon con `NEON_DATABASE_URL` en `.env` y `bash scripts/replicate_neon.sh --check`.
 Las variables de entorno están documentadas una por una en `.env.example`.
 
-## Estado
+## Qué incluye
 
-Etapa SDD completa (`Requirement → Spec → Plan → Tasks → Validation`): todas las tareas de los cinco changes están terminadas. El agente, la API con streaming y cancelación, y la
-interfaz web (D93) están implementados. La clasificación con el modelo definitivo (`gemini-3.1-flash-lite`, D71) midió 13/13 casos correctos el 2026-10-10 y el 2026-10-11 y 12/13 el 2026-10-16 con la recuperación real por coseno (el caso fallido fue un 503 de la API y repetido solo clasificó bien) y 13/13 con el re-ranking por defecto (D100), sobre el
-mínimo de 11 (R-2.1); las corridas, la exportación de `agent_runs` y la calibración del umbral están en `TP/evidencia/`. Las specs se validan con
-`openspec validate --all --strict` y los cinco changes están en [`openspec/changes/`](openspec/changes/): `agente-y-tools`, `base-de-datos-neon`,
-`calibracion-umbral-rag`, `frontend-web-vite` y `frontend-markdown-answer`.
+- **Agente** (`agent/`): clasificador con salida estructurada (fuente, idioma, pedido de escritura y saludo),
+  orquestador con Smolagents, herramienta `execute_sql` y herramienta `retrieve_documents`. Responde en el idioma
+  de la consulta, declara la fuente y la evidencia, y no inventa datos: ante la ausencia de información lo dice.
+- **Seguridad del SQL**: el SQL lo genera el agente y se valida con `sqlglot` contra una lista blanca de tablas,
+  columnas y funciones; se ejecuta con el rol de solo lectura `agent_ro`, con timeout de 10 s y un máximo de 50 filas.
+- **Base de datos** (`db/`): 7 tablas del dominio con entre 18 y 95 registros, la vista `v_prestamos_estado` y la tabla
+  de trazabilidad `agent_runs`.
+- **RAG** (`rag/`): 6 documentos PDF en 44 fragmentos con embeddings de Gemini en pgvector; la recuperación usa
+  re-ranking con el modelo y, como respaldo, el umbral de coseno 0,64 (D100, D12).
+- **API y web**: `POST /ask` con streaming SSE y cancelación, y una SPA con el progreso en vivo, la fuente y la evidencia.
+- **Documentación SDD** (`TP/`, `openspec/`, `informe/`): constitución, especificaciones, decisiones, plan de
+  validación, cinco changes de OpenSpec y el informe técnico.
+
+**Mediciones** (`TP/evidencia/`): el golden set tiene 13 casos (más 2 en inglés) y se mide con el modelo
+`gemini-3.1-flash-lite` (D71). Clasificó 13/13 el 2026-10-10 y el 2026-10-11, y el 2026-10-16 con la base y la
+recuperación reales: 12/13 con el corte por coseno (el caso fallido fue un 503 de la API y repetido solo clasificó
+bien) y 13/13 con el re-ranking por defecto (D100). La calibración del RAG usa 126 consultas etiquetadas, y las
+specs se validan con `openspec validate --all --strict`.

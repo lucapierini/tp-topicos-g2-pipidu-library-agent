@@ -91,7 +91,7 @@ Python no sirve interfaz; la SPA es un cliente en su propio servicio. La regla v
 
 - [SSE cortado por buffering en nginx] → `proxy_buffering off`, cabecera `X-Accel-Buffering: no` ya enviada
   por la API, y `proxy_read_timeout` de 600 s.
-- [Cambio de postura sobre R-7.0 frente a la cátedra y al otro change] → la reformulación se registra en el
+- [Reformulación de R-7.0 respecto del change `agente-y-tools`] → la reformulación se registra en el
   CHANGELOG.
 - [Conflictos con `agente-y-tools` en `README.md` y `docker-compose.yml`] → cambios acotados y rebase
   frecuente; no se toca `docker/Dockerfile`.

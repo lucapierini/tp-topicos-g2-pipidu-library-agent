@@ -4,8 +4,8 @@
 
 El agente responde en Markdown (listas con `*`, **negritas**, *cursivas*, notas, a veces tablas). Si la
 respuesta se mostrara como texto plano, la persona vería los asteriscos literales y las listas sin formato,
-como en las consultas "libros con reseña", "reseña de Tolkien" y "libros agrupados por editorial". La
-interfaz es el criterio de promoción "Interfaz gráfica" (D93): una respuesta ilegible lo debilita.
+como en las consultas "libros con reseña", "reseña de Tolkien" y "libros agrupados por editorial". Una
+respuesta ilegible le quita valor a la interfaz (D93).
 
 ## What Changes
 

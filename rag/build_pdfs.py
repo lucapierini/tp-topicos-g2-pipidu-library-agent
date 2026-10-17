@@ -1,7 +1,7 @@
 """Convierte rag/documents/*.md a PDF (rag/documents/pdf/*.pdf).
 
-Los PDFs generados se versionan en el repo (el enunciado exige PDFs), así que
-este script solo hace falta si se edita algún .md.
+Los PDFs generados se versionan en el repo, así que este script solo hace falta si
+se edita algún .md.
 Soporta el subconjunto de Markdown usado en los documentos: títulos (#, ##),
 listas (-, 1.), tablas simples, negritas (**x**) y párrafos.
 

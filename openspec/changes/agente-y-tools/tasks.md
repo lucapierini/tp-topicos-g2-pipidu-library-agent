@@ -70,7 +70,7 @@ Contrato de la respuesta, idioma, evidencia exhibida, bitácora `agent_runs` y s
   _(B1 (SQL) y B2 (RAG), flag `--bilingual` en `scripts/measure_golden.py`, fuera del denominador de R-2.1; D73)_
 - [x] 7.7 Implementar `scripts/export_runs.py` que vuelque `agent_runs` a un archivo versionado en `TP/evidencia/`, y verificar que contiene las 13 consultas del golden set con sus campos. El fixture de integración hace `TRUNCATE agent_runs` (`tests/test_runs_integration.py`), así que exportar **antes** de correr `pytest -m integration`; la tabla no es una evidencia durable (R-6.1, R-6.2)
   _(`scripts/export_runs.py` con `--last N`, verificado en `tests/test_export_runs.py`; las 13 consultas exportadas en `TP/evidencia/agent_runs_2026-10-11.json` (`count: 13`))_
-- [x] 7.8 Retirar la línea de fuente del texto de la respuesta y declararla solo en `sources` (R-5.2, R-2.6, D84), y verificar que `answer` no menciona la fuente (ni línea `Fuente: …` / `Source: …`, ni cita entre paréntesis, ni nombre de documento) en ningún caso (`sql`, `rag`, `hybrid`, `none`, error) y que la que escriba el modelo se retira
+- [x] 7.8 Declarar la fuente en `sources` y retirar del texto la línea `Fuente: …` / `Source: …` y las citas entre paréntesis con ese formato (R-5.2, R-2.6, D84), y verificar que la que escriba el modelo se retira en los casos `sql`, `rag`, `hybrid`, `none` y error
   _(`tests/test_agent.py`, `tests/test_prompts.py::test_the_prompt_forbids_naming_the_source_in_the_answer` y `tests/test_api.py::test_the_result_event_carries_the_complete_agent_answer`)_
 
 ## 8. API HTTP (único acceso al agente, sin interfaz gráfica propia)

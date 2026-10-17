@@ -1,6 +1,6 @@
 ---
 title: "Pipidu Library Agent: informe técnico"
-subtitle: "Trabajo Práctico Integrador, AI Engineering (UCSE, Ingeniería en Informática, 5.º año)"
+subtitle: "Tópicos Avanzados de IA (UCSE, Ingeniería en Informática)"
 author:
   - "Duelli, Agustín"
   - "Pierini, Luca"
@@ -11,19 +11,21 @@ author:
 
 **Pipidu Library Agent** es un agente de IA para una biblioteca universitaria. Recibe consultas en lenguaje natural (castellano o inglés) y las resuelve a partir de dos fuentes: una **base de datos relacional** (libros, autores, socios y préstamos) y un **repositorio de documentos PDF** consultado con RAG, generación aumentada por recuperación (reglamento, políticas y reseñas). El agente decide en cada consulta qué fuente usar, o si usa ambas, e informa de dónde sale la respuesta o declara que no hay información suficiente.
 
-El sistema cumple los cuatro criterios técnicos de aprobación del enunciado (los otros dos son este informe y el coloquio) y tres de los cinco criterios de promoción:
+El sistema incluye:
 
-| Criterio | Cómo se cumple |
+| Componente | Qué se implementó |
 |---|---|
-| Modelo relacional, 5 tablas o más, más de 15 registros por tabla | 7 tablas del dominio con entre 18 y 95 filas cada una (sección 2) |
-| El agente interpreta lenguaje natural y responde con la base | Text-to-SQL con validación estática y rol de solo lectura (secciones 3 y 4) |
-| RAG sobre 2 PDF como mínimo | 6 PDF, 44 fragmentos, búsqueda vectorial con pgvector y re-ranking con el modelo |
-| Código documentado y reproducible | `README.md` con un único comando de arranque (`docker compose up -d --build --wait`) |
-| Promoción: framework agéntico | Smolagents (`ToolCallingAgent`) |
-| Promoción: interfaz gráfica | SPA (aplicación web de una sola página) propia en React con progreso en vivo, fuente y evidencia |
-| Promoción: SDD (Spec Driven Development) | OpenSpec con cinco changes, constitución, especificaciones y registro de decisiones |
+| Base de datos relacional | 7 tablas del dominio con entre 18 y 95 registros cada una, una vista de vencimiento y la tabla de trazabilidad (sección 2) |
+| Agente | Clasificador con salida estructurada y herramienta text-to-SQL con validación estática y rol de solo lectura; responde en castellano o en inglés (secciones 3 y 4) |
+| RAG | 6 PDF en 44 fragmentos, búsqueda vectorial con pgvector y re-ranking con el modelo (sección 3.4) |
+| Framework agéntico | Smolagents (`ToolCallingAgent`) |
+| API | FastAPI con respuesta en streaming (SSE) y cancelación |
+| Interfaz web | SPA (aplicación web de una sola página) en React, con progreso en vivo, fuente y evidencia |
+| Trazabilidad | Tabla `agent_runs` con cada consulta, sus herramientas, el SQL y los fragmentos usados |
+| Reproducibilidad | `README.md` con un único comando de arranque (`docker compose up -d --build --wait`) |
+| SDD (Spec Driven Development) | OpenSpec con cinco changes, constitución, especificaciones y registro de decisiones |
 
-No se despliega en la nube ni se integra LangSmith: el sistema corre en entorno local (decisión D81), y la trazabilidad propia vive en la tabla `agent_runs`, que no se presenta como el criterio de observabilidad.
+El sistema corre en entorno local (decisión D81). La trazabilidad vive en la tabla `agent_runs`; no se integra LangSmith.
 
 # 2. Modelo de datos
 
@@ -51,7 +53,7 @@ El dominio es una biblioteca universitaria. El esquema (`db/schema.sql`) tiene *
 | `prestamos` | 28 | Fechas de préstamo, devolución prevista y real, `estado` (CHECK `activo` o `devuelto`) |
 | `documentos` y `documentos_chunks` | 6 y 44 | Repositorio RAG: un registro por PDF y un fragmento por fila, con `embedding vector(768)` |
 
-Todas las tablas del dominio superan el mínimo de 15 registros que pide el enunciado. Un test (`tests/test_seed_contract.py`) lo verifica contra la base real.
+Todas las tablas del dominio tienen más de 15 registros. Un test (`tests/test_seed_contract.py`) lo verifica contra la base real.
 
 ## 2.2 Decisiones de diseño del modelo
 
@@ -89,10 +91,10 @@ Se levanta con Docker Compose: `db` (PostgreSQL con pgvector), `ingest` (una sol
 ## 3.2 Flujo de una consulta
 
 1. **Entrada.** `POST /ask` recibe la pregunta; una consulta vacía devuelve 422 sin abrir el flujo. La respuesta es un flujo de eventos SSE (Server-Sent Events): `start`, `classified`, `tool_call`, `tool_result`, `step`, `composing`, `heartbeat` (cada 5 s), `result` y, ante una falla inesperada, `error` (D75).
-2. **Clasificación antes de cualquier herramienta (D3).** Una llamada al modelo con salida estructurada obligatoria devuelve la fuente (`sql`, `rag`, `hybrid` o `none`), el idioma y si la consulta pide escribir datos. La clasificación se emite primero, de modo que el agente solo recibe las herramientas de la fuente elegida.
-3. **Pedidos de escritura.** Si la consulta pide crear, modificar o borrar datos, solo interviene el clasificador: no se ejecuta ninguna herramienta ni se llama al modelo para redactar, y el agente responde con un mensaje fijo, porque es de solo lectura.
+2. **Clasificación antes de cualquier herramienta (D3).** Una llamada al modelo con salida estructurada obligatoria devuelve la fuente (`sql`, `rag`, `hybrid` o `none`), el idioma, si la consulta pide escribir datos y si es solo un saludo. La clasificación se emite primero, de modo que el agente solo recibe las herramientas de la fuente elegida.
+3. **Pedidos de escritura y saludos.** Si la consulta pide crear, modificar o borrar datos, solo interviene el clasificador: no se ejecuta ninguna herramienta ni se llama al modelo para redactar, y el agente responde con un mensaje fijo, porque es de solo lectura. Si la consulta es solo un saludo, responde también con un mensaje fijo (`answer_kind = greeting`): una bienvenida con dos consultas de ejemplo, una sobre la base y otra sobre el reglamento.
 4. **Ejecución.** El agente (`ToolCallingAgent`, D2) usa `execute_sql`, `retrieve_documents` o ambas. En un híbrido consulta primero la base, luego los documentos y recién después concluye, separando el hecho verificado de la conclusión.
-5. **Composición.** El agente redacta en el idioma de la pregunta. La fuente nunca va dentro del texto: viaja aparte en `sources`, y la evidencia (sentencia SQL, filas, fragmentos con documento y ubicación) en `evidence` (D84).
+5. **Composición.** El agente redacta en el idioma de la pregunta. La fuente se declara aparte, en `sources`, y la evidencia (sentencia SQL, filas, fragmentos con documento y ubicación) en `evidence` (D84).
 6. **Ausencia de información.** Si ninguna fuente tiene la respuesta, el agente lo declara en lugar de inventar (`answer_kind = no_coverage`).
 7. **Trazabilidad.** Cada consulta queda en `agent_runs` con la clasificación, las herramientas, la sentencia generada y la ejecutada, los fragmentos, cada intento, el modelo, la latencia y el estado.
 
@@ -108,7 +110,7 @@ La ingesta divide cada documento por sección (`## `): un fragmento por artícul
 
 La SPA (`web/`: React 19, TypeScript, Vite, Tailwind y shadcn/ui) es un cliente de la API. Muestra el progreso en vivo como una línea de tiempo («Clasificada: corresponde consultar la base de datos», «Devolvió 2 filas», «Armando la respuesta»), la respuesta en Markdown con la fuente como insignia, y un panel plegable «Ver evidencia» con la sentencia SQL, la tabla de filas y los fragmentos citados. Permite cancelar una consulta en curso y reintentar ante fallas de conexión. Distingue visualmente las respuestas normales, la ausencia de información y los errores. En Docker, nginx sirve la SPA y reenvía `/api/` a la API sin buffering, para que el flujo llegue en vivo (D93).
 
-![Figura 1. Interfaz web con una consulta resuelta por SQL (préstamos que vencen esta semana) y otra por RAG (duración de un préstamo), cada una con su fuente y el botón «Ver evidencia».](screenshot-1.png){width=78%}
+![Figura 1. Interfaz web con una consulta resuelta por SQL (préstamos que vencen esta semana) y otra por RAG (duración de un préstamo), cada una con su fuente y el botón «Ver evidencia».](screenshot-1.png){width=66%}
 
 # 4. Seguridad de la generación de SQL
 
@@ -141,9 +143,9 @@ El registro completo, con fecha, alternativa considerada y motivo de cada decisi
 | D56 Proveedor configurable | Modelo fijo en el código | Se valida el flujo con un modelo local sin gastar cuota |
 | D77 Consultas en serie | Concurrencia sin control | Cada backend guarda una sola conexión: dos consultas simultáneas se pisarían |
 | D80 La API es el único acceso al agente | Interfaz Streamlit en el mismo servicio | El frontend consume el agente por HTTP y la evidencia viaja en `result.evidence` |
-| D81 Ejecución local | Despliegue en la nube | Decisión del equipo: el sistema se entrega para ejecutarse en entorno local con Docker y el criterio de despliegue en la nube no se presenta |
-| D84 La fuente nunca va en el texto | Línea «Fuente:» al pie | La interfaz ya la muestra desde `sources`; si estaba en el texto, aparecía duplicada |
-| D93 SPA propia en su servicio, con proxy del mismo origen | Interfaz Streamlit en el servicio del agente (D80) | En Docker la web llega a la API por un proxy del mismo origen, sin CORS, y cubre el criterio de promoción «Interfaz gráfica» |
+| D81 Ejecución local | Despliegue en la nube | Decisión del equipo: el sistema se ejecuta en entorno local con Docker |
+| D84 La fuente se declara en `sources` | Línea «Fuente:» al pie del texto | La interfaz ya la muestra desde `sources`; la línea escrita por el modelo aparecía duplicada y se retira |
+| D93 SPA propia en su servicio, con proxy del mismo origen | Interfaz Streamlit en el servicio del agente (D80) | En Docker la web llega a la API por un proxy del mismo origen, sin CORS |
 
 # 6. Pruebas y evidencias
 
@@ -225,11 +227,27 @@ Fuentes declaradas: `sql` y `rag`.
 
 **Pedido de escritura.** Una pregunta que pide modificar datos solo pasa por el clasificador: no ejecuta ninguna herramienta ni llama al modelo para redactar; se responde con un mensaje fijo que explica que el agente es de solo lectura.
 
-![Figura 2. Pedido de escritura rechazado («¡No pasarás!»), consulta fuera del dominio sin cobertura («Houston, tenemos un problema») y consulta en inglés respondida con el reglamento en castellano.](screenshot-2.png){width=78%}
+![Figura 2. Pedido de escritura rechazado («¡No pasarás!»), consulta fuera del dominio sin cobertura («Houston, tenemos un problema») y consulta en inglés respondida con el reglamento en castellano.](screenshot-2.png){width=66%}
 
 ## 6.5 Registro de trazabilidad
 
-Cada consulta deja una fila en `agent_runs`. Por ejemplo, la de «¿Qué libros tiene prestados el socio Juan Pérez?» registra: clasificación `sql`, herramienta `execute_sql`, la sentencia generada y la normalizada que corrió, el modelo (`gemini/gemini-3.1-flash-lite`), el endpoint `api`, estado `ok` y latencia de 7,4 s. El archivo `TP/evidencia/agent_runs_2026-10-16.json` contiene las 15 consultas de la corrida con todos esos campos.
+Cada consulta deja una fila en `agent_runs`. Esta es la de «¿Qué libros tiene prestados el socio Juan Pérez?», tal como figura en `TP/evidencia/agent_runs_2026-10-16.json` (fila 46, con las sentencias abreviadas):
+
+| Campo | Valor |
+|---|---|
+| `created_at` | 2026-10-16 20:30:52 UTC |
+| `classification` / `status` | `sql` / `ok` |
+| `sources` / `tools` | `["sql"]` / `["execute_sql"]` |
+| `generated_sql` | `SELECT l.titulo, p.fecha_prestamo, p.fecha_devolucion_prevista FROM prestamos p JOIN socios s … WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.estado = 'activo'` |
+| `executed_sql` | la misma sentencia normalizada (`l.titulo AS titulo`, `prestamos AS p`, …) |
+| `attempts` | un intento: 1 fila, ejecutado, 23 ms |
+| `chunks` | `[]` (no hubo consulta documental) |
+| `answer` | «El socio Juan Pérez tiene prestado el libro "Sobre héroes y tumbas", el cual fue retirado el 2026-09-26 y tiene fecha de devolución prevista para el 2026-10-10.» |
+| `latency_ms` | 7430 |
+| `model_id` / `endpoint` | `gemini/gemini-3.1-flash-lite` / `api` |
+| `error_code` / `trace` | `null` / `["classification", "execute_sql"]` |
+
+El archivo contiene las 15 consultas de la corrida (13 `ok`, 1 `no_coverage` y 1 `error`) con todos esos campos.
 
 ## 6.6 Concurrencia
 
@@ -254,7 +272,7 @@ El desarrollo siguió el ciclo `Requirement → Spec → Plan → Tasks → Impl
 | Especificación funcional y técnica | `TP/01-especificacion-funcional.md`, `TP/02-especificacion-tecnica.md` |
 | Validación: casos de prueba, calibración y corridas medidas | `TP/05-validacion.md`, `TP/evidencia/` |
 | Registro de decisiones, con fecha y motivo | `TP/CHANGELOG.md` |
-| Cuatro changes de OpenSpec: requisitos con escenarios `GIVEN / WHEN / THEN`, diseño y tareas | `openspec/changes/` (`agente-y-tools`, `base-de-datos-neon`, `frontend-web-vite`, `frontend-markdown-answer`) |
+| Cinco changes de OpenSpec: requisitos con escenarios `GIVEN / WHEN / THEN`, diseño y tareas | `openspec/changes/` (`agente-y-tools`, `base-de-datos-neon`, `calibracion-umbral-rag`, `frontend-web-vite`, `frontend-markdown-answer`) |
 
 Cada requisito tiene un identificador (por ejemplo `R-3.4`), una decisión de diseño lleva el suyo (`D12`) y las pruebas citan ambos, de modo que se puede seguir un comportamiento desde el requisito hasta la prueba que lo verifica. La especificación se escribe antes que el código y `openspec validate --all --strict` valida que cada requisito tenga al menos un escenario.
 

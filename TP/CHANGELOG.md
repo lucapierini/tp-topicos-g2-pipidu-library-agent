@@ -1,27 +1,26 @@
 # CHANGELOG — Decisiones de diseño
 
 > Registro incremental del ciclo SDD. Cada decisión relevante se consigna aquí con fecha,
-> alternativa descartada y motivo. Es el artefacto que la cátedra pide adjuntar.
+> alternativa descartada y motivo.
 >
-> Los IDs `D1…D101` son los mismos que usa `openspec/changes/agente-y-tools/design.md`.
+> Los IDs `D1…D102` son los mismos que usa `openspec/changes/agente-y-tools/design.md`.
 > Algunas numeraciones no se usan porque se fusionaron en otra decisión.
 
 ---
 
 ## 2026-10-08 — Ciclo SDD orientado al agente y sus tools
 
-**Decisión:** completar el ciclo `Requirement → Spec → Plan → Tasks → Validation` con los dos
-artefactos que faltaban (`04-tareas.md`, `05-validacion.md`) y agregar la constitución (`00-constitucion.md`).
+**Decisión:** el ciclo `Requirement → Spec → Plan → Tasks → Validation` se completa con la constitución
+(`00-constitucion.md`) y el plan de validación (`05-validacion.md`).
 
-**Decisión:** adoptar OpenSpec como herramienta de estandarización grupal, manteniendo los artefactos
-en Markdown plano dentro de `TP/` para que sean directamente adjuntables al informe.
+**Decisión:** OpenSpec es la herramienta de estandarización del grupo. Los artefactos son Markdown plano versionado
+en el repositorio: la spec vive en `openspec/` y `TP/` conserva la versión legible.
 
-**Alternativa descartada:** Spec-Kit. Motivo: constitution + templates + slash commands implican
-mayor ceremonia y costo de tokens para un trabajo de 3 personas con un informe de 10 páginas.
-Se retoma solo si el grupo necesita checkpoints de clarificación formales.
+**Alternativa descartada:** Spec-Kit. Motivo: constitution, templates y slash commands implican mayor ceremonia y
+costo de tokens para un equipo de 3 personas. Se retoma solo si el grupo necesita checkpoints de clarificación formales.
 
-**Decisión:** los criterios de aceptación pasan a formato GIVEN / WHEN / THEN, porque los checkboxes
-no son verificables.
+**Decisión:** los criterios de aceptación usan el formato GIVEN / WHEN / THEN, porque los checkboxes no son
+verificables.
 
 ---
 
@@ -36,7 +35,7 @@ Cada decisión consigna la alternativa descartada y el motivo.
 **Traza:** R-3.1.
 
 ### D2 — `ToolCallingAgent`, no `CodeAgent`
-**Motivo:** `CodeAgent` exige un ejecutor de código (local o E2B), lo que agrega una superficie de ejecución que contradice el Art. 3 de la constitución. El TP exige un framework agéntico, no ejecución de código.
+**Motivo:** `CodeAgent` exige un ejecutor de código (local o E2B), lo que agrega una superficie de ejecución que contradice el Art. 3 de la constitución. El agente necesita un framework de herramientas, no ejecución de código generado.
 **Traza:** `02 §5.1`.
 
 ### D3 — Clasificación mediante salida estructurada obligatoria
@@ -93,7 +92,7 @@ Umbral calibrado contra los documentos reales con 126 consultas (`TP/evidencia/c
 **Traza:** R-4.4, R-4.8, R-4.9, R4 del set de retrieval.
 
 ### D13 — Índice vectorial HNSW con `vector_cosine_ops`
-**Motivo:** con ~100 chunks el rendimiento es irrelevante; se mantiene porque es demostrable en el informe y coherente con la elección de pgvector.
+**Motivo:** con ~100 chunks el rendimiento es irrelevante; se mantiene porque es demostrable y coherente con la elección de pgvector.
 **Traza:** T3.4.
 
 ### D14 — Rol de solo lectura como usuario dedicado `agent_ro`
@@ -116,13 +115,13 @@ Se muestra pero no alimenta al agente.
 **Motivo:** un historial que alimenta al agente contradice la exclusión de memoria conversacional.
 **Traza:** `01 §5.5`.
 
-### D19 — PDFs generados por el integrante responsable de RAG y base de datos
+### D19 — PDFs generados por el equipo
 **Descartado:** documentación real de la universidad.
 **Motivo:** el golden set necesita respuestas esperadas verificables; con documentación ajena la rúbrica se vuelve discutible.
 **Dependencia:** G6–G9 y R1–R3 verifican el contenido de los documentos, que cubren plazo de devolución, sinopsis y horario.
 
 ### D20 — Un artefacto, un solo lugar
-Las specs por capacidad viven solo en `openspec/`. `TP/` conserva constitución, especificación funcional, especificación técnica, validación y CHANGELOG. Drive queda solo con la consigna y un puntero al repo.
+Las specs por capacidad viven solo en `openspec/`. `TP/` conserva constitución, especificación funcional, especificación técnica, validación y CHANGELOG.
 **Motivo:** con tres integrantes y asistentes de IA distintos, dos copias del mismo requisito derivan en ediciones divergentes.
 **Traza:** `TP/README.md`.
 
@@ -130,7 +129,7 @@ Las specs por capacidad viven solo en `openspec/`. `TP/` conserva constitución,
 
 ## 2026-10-13 — Base de datos en Neon y documentos del RAG (change `base-de-datos-neon`)
 
-**Decisión:** la justificación del esquema, el seed y los documentos fuente del RAG se tramitan como un change propio, `openspec/changes/base-de-datos-neon/`, con capacidades `esquema-de-base-de-datos` (R-7.x), `datos-de-prueba` (R-8.x) y `documentos-fuente-rag` (R-9.x). **Motivo:** D64 adoptó el esquema compartido sin dejar escrito por qué tiene esa forma; el informe necesita sustentar el modelo de datos.
+**Decisión:** la justificación del esquema, el seed y los documentos fuente del RAG se tramitan como un change propio, `openspec/changes/base-de-datos-neon/`, con capacidades `esquema-de-base-de-datos` (R-7.x), `datos-de-prueba` (R-8.x) y `documentos-fuente-rag` (R-9.x). **Motivo:** D64 adoptó el esquema compartido sin dejar escrito por qué tiene esa forma; el modelo de datos necesita una justificación escrita.
 
 Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D101`:
 
@@ -159,7 +158,7 @@ Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D10
 | B2 | LLM y embeddings: API de Gemini | Confirmada |
 | B3 | Framework agéntico: Smolagents | Confirmada |
 | B4 | UI: SPA en `web/`, cliente de la API | Confirmada |
-| B5 | Criterios de promoción cubiertos: framework agéntico, SDD; el de despliegue en la nube no se cubre porque el sistema corre en entorno local | Confirmada |
+| B5 | Componentes del sistema: framework agéntico (Smolagents), SDD e interfaz web; el sistema corre en entorno local, sin nube | Confirmada |
 | B6 | LangSmith / observabilidad: **no incluido** | Confirmada (exclusión explícita) |
 | B7 | Persistencia de trazabilidad en `agent_runs` | Confirmada (Art. 5) |
 
@@ -176,9 +175,9 @@ Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D10
 | D27 | 2026-10-10 | T4.2 | Se rechaza `FOR UPDATE` con `SQL_NOT_READONLY` | Un lock de fila no es lectura, aunque la sentencia empiece con `SELECT` (R-3.2) |
 | D28 | 2026-10-10 | T4.2 | Identificadores normalizados a minúsculas antes de comparar | `FROM "Libros"` se rechazaba falsamente; Postgres resuelve la tabla como `libros` (R-3.15) |
 | D29 | 2026-10-10 | T4.2 | `error_level=RAISE` en el parseo | Por defecto `sqlglot` avisa y degrada a `Command`; una sentencia mal formada se reinterpretaba en vez de fallar (R-3.3) |
-| D30 | 2026-10-10 | T4.2 | Se registra la sentencia **normalizada** como la ejecutada y `SqlResult.sql_original` conserva la del modelo | Con la expansión de `*` la sentencia que corre ya no es idéntica a la que produjo el modelo; sin las dos versiones la evidencia del informe no es verificable (R-3.9, R-6.4) |
+| D30 | 2026-10-10 | T4.2 | Se registra la sentencia **normalizada** como la ejecutada y `SqlResult.sql_original` conserva la del modelo | Con la expansión de `*` la sentencia que corre ya no es idéntica a la que produjo el modelo; sin las dos versiones la evidencia no es verificable (R-3.9, R-6.4) |
 | D31 | 2026-10-10 | T4.2 | Los literales de texto no se modifican por la normalización | La respuesta final debe citar los valores efectivamente devueltos (Art. 4); normalizar identificadores no puede cambiar un valor |
-| D32 | 2026-10-10 | — | No hay política de PII ni roles de acceso diferenciados: todos los usuarios acceden a toda la información del dominio | La consigna 2026 no lo detalla. La whitelist de tablas y columnas es control de alcance y de inyección (R-3.4), no de privacidad. Si la consigna introdujera un requisito de privacidad, es un cambio de spec (Art. 10) |
+| D32 | 2026-10-10 | — | No hay política de PII ni roles de acceso diferenciados: todos los usuarios acceden a toda la información del dominio | El dominio no distingue usuarios. La whitelist de tablas y columnas es control de alcance y de inyección (R-3.4), no de privacidad. Un requisito de privacidad sería un cambio de spec (Art. 10) |
 | D33 | 2026-10-10 | T4.3 | El fallo de ejecución se reporta con el código `EXECUTION_ERROR` (R-3.16) | Los códigos existentes cubren la validación estática; un fallo al ejecutar (conexión, restricción, sintaxis) no tiene código y sin él la herramienta termina interpretando el mensaje de la base |
 | D34 | 2026-10-10 | T4.3 | `pytest` por defecto excluye `integration` y `llm` (`addopts = -m "not integration and not llm"`) | Art. 6 exige que los tests corran sin base ni credenciales. Con la conexión inyectable, la política de clamp/regeneración se prueba offline con un fake; lo que sí necesita base queda en `-m integration` |
 | D35 | 2026-10-10 | T4.3 | `psycopg2` se importa de forma diferida dentro de `_connect()` | Si el import estuviera al nivel de módulo, los tests offline no podrían importar el executor sin el paquete instalado |
@@ -203,7 +202,7 @@ Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D10
 | D56 | 2026-10-10 | T6.2 | El proveedor del LLM es configuración: `LLM_MODEL` (formato LiteLLM) y `LLM_API_BASE`. Por defecto `gemini/<GEMINI_MODEL>`. `build_classifier` usa Gemini nativo (salida estructurada con enum) o `LiteLLMClassifier` para cualquier otro proveedor | Permite validar el flujo contra un servidor local OpenAI-compatible sin gastar cuota (la cuenta gratuita da ~5 req/min). El criterio de aceptación R-2.1 se mide con el modelo definitivo, no con el local |
 | D57 | 2026-10-10 | T6.2 | Reintento ante 429 con la espera que informa la API (`Please retry in Ns`), tope 60 s y `AGENT_API_MAX_RETRIES` (3) | `gemini-3-flash-preview` con la clave gratuita permite ~5 req/min y cada consulta usa 3–5 llamadas: sin reintento 12 de 13 casos fallaron en 0,2 s |
 | D58 | 2026-10-10 | T6.2 | Las fuentes declaradas son las **efectivamente invocadas** y la evidencia sale de lo que devolvieron las tools, no del texto del modelo. Un fallo de tool o de clasificación se responde con plantilla fija (`answer_kind=error`) | Art. 4 y R-2.7: si el modelo afirma datos sin haber consultado no puede haber respuesta con fuente; R-5.7: el error se informa en vez de responder sin datos |
-| D59 | 2026-10-10 | T6.3 | La medición de R-2.1 sin base ni PDFs usa backends falsos y el validador de SQL **real**; mide clasificación, herramientas invocadas, orden y SQL aceptado, no el contenido. La evidencia se versiona en `TP/evidencia/` | El contenido (filas, fragmentos) depende del seed y de los PDFs del otro integrante (D19). Lo que el orquestador controla ya se puede medir y afirmar |
+| D59 | 2026-10-10 | T6.3 | La medición de R-2.1 sin base ni PDFs usa backends falsos y el validador de SQL **real**; mide clasificación, herramientas invocadas, orden y SQL aceptado, no el contenido. La evidencia se versiona en `TP/evidencia/` | El contenido (filas, fragmentos) depende del seed y de los PDFs (D19). Lo que el orquestador controla ya se puede medir y afirmar |
 | D61 | 2026-10-10 | T6.2 | smolagents hace una llamada extra al llegar a `max_steps`: el tope real de llamadas al modelo es `max_steps + 1` | Verificado con un modelo falso que nunca converge (7 llamadas con tope 6) |
 | D62 | 2026-10-10 | T6.2 | El clasificador para proveedores no-Gemini usa `max_tokens=4096` y propaga el motivo real del fallo (no solo la clase de la excepción) | La medición con un modelo local que razona dejó G12 en error 3 de 3 veces: con 1024 tokens el servidor devolvió `finish_reason=length` con el JSON incompleto, y el mensaje solo decía `ClassificationError`. El error era técnico y parecía una clasificación inválida (R-2.8) |
 | D63 | 2026-10-10 | T7.4 | Dos roles de aplicación: `agent_ro` (solo lectura del dominio y de `documentos_chunks`) y `agent_logger` (solo `INSERT` en `agent_runs`, y `SELECT (id)` para `RETURNING`). `agent_ro` no ve `agent_runs` | `agent_ro` es de solo lectura (R-3.5): no puede escribir la bitácora. Un único rol con escritura rompería Art. 3. Con rol de solo inserción, una credencial filtrada no expone la historia de consultas (D21). Verificado contra Postgres real |
@@ -212,7 +211,7 @@ Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D10
 | D66 | 2026-10-10 | T5.1 | La herramienta de RAG lee `documentos_chunks` + `documentos`. `location` = `metadata.seccion` / `ubicacion` / `pagina` o “fragmento N”; `content_hash` = `sha256 + ':' + chunk_index` | El esquema real no tiene columna de ubicación: la cita “Art. 12” (R-4.7) depende de que la ingesta la guarde en `metadata` |
 | D67 | 2026-10-10 | T7.4 | `agent_runs` se arma solo desde el `AgentAnswer` (una sola fuente de verdad). Si el registro falla, la consulta se contesta igual y el fallo queda en `evidence.run_recording_error`. La consulta vacía no se registra (R-1.2). Con la base caída no se reintenta durante 30 s | Una respuesta correcta no se pierde por un problema de bitácora, pero tampoco se finge que se registró (Art. 4). Sin el enfriamiento cada consulta pagaría el timeout de conexión (R-6.2, R-6.3) |
 | D68 | 2026-10-10 | T1.3 | `POSTGRES_HOST` por defecto `127.0.0.1` | En Windows `localhost` intenta primero IPv6 y cada conexión costaba ~2 s (medido: 2,03 s contra 0,03 s). La suite de integración pasó de 98 s a 2,4 s |
-| D69 | 2026-10-11 | T6.7 | Corpus simulado de RAG (`tests/rag_fixture.py`): un `RagRetriever` real sobre un embedder léxico y 5 fragmentos de prueba; `measure_golden.py --rag-mock` lo usa y evalúa el `check` de contenido solo donde las fuentes no son falsas (`content_evaluable`). Su umbral (0,15) es propio y **no** calibra D12 | El mock permite medir al agente (decisión, tool, cita, composición) con el modelo definitivo sin esperar a otro integrante; no mide retrieval semántico ni sustituye 3.6–3.8 (R-2.8, D59) |
+| D69 | 2026-10-11 | T6.7 | Corpus simulado de RAG (`tests/rag_fixture.py`): un `RagRetriever` real sobre un embedder léxico y 5 fragmentos de prueba; `measure_golden.py --rag-mock` lo usa y evalúa el `check` de contenido solo donde las fuentes no son falsas (`content_evaluable`). Su umbral (0,15) es propio y **no** calibra D12 | El mock permite medir al agente (decisión, tool, cita, composición) con el modelo definitivo sin depender de los PDFs; no mide retrieval semántico ni sustituye 3.6–3.8 (R-2.8, D59) |
 | D70 | 2026-10-11 | T6.7 | `GeminiClassifier` conserva el motivo del fallo de la API (clase + primeros 200 caracteres del mensaje), igual que el clasificador de LiteLLM (D62) | Una corrida con `gemini-3-flash-preview` dio 3/13 con `classifier_errors=10` y el mensaje decía solo `ClientError`: el motivo real (cuota gratuita de 20 requests por día y por modelo agotada, HTTP 429) solo apareció haciendo una llamada aparte. Con el motivo a la vista la corrida se descarta como no evaluable en vez de leerse como falla del modelo (R-5.7, Art. 4) |
 | D71 | 2026-10-11 | T6.7 | El modelo definitivo y por defecto es `gemini-3.1-flash-lite` (`GEMINI_MODEL`) | `gemini-3.1-flash-lite` midió 13/13 clasificados, 3/3 híbridos y 1/1 `none` en dos corridas (`TP/evidencia/`), con base local y RAG simulado en la última. Si el equipo despliega otro modelo, la medición se repite completa (`TP/05` §4.1, regla 5) |
 | D72 | 2026-10-11 | — | El `check` de los híbridos (`_both_sources`) exige una sentencia SQL ejecutada y un fragmento citado, **no** filas no vacías. Un resultado vacío es válido | G11 daba contenido fallido con la respuesta correcta: el agente resolvió el socio con más préstamos y después verificó si tenía vencidos (0 filas) y `as_outcome()` toma las filas de la última sentencia. Exigir filas contradecía R-3.8 (sin resultados es una respuesta válida) |
@@ -223,17 +222,16 @@ Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D10
 | D77 | 2026-10-13 | T8.4 | `LibraryAgent.answer()` serializa las consultas con un `threading.Lock`, y `get_agent()` crea el singleton bajo otro lock | Cada backend guarda una única conexión y el servidor HTTP de la API atiende cada sesión en su propio hilo: dos consultas simultáneas se pisarían (`rollback`, `SET LOCAL`). Costo: una consulta a la vez, las demás esperan su turno con latencia de hasta 170 s (R-1.3) |
 | D79 | 2026-10-13 | T8.4 | Dos correcciones al streaming: `_stream` encola un marcador interno cuando el agente termina, y el evento `step` informa `duration_s` siempre como número (`or 0.0`) | Medido: el `result` salía hasta 5,01 s después del último evento porque el bucle esperaba otro evento hasta el latido (retraso de hasta `HEARTBEAT_S` en **cada** consulta). Y con el reloj de Windows un paso rápido dura exactamente 0.0: `0.0 or 0` devolvía el entero 0 y el test `test_step_events_come_from_the_framework_callbacks` fallaba (R-7.3, R-7.2) |
 | D80 | 2026-10-13 | T8.6 | Se elimina la UI Streamlit: el agente es accesible **únicamente** por la API HTTP (`POST /ask`) y el frontend es un cliente externo. La imagen `runtime` sirve `uvicorn api.app:app` en `$PORT`; `streamlit` sale de las dependencias | Decisión del equipo (2026-10-13): el frontend consume el agente por HTTP. Consecuencias: R-5.3 y R-5.4 (exhibir sentencia y fragmento) son responsabilidad del frontend; la API los entrega en `result.evidence`. Un frontend en un navegador desde otro origen necesita CORS (D82). Sin UI propia, D17 se mantiene como regla: el agente es de un solo turno (R-7.0) |
-| D81 | 2026-10-13 | — | Se decide **no desplegar el agente en la nube**: el sistema se prepara para correr en entorno local (Docker + `uvicorn`) | Decisión del equipo (2026-10-13). Consecuencias: el criterio de promoción “nube” (B5) no se cumple; quedan `framework agéntico` y `SDD`. La base de trabajo es la de Docker local. Sin exposición pública no hace falta autenticación (D82) |
+| D81 | 2026-10-13 | — | Se decide **no desplegar el agente en la nube**: el sistema se prepara para correr en entorno local (Docker + `uvicorn`) | Decisión del equipo (2026-10-13). Consecuencias: la base de trabajo es la de Docker local y, sin exposición pública, no hace falta autenticación (D82) |
 | D82 | 2026-10-13 | — | CORS con allowlist configurable `API_ALLOWED_ORIGINS` (coma, vacío = ninguno), sin wildcard `*`, sin credenciales y **sin autenticación** | Un navegador desde otro origen no puede leer `POST /ask` sin `Access-Control-Allow-Origin`. Verificado con `tests/test_api_cors.py` (8 tests): preflight 200 con el header para el origen declarado, 400 sin header para otro, sin wildcard con la lista vacía, y el stream SSE conserva el header. Sin auth porque el servicio corre en entorno local (D81): no hay consumo de cuota por clientes externos |
-| D83 | 2026-10-13 | — | Se **acepta explícitamente el riesgo** de promoción: el margen es 2 de 5 (`framework agéntico` + `SDD`); el criterio de despliegue en la nube no se cumple porque el sistema corre en entorno local (D81), y la desviación se justifica en el informe y en el coloquio. El criterio de interfaz gráfica lo aporta la SPA `web/` (D93) | El criterio de despliegue en la nube (B5) no se cumple (D81). El criterio de interfaz gráfica lo aporta la SPA `web/` (D93). Traza D80, D81, D93 |
-| D84 | 2026-10-15 | T7.8 | La fuente no aparece en el texto de `answer` en ninguna forma: no línea “Fuente: …” / “Source: …”, no cita entre paréntesis que empiece con “Fuente:”/“Source:” o nombre un documento (`*.pdf`), y el prompt indica al modelo no mencionar la fuente ni nombrar documentos. La fuente se declara solo en `sources` y los fragmentos en `evidence.chunks` | El frontend ya muestra la fuente desde la metadata (`sources`): con la línea en el texto aparecía dos veces. La proveniencia sigue declarada y verificable (Art. 4) y sale de las herramientas invocadas, no de la prosa (D58); en las ausencias y errores la señal es `sources: []` con `answer_kind` `no_coverage` / `error` *(Traza: R-5.2, R-2.6, Art. 4.)* |
+| D84 | 2026-10-15 | T7.8 | La fuente se declara en el campo estructurado `sources` y los fragmentos en `evidence.chunks`. El sistema retira del texto de `answer` la línea final “Fuente: …” / “Source: …” y las citas entre paréntesis con ese formato, y el prompt le indica al modelo que no las escriba | El frontend ya muestra la fuente desde la metadata (`sources`): con la línea en el texto aparecía dos veces. La proveniencia sigue declarada y verificable (Art. 4) y sale de las herramientas invocadas, no de la prosa (D58); en las ausencias y errores la señal es `sources: []` con `answer_kind` `no_coverage` / `error` *(Traza: R-5.2, R-2.6, Art. 4.)* |
 | D86 | 2026-10-15 | T3.1 | El corpus del RAG no incluye manual de uso del sistema. G8, R3 y R11 verifican el `reglamento_biblioteca` (renovaciones y límites, Art. 3 y 4). | No hay cobertura para “cómo se hace X en la plataforma”; esas consultas dan “sin información” (R-4.6) salvo que el reglamento las responda. |
-| D87 | 2026-10-15 | T2.4 | **Ampliación del catálogo y de las reseñas.** `db/seed.sql` suma 51 libros: 10 cómics de DC, 10 de Marvel, la saga Empyrean, Tolkien (Silmarillion, Hobbit, 3 tomos), Narnia (7), Harry Potter (7), Berserk Deluxe (5) y Dragon Ball (4), con ISBN verificados en Open Library. En el RAG entran `resenas_tolkien` y `resenas_empyrean` (6 PDFs en total), con una sección de sinopsis y otra de valoración por libro. `rag/ingest.py` poda: lo que ya no está en `rag/documents/` se borra de la base. Corpus: 6 documentos, 44 fragmentos | Las reseñas se limitan a 2 sagas para respetar el tope de 6 PDFs |
+| D87 | 2026-10-15 | T2.4 | **Ampliación del catálogo y de las reseñas.** `db/seed.sql` suma 51 libros: 10 cómics de DC, 10 de Marvel, la saga Empyrean, Tolkien (Silmarillion, Hobbit, 3 tomos), Narnia (7), Harry Potter (7), Berserk Deluxe (5) y Dragon Ball (4), con ISBN verificados en Open Library. En el RAG entran `resenas_tolkien` y `resenas_empyrean` (6 PDFs en total), con una sección de sinopsis y otra de valoración por libro. `rag/ingest.py` poda: lo que ya no está en `rag/documents/` se borra de la base. Corpus: 6 documentos, 44 fragmentos | Las reseñas se limitan a 2 sagas para mantener el corpus en 6 documentos |
 | D89 | 2026-10-15 | T2.4, T6.1 | Un solo seed `db/seed.sql`. Sobre una base vacía deja 70 libros, 57 autores, 28 editoriales, 18 categorías y 95 vínculos. El prompt de `editoriales` es genérico: regla general (filtrar editorial, autor y categoría con JOIN, `ILIKE '%X%'`) y un ejemplo neutro | `seed.sql` no es idempotente: solo sirve para bases nuevas. Con solo la regla de JOIN, “cómics de Marvel” seguía respondiendo 2; lo resolvió decir que un nombre propio es editorial o autor (no se busca en título ni en la descripción de la categoría) y que un tipo de libro suma el filtro de categoría. Ahora responde 10 en tres corridas |
 | D90 | 2026-10-15 | T6.1 | **Las reseñas no son datos de la base.** El clasificador (regla 4) manda a `rag` —o `hybrid` si pide también un dato del catálogo— las consultas sobre qué libros tienen reseña o qué dicen; el prompt de SQL aclara que no hay tabla de reseñas | Caso real del chat: “libros con reseña disponible” se clasificó `sql` y el modelo inventó la tabla `reseñas` (`TABLE_NOT_ALLOWED`, run 38 de `agent_runs`) |
 | D91 | 2026-10-15 | T1.3, T2.4 | **`docker compose up` carga el catálogo completo.** `DEV_SEED` vale `full` por defecto (aplica `db/seed.sql`: 70 libros, 20 socios, 28 préstamos); `1` carga `db/dev_seed.sql` (7 libros, para los tests de integración) y `0` deja la base vacía | Para los tests de integración y la medición contra datos deterministas hay que levantar con `DEV_SEED=1` |
 | D92 | 2026-10-15 | T3.3, T9.2 | **`docker compose up` también ingesta el RAG.** El servicio `ingest` sale del perfil `tools`, corre una vez antes de la API (`service_completed_successfully`) y termina; es idempotente por `sha256` | Hace falta `GEMINI_API_KEY` en `.env` para levantar: sin ella falla a la vista en vez de dejar el RAG sin documentos |
-| D93 | 2026-10-14 | T-web (change `frontend-web-vite`) | SPA en `web/` (Vite + React + shadcn/ui), cliente de la API, en su propio servicio de Docker junto con `db` y `api` (`docker compose up`). La API es el único acceso al agente (R-7.0); la imagen `runtime` no sirve interfaz | En Docker la web sirve la API por un proxy del mismo origen, sin CORS; `API_ALLOWED_ORIGINS` queda para `npm run dev` (D82). El criterio de promoción “Interfaz gráfica” se evidencia con `web/` |
+| D93 | 2026-10-14 | T-web (change `frontend-web-vite`) | SPA en `web/` (Vite + React + shadcn/ui), cliente de la API, en su propio servicio de Docker junto con `db` y `api` (`docker compose up`). La API es el único acceso al agente (R-7.0); la imagen `runtime` no sirve interfaz | En Docker la web sirve la API por un proxy del mismo origen, sin CORS; `API_ALLOWED_ORIGINS` queda para `npm run dev` (D82). |
 | D94 | 2026-10-15 | T7.8 | **Pedidos de escritura, una sola nota y mensajes con carácter.** El clasificador suma `write_request`: si es verdadero, el agente responde un mensaje fijo de que no tiene permiso (“¡No pasarás!”) sin invocar al modelo, SQL ni RAG (R-2.9). Cuando el sistema agrega su nota (límite de filas, dato faltante) se retira la que el modelo haya escrito al final (R-5.8) y el prompt le indica que no la agregue. Los mensajes fijos de ausencia y error son de tono cercano con referencias (Houston, Obi-Wan, Sherlock) y conservan el código y el detalle del error (R-5.9) | `write_request` solo cuenta si es un booleano real; el rechazo ocurre aunque la etiqueta no sea `none` |
 | D95 | 2026-10-15 | T-web (change `frontend-web-vite`) | La SPA presenta `answer` (`answer_kind` `answer`) como **Markdown** con `react-markdown` + `remark-gfm` + `remark-breaks`, componiendo `Table` y `Separator` de shadcn/ui; sin `rehype-raw`, así que el HTML de la respuesta no se interpreta. `no_coverage`, `error` y la evidencia no cambian. Agrega R-8.11 a `interfaz-web` | No cambia la API ni el agente: `answer` sigue siendo texto y el cliente solo cambia cómo lo muestra (R-8.7: no se altera el contenido) |
 | D96 | 2026-10-15 | T7.8 | **La frase de los mensajes fijos va en el título.** `AgentAnswer` suma `title` (opcional): los mensajes de ausencia, error y rechazo de escritura se dividen en `title` (la frase: “¡No pasarás!”, “Houston, tenemos un problema”) y `answer` (solo el cuerpo, con el código y el detalle del error). La tarjeta de la web usa `title` como encabezado y cae a los títulos genéricos si no viene | Una respuesta normal no lleva `title`. El CLI (`scripts/ask.py`) lo imprime antes del cuerpo *(Traza: R-5.9.)* |

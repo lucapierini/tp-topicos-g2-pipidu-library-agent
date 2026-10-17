@@ -30,7 +30,7 @@ TP02 = ROOT / "TP" / "02-especificacion-tecnica.md"
 
 # Las 7 tablas del dominio (T2.5). La vista no cuenta: se calcula, no se siembra.
 DOMAIN_TABLES = ("autores", "editoriales", "categorias", "libros", "libros_autores", "socios", "prestamos")
-MIN_ROWS = 15  # mínimo exigido por el enunciado (T2.5)
+MIN_ROWS = 15  # mínimo de registros por tabla del dominio (T2.5)
 DOCUMENT_TABLES = {"documentos", "documentos_chunks"}
 
 

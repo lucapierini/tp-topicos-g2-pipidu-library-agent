@@ -26,9 +26,9 @@ La respuesta SHALL estar en el idioma de la consulta entrante.
 
 ### Requirement: R-5.2 — Proveniencia obligatoria
 El resultado de la respuesta SHALL declarar la fuente o fuentes utilizadas en un campo estructurado
-(`sources`). El texto de la respuesta SHALL NO mencionar la fuente: ni una línea de fuente, ni una cita
-entre paréntesis, ni el nombre de un documento. La presentación de la fuente corresponde al cliente, que la
-lee del campo estructurado y de la evidencia.
+(`sources`). El sistema SHALL retirar del texto la línea final de fuente («Fuente: …» / «Source: …») y las
+citas entre paréntesis con ese formato. La presentación de la fuente corresponde al cliente, que la lee del
+campo estructurado y de la evidencia.
 
 #### Scenario: respuesta con fuente SQL
 - **GIVEN** una consulta clasificada como `sql`
@@ -50,7 +50,7 @@ lee del campo estructurado y de la evidencia.
 - **AND** la fuente declarada sigue siendo la de las herramientas efectivamente invocadas
 
 #### Scenario: el modelo cita la fuente entre paréntesis
-- **GIVEN** una respuesta del modelo con una cita entre paréntesis que empieza con «Fuente:» o nombra un documento
+- **GIVEN** una respuesta del modelo con una cita entre paréntesis que empieza con «Fuente:» o «Source:»
 - **WHEN** el agente compone la respuesta
 - **THEN** esa cita se retira del texto y el resto de la respuesta queda intacto
 - **AND** los fragmentos citados siguen disponibles en la evidencia

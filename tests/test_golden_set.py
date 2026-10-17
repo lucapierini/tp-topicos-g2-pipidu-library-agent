@@ -29,8 +29,8 @@ from tests.golden_set import (
 def test_golden_set_shape() -> None:
     assert len(GOLDEN_SET) == 13
     counts = Counter(c.expected_classification for c in GOLDEN_SET)
-    assert counts["sql"] >= 5, "criterio de aprobación 2: mínimo 5 casos SQL"
-    assert counts["rag"] >= 4, "criterio de aprobación 3: mínimo 4 casos RAG"
+    assert counts["sql"] >= 5, "mínimo 5 casos SQL"
+    assert counts["rag"] >= 4, "mínimo 4 casos RAG"
     assert counts["hybrid"] == 3, "R-2.4: 3 casos híbridos"
     assert counts["none"] == 1, "R-2.5: 1 caso de no cobertura"
     assert len({c.id for c in GOLDEN_SET}) == 13, "IDs duplicados"
@@ -97,7 +97,7 @@ def test_hybrid_check_accepts_an_empty_result_from_an_executed_statement() -> No
 
 
 def test_english_cases_are_extra_and_do_not_change_the_acceptance_denominator() -> None:
-    # El enunciado pide castellano o inglés (R-5.1); R-2.1 se mide sobre los 13 casos del golden set.
+    # El agente responde en castellano o en inglés (R-5.1); R-2.1 se mide sobre los 13 casos del golden set.
     assert len(GOLDEN_SET) == 13
     assert [c.id for c in BILINGUAL_SET] == ["B1", "B2"]
     assert not {c.id for c in BILINGUAL_SET} & {c.id for c in GOLDEN_SET}

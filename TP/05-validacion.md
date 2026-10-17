@@ -1,13 +1,13 @@
 # Validación — Golden set y pruebas
 
 > Última etapa del ciclo SDD: `Requirement → Spec → Plan → Tasks → Implementation → Validation`.
-> Esta es la sección que sustenta las "evidencias de funcionamiento" del informe técnico.
+> Reúne los casos de prueba, los criterios de aceptación y las corridas medidas que sustentan el funcionamiento del agente.
 
 ---
 
 ## 1. Golden set — casos con respuesta esperada
 
-La semilla es fija y versionada: `db/seed.sql` es el entregable (catálogo real de 70 libros, socios y
+La semilla es fija y versionada: `db/seed.sql` es el seed principal (catálogo real de 70 libros, socios y
 préstamos sintéticos) y `db/dev_seed.sql` es la base de desarrollo, que contiene las entidades que nombran
 los casos (`tests/golden_set.py::SEED_ENTITIES`). Las fechas de préstamo son relativas a `CURRENT_DATE`, así
 que los atrasos envejecen: las afirmaciones deterministas son sobre entidades, filas y clasificación, no
@@ -25,7 +25,7 @@ el texto del modelo no es determinista. La prosa se valida con una rúbrica manu
 La afirmación automática de cada caso queda en `tests/golden_set.py` (`GOLDEN_SET`, `BILINGUAL_SET`), ejecutada
 por `tests/test_golden_set.py`.
 
-### Casos SQL (≥5, criterio de aprobación 2)
+### Casos SQL (5)
 
 | # | Pregunta esperada | Fuente esperada | Resultado esperado |
 |---|---|---|---|
@@ -35,7 +35,7 @@ por `tests/test_golden_set.py`.
 | G4 | ¿Cuántos libros de la categoría "Ciencias de la Computación" hay disponibles? | SQL | Conteo de ejemplares disponibles |
 | G5 | ¿Qué autor tiene más libros publicados por la editorial Sudamericana? | SQL | Autor + cantidad |
 
-### Casos RAG (≥4, criterio de aprobación 3)
+### Casos RAG (4)
 
 | # | Pregunta | Fuente esperada | Resultado esperado |
 |---|---|---|---|
@@ -44,7 +44,7 @@ por `tests/test_golden_set.py`.
 | G8 | ¿Cómo renuevo un préstamo desde el sistema? | RAG | Renovación citada (Art. 4 del reglamento) |
 | G9 | ¿Cuál es el horario de la biblioteca? | RAG | Horario citado del reglamento |
 
-### Casos híbridos (≥3, requisito R-2.4)
+### Casos híbridos (3, R-2.4)
 
 | # | Pregunta | Fuente esperada | Resultado esperado |
 |---|---|---|---|
@@ -305,10 +305,10 @@ Una tarea de `openspec/changes/agente-y-tools/tasks.md` está terminada solo si:
 
 ---
 
-## 6. Evidencias para el informe
+## 6. Evidencias de funcionamiento
 
 - Salida de la API (`curl -N` sobre `POST /ask`) por cada tipo de consulta (SQL, RAG, híbrida,
-  no-cobertura), o capturas del frontend que la consume. El contrato está cubierto por los tests de §7
+  no-cobertura) y capturas del frontend que la consume (`informe/screenshot-1.png`, `informe/screenshot-2.png`). El contrato está cubierto por los tests de §7
   (A1–A11, O1–O7).
 - Export de `agent_runs` con las 13 consultas del golden set (`TP/evidencia/agent_runs_2026-10-11.json`).
 - Output de `pytest` con los casos de sanitización: 18 adversos de `tests/test_sql_validator.py` (S1–S9,
@@ -341,7 +341,7 @@ y la evidencia (R-5.3, R-5.4) corresponden al frontend (`web/`, D93; sus pruebas
 | C3 | R-6.7 | Cancelada durante la ejecución: se descarta la respuesta | `test_agent.py::test_cancelling_during_the_run_discards_the_answer` |
 | C4 | R-7.2 | Los eventos de progreso siguen el flujo y reportan una sentencia rechazada | `test_agent.py::test_progress_events_follow_the_flow_in_order`, `::test_a_rejected_statement_is_reported_as_a_failed_tool_result` |
 | C5 | R-7.2 | Los eventos `step` salen de los callbacks del framework; `cancel` interrumpe antes del siguiente paso | `test_agent_smolagents.py::test_step_events_come_from_the_framework_callbacks`, `::test_cancel_interrupts_the_framework_before_the_next_step` |
-| C6 | R-5.2 | El texto de `answer` no menciona la fuente (`sql`, `rag`, `hybrid`, `none`): ni línea de fuente, ni cita entre paréntesis, ni nombre de documento; lo que escriba el modelo se retira y `sources` sigue siendo la de las herramientas | `test_agent.py::test_sql_answer_declares_source_and_shows_the_executed_statement`, `::test_the_answer_declares_the_language_of_the_question`, `::test_a_source_line_written_by_the_model_is_removed_from_the_answer`, `::test_a_parenthetical_source_citation_is_removed_from_the_answer`, `test_prompts.py::test_the_prompt_forbids_naming_the_source_in_the_answer` |
+| C6 | R-5.2 | El texto de `answer` no conserva la línea de fuente ni la cita «(Fuente: …)» (`sql`, `rag`, `hybrid`, `none`); lo que escriba el modelo se retira y `sources` sigue siendo la de las herramientas | `test_agent.py::test_sql_answer_declares_source_and_shows_the_executed_statement`, `::test_the_answer_declares_the_language_of_the_question`, `::test_a_source_line_written_by_the_model_is_removed_from_the_answer`, `::test_a_parenthetical_source_citation_is_removed_from_the_answer`, `test_prompts.py::test_the_prompt_forbids_naming_the_source_in_the_answer` |
 | E1 | R-5.3, R-5.4 | La evidencia trae la sentencia y cada fragmento con documento, ubicación y texto | `test_agent.py::test_rag_answer_cites_document_and_location`, `test_agent.py::test_sql_answer_declares_source_and_shows_the_executed_statement` |
 | I1 | R-7.0 | La imagen `runtime` sirve la API y no una interfaz; no hay Streamlit en las dependencias | `test_dockerfile.py::test_the_runtime_stage_serves_the_http_api_and_no_ui`, `::test_the_runtime_dependencies_do_not_include_a_ui_framework` |
 | O1 | R-7.8 (origen permitido) | Preflight `OPTIONS` a `POST /ask`: 200 con `Access-Control-Allow-Origin` del origen declarado | `test_api_cors.py::test_allowed_origin_gets_the_cors_header` |
@@ -415,6 +415,6 @@ conexión (`sql_backend`, `retriever`, `recorder`: tres por agente), el agente e
 | Pool de conexiones con agente compartido | Una conexión prestada por consulta; varias consultas avanzan a la vez | Requiere ciclo de vida del pool y que `SET LOCAL` / sesión solo lectura se aplique por conexión prestada; el estado de espera del recorder sigue siendo compartido | R-1.3 deja de ser serial global: hay que reescribirlo |
 
 **Recomendación:** para una demostración de 3 a 5 personas mantener la serialización (D77) — la espera
-típica es de 12 a 24 s y los latidos mantienen viva la conexión. Cambiar solo si la consigna exige
+típica es de 12 a 24 s y los latidos mantienen viva la conexión. Cambiar solo si hacen falta
 consultas realmente simultáneas; en ese caso conviene la opción por sesión, que no exige reescribir el
 requisito de serialización.

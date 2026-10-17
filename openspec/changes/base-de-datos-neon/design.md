@@ -2,14 +2,13 @@
 
 ## Context
 
-El esquema, el seed y los documentos del RAG se diseñaron en el repositorio de la integrante
-responsable de base de datos y RAG (D19) y se versionan en este repo. Se definieron **antes de crear
-ninguna tabla**, se validaron en ramas descartables de Neon (`test-ddl`, `test-seed`) y recién
+El esquema, el seed y los documentos del RAG se diseñaron aparte (D19) y se versionan en este repo. Se
+definieron **antes de crear ninguna tabla**, se validaron en ramas descartables de Neon (`test-ddl`, `test-seed`) y recién
 entonces se aplicaron a `production`. Ese orden es parte de la justificación: el DDL aprobado es el
 que corre, no un borrador.
 
-Condición de contorno: tres integrantes y entrega el 16/10/2026. La base tiene que ser accesible
-para todos sin que cada uno administre una instancia.
+Condición de contorno: tres integrantes. La base tiene que ser accesible para todos sin que cada uno
+administre una instancia.
 
 ## Goals / Non-Goals
 

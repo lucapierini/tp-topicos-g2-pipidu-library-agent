@@ -57,8 +57,7 @@ El agente SHALL clasificar la consulta como `none` cuando ninguna fuente contien
 - **AND** el resultado declara `sources` vacío
 
 ### Requirement: R-2.6 — Declaración de fuente en el resultado
-El agente SHALL declarar en el resultado la fuente o fuentes utilizadas, en un campo estructurado y no
-en el texto de la respuesta (R-5.2).
+El agente SHALL declarar en el resultado la fuente o fuentes utilizadas, en un campo estructurado (R-5.2).
 
 #### Scenario: fuente visible
 - **WHEN** el agente entrega una respuesta

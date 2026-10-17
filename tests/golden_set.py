@@ -100,7 +100,7 @@ def _all(*checks: Callable[[dict], bool]) -> Callable[[dict], bool]:
 
 
 GOLDEN_SET: list[GoldenCase] = [
-    # --- SQL (criterio de aprobación 2) ---
+    # --- SQL ---
     GoldenCase("G1", f"¿Qué libros tiene prestados el socio {SOCIO}?", "sql", _min_rows(1),
                "lista de títulos con fecha de préstamo"),
     GoldenCase("G2", "¿Cuáles son los 5 libros más prestados este cuatrimestre?", "sql", _min_rows(1),
@@ -112,7 +112,7 @@ GOLDEN_SET: list[GoldenCase] = [
     GoldenCase("G5", f"¿Qué autor tiene más libros publicados por la editorial {SEED_ENTITIES['editorial']}?",
                "sql", _min_rows(1), "autor + cantidad"),
 
-    # --- RAG (criterio de aprobación 3) ---
+    # --- RAG ---
     GoldenCase("G6", "¿Cuántos días tengo para devolver un libro antes de que me multen?", "rag",
                _document("reglamento_biblioteca"), "plazo exacto citado"),
     GoldenCase("G7", f'¿De qué trata el libro "{SEED_ENTITIES["libro_con_resena"]}"?', "rag",
@@ -136,7 +136,7 @@ GOLDEN_SET: list[GoldenCase] = [
                "declara ausencia de información (Art. 4)"),
 ]
 
-# Casos en inglés (R-5.1, T7.6). El enunciado pide "castellano o inglés" y los 13 casos de arriba están
+# Casos en inglés (R-5.1, T7.6). El agente responde en castellano o en inglés y los 13 casos de arriba están
 # en castellano. Van aparte para no cambiar el denominador del criterio ≥ 11/13 (R-2.1).
 BILINGUAL_SET: list[GoldenCase] = [
     GoldenCase("B1", f"Which books does {SOCIO} currently have on loan?", "sql",

@@ -15,7 +15,3 @@
 
 - [x] 4.1 Registrar D95 en `TP/CHANGELOG.md` (respuesta como Markdown con `react-markdown` + `remark-gfm`, sin HTML crudo) y citar R-8.11 en `README.md` (sección Interfaz web) y en `TP/05-validacion.md` si enumera R-8.x; verificar con `openspec validate frontend-markdown-answer --strict`
 - [x] 4.2 Ejecutar `npm test`, `npm run lint` y `npm run build` en `web/`; verificar que todo pasa
-
-## Workflow follow-up
-
-- Archivar `frontend-web-vite` y después este change cuando se revisen con el equipo.

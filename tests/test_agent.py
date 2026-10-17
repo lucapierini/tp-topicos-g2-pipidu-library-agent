@@ -214,8 +214,8 @@ def test_rag_answer_cites_document_and_location() -> None:
 
 @pytest.mark.parametrize("language", ["es", "en"])
 def test_the_answer_declares_the_language_of_the_question(language) -> None:
-    # R-5.1: la evidencia registra el idioma con el que se compuso la respuesta (el enunciado pide
-    # castellano o inglés). La fuente no viaja en el texto (R-5.2, D84): solo en `sources`.
+    # R-5.1: la evidencia registra el idioma con el que se compuso la respuesta (castellano o inglés).
+    # La fuente no viaja en el texto (R-5.2, D84): solo en `sources`.
     agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], language=language)
 
     answer = agent.answer("Which books are on loan?" if language == "en" else "¿Qué libros hay prestados?")

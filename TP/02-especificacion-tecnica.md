@@ -1,6 +1,5 @@
 # Especificación Técnica — Pipidu Library Agent
 
->
 > **Nivel en el ciclo SDD:** Plan (HOW). Los requisitos verificables del agente y sus tools están en
 > `openspec/changes/agente-y-tools/specs/<capacidad>/spec.md`; la división en tareas en
 > `openspec/changes/agente-y-tools/tasks.md`; la validación en `05-validacion.md`.
@@ -260,7 +259,7 @@ mínimo (`db/dev_seed.sql`, `DEV_SEED=1`) no llega a 15 filas en todas las tabla
 | `politicas_universidad.pdf` | Políticas institucionales generales |
 | `resenas_cien_anios_de_soledad.pdf`, `resenas_clean_code.pdf`, `resenas_tolkien.pdf`, `resenas_empyrean.pdf` | Reseñas de libros y sagas del catálogo |
 
-Total: entre 4 y 6 PDFs (mínimo exigido: 2).
+Total: 6 PDF.
 
 ### 4.1 Pipeline de ingesta RAG
 
@@ -394,12 +393,12 @@ class AgentAnswer:
     question: str
     classification: str      # sql | rag | hybrid | none
     sources: list[str]       # fuentes efectivamente usadas
-    answer: str              # texto sin mención de la fuente: la fuente va en `sources` (R-5.2, D84)
+    answer: str              # texto de la respuesta; la fuente se declara en `sources` (R-5.2, D84)
     evidence: dict           # model (id, endpoint), language, sql, sql_original, rows, truncated, attempts,
                              # chunks, sql_attempts, sql_errors, error (code, detail), write_request,
                              # inconsistency, run_recording_error
     run_id: int | None       # fila en agent_runs; None si el registro falló o está desactivado (R-6.6)
-    answer_kind: str         # answer | no_coverage | error
+    answer_kind: str         # answer | no_coverage | error | greeting
     title: str | None        # frase corta de un mensaje fijo de ausencia o error (R-5.9, D96); None en una respuesta normal
     trace: list[str]         # eventos en orden: "classification" primero (D3)
 
@@ -445,8 +444,8 @@ R-7.4).
 
 **Cómo debe consumirlo el frontend** (a partir del evento `result`, que es un `AgentAnswer`):
 
-- `answer`: texto final, sin mención de la fuente (D84): mostrar la fuente a partir de `sources` y de `evidence`, no del texto.
-- `answer_kind`: `answer`, `no_coverage` o `error`; conviene mostrarlos distinto.
+- `answer`: texto final (D84): mostrar la fuente a partir de `sources` y de `evidence`.
+- `answer_kind`: `answer`, `no_coverage`, `error` o `greeting` (bienvenida a un saludo, sin fuentes ni evidencia); conviene mostrarlos distinto.
 - `sources`: `sql`, `rag` o ambas; vacío cuando se declara ausencia de información o un error.
 - `title`: `null` en una respuesta normal; frase corta en los mensajes fijos de ausencia o error (R-5.9).
 - `evidence`: `sql` (sentencia ejecutada), `rows`, `truncated`, `chunks` (cada uno con `id`, `document`,
@@ -468,7 +467,7 @@ backends inyectados. No es un punto de acceso para clientes. Una consulta vacía
 serializa las consultas con un `threading.Lock`, por lo que dos sesiones simultáneas se atienden una detrás
 de otra y la segunda espera la latencia completa de la primera.
 
-**Requisitos y decisiones:** el contrato HTTP está en la capacidad `consulta-por-api` (R-7.0 a R-7.8); las decisiones, en D75 a D83. Las pruebas están en `tests/test_api.py` y `tests/test_api_cors.py`, y se listan en `TP/05` §7.
+**Requisitos y decisiones:** el contrato HTTP está en la capacidad `consulta-por-api` (R-7.0 a R-7.8); las decisiones, en D75 a D82. Las pruebas están en `tests/test_api.py` y `tests/test_api_cors.py`, y se listan en `TP/05` §7.
 
 **Garantías del flujo:**
 
@@ -585,7 +584,7 @@ tp-topicos-g2-pipidu-library-agent/
 ├── web/                          # SPA Vite + shadcn/ui: cliente de la API (D93)
 ├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, evaluate_retrieval.py, measure_retrieval.py, probe_llm.py, replicate_neon.sh
 ├── openspec/                     # cambios con specs, design y tasks; `project.md`, `config.yaml`
-├── TP/                           # artefactos SDD legibles para la entrega
+├── TP/                           # versión legible de los artefactos SDD
 ├── informe/                      # informe técnico (informe-tecnico.md y su PDF)
 └── tests/
     ├── golden_set.py             # fixtures compartidas (D16)
@@ -635,8 +634,13 @@ prueba cada archivo.
 - Imagen: `tests/test_dockerfile.py` (chequeos estáticos, sin construir la imagen).
 - Smoke con el modelo real: `tests/test_llm_smoke.py` (`llm`, deseleccionado por defecto).
 
-## 10. Metodología SDD (artefactos a entregar)
+## 10. Metodología SDD
 
-1. Este documento + `01-especificacion-funcional.md`
-2. Actualizaciones de ambos documentos a medida que se toman decisiones de diseño durante el desarrollo
-3. `TP/CHANGELOG.md` con las decisiones relevantes, fechadas y con su motivo
+Los artefactos del desarrollo son:
+
+1. Este documento y `01-especificacion-funcional.md`, que se actualizan a medida que se toman decisiones de diseño.
+2. `00-constitucion.md`, con los principios que gobiernan el desarrollo.
+3. `openspec/changes/*/specs/`, con los requisitos y escenarios verificables, y `openspec/changes/*/tasks.md`, con
+   las tareas y su estado.
+4. `CHANGELOG.md`, con las decisiones vigentes, fechadas y con su motivo.
+5. `05-validacion.md` y `evidencia/`, con los casos de prueba y las corridas medidas.

@@ -3,8 +3,8 @@
 ## Why
 
 El agente se consulta solo por la API HTTP (R-7.0, D80), que transmite el progreso por SSE (R-7.1 a R-7.3).
-El criterio de promoción "Interfaz gráfica" (`TP/01` §8) necesita un cliente de esa API, y el sistema local
-(D81) necesita que la interfaz arranque junto con la base y la API en un solo comando.
+La interfaz gráfica es un cliente de esa API, y el sistema local (D81) necesita que la interfaz arranque junto
+con la base y la API en un solo comando.
 
 ## What Changes
 
