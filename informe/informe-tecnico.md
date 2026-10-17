@@ -108,6 +108,8 @@ La ingesta divide cada documento por sección (`## `): un fragmento por artícul
 
 La SPA (`web/`: React 19, TypeScript, Vite, Tailwind y shadcn/ui) es un cliente de la API. Muestra el progreso en vivo como una línea de tiempo («Clasificada: corresponde consultar la base de datos», «Devolvió 2 filas», «Armando la respuesta»), la respuesta en Markdown con la fuente como insignia, y un panel plegable «Ver evidencia» con la sentencia SQL, la tabla de filas y los fragmentos citados. Permite cancelar una consulta en curso y reintentar ante fallas de conexión. Distingue visualmente las respuestas normales, la ausencia de información y los errores. En Docker, nginx sirve la SPA y reenvía `/api/` a la API sin buffering, para que el flujo llegue en vivo (D93).
 
+![Figura 1. Interfaz web con una consulta resuelta por SQL (préstamos que vencen esta semana) y otra por RAG (duración de un préstamo), cada una con su fuente y el botón «Ver evidencia».](screenshot-1.png){width=78%}
+
 # 4. Seguridad de la generación de SQL
 
 El SQL lo escribe un modelo de lenguaje, así que se trata como entrada no confiable. Hay cuatro capas, de modo que ninguna falla individual abra una escritura o una fuga:
@@ -210,6 +212,8 @@ Fuentes declaradas: `sql` y `rag`.
 **Sin cobertura.** «¿Cuál es el precio del libro "Rayuela"?» El modelo de datos no registra precios, así que el agente no inventa un valor y responde con un mensaje fijo: «Busqué en la base y en los documentos y no encontré nada sobre eso. Probá con otra pregunta o con el título exacto del libro.» No invocó ninguna herramienta (1,5 s) y `sources` quedó vacío.
 
 **Pedido de escritura.** Una pregunta que pide modificar datos solo pasa por el clasificador: no ejecuta ninguna herramienta ni llama al modelo para redactar; se responde con un mensaje fijo que explica que el agente es de solo lectura.
+
+![Figura 2. Pedido de escritura rechazado («¡No pasarás!»), consulta fuera del dominio sin cobertura («Houston, tenemos un problema») y consulta en inglés respondida con el reglamento en castellano.](screenshot-2.png){width=78%}
 
 ## 6.5 Registro de trazabilidad
 
