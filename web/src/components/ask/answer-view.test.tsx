@@ -29,6 +29,13 @@ describe("AnswerView", () => {
     expect(screen.queryByText("SQL")).not.toBeInTheDocument()
   })
 
+  it("greeting se presenta como una respuesta normal, sin alerta ni fuentes", () => {
+    render(<AnswerView result={{ ...base, answer_kind: "greeting", sources: [], evidence: {}, answer: "¡Hola! Soy el agente." }} />)
+    expect(screen.getByText("¡Hola! Soy el agente.")).toBeInTheDocument()
+    expect(screen.queryByText("Sin información suficiente")).not.toBeInTheDocument()
+    expect(screen.queryByText("Fuente:")).not.toBeInTheDocument()
+  })
+
   it("error se presenta como error, sin fuentes", () => {
     render(<AnswerView result={{ ...base, answer_kind: "error", sources: [], answer: "Falló la herramienta." }} />)
     expect(screen.getByText("El agente no pudo responder")).toBeInTheDocument()

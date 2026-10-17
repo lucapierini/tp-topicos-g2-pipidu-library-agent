@@ -1,4 +1,4 @@
-"""Corpus simulado y recuperador léxico para medir el agente sin PDFs ni ingesta (T3.x pendiente, D19).
+"""Corpus simulado y recuperador léxico para medir el agente sin PDFs ni ingesta (D69).
 
 Qué es: un `RagRetriever` **real** (top-k, umbral y reporte de no-relevancia de `agent/tools/rag_tool.py`)
 sobre un `InMemoryVectorStore` con un puñado de fragmentos escritos a mano y un embedder léxico
@@ -7,7 +7,7 @@ sobre un `InMemoryVectorStore` con un puñado de fragmentos escritos a mano y un
 Qué NO es: no mide la calidad de la recuperación semántica. Las similitudes de un embedder léxico no son
 comparables con las de `gemini-embedding-001`, así que el umbral de acá (`MOCK_SIMILARITY_THRESHOLD`) no
 tiene relación con D12 y no calibra nada (R-4.8). El contenido de los documentos es de prueba: no es el
-reglamento real. Toda medición hecha con este corpus debe declararlo (R-2.8, `AGENTS.md` §4).
+reglamento real. Toda medición hecha con este corpus debe declararlo (R-2.8, TP/05 §4.1).
 """
 from __future__ import annotations
 

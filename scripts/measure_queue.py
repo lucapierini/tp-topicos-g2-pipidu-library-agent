@@ -1,4 +1,4 @@
-"""Medición del costo de atender las consultas en serie (T9.11, D77, R-1.3).
+"""Medición del costo de atender las consultas en serie (D77, R-1.3).
 
 Es un script de medición, no un test: afirma tiempos, no resultados, y un test de tiempos sería
 flaky en CI (Art. 6, suite determinística). Corre offline: no abre base, no lee credenciales y no
@@ -167,7 +167,7 @@ def evidence_latencies() -> dict[str, dict[str, float]]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Mide la espera de la cola del lock real (T9.11, D77).")
+    parser = argparse.ArgumentParser(description="Mide la espera de la cola del lock real (D77).")
     parser.add_argument("--service-time", type=float, default=DEFAULT_SERVICE_TIME_S, help="S simulado en segundos")
     parser.add_argument("--counts", type=int, nargs="*", default=list(DEFAULT_COUNTS))
     parser.add_argument("--evidence", action="store_true", help="resume las latencias ya medidas en TP/evidencia/")

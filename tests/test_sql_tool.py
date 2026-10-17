@@ -48,7 +48,7 @@ def test_timeout_devuelve_error_tipado(executor) -> None:
 
 
 def test_la_conexion_siguiente_funciona_tras_un_error(executor) -> None:
-    # D45: sin rollback, la transacción abortada rompía la consulta que sigue.
+    # D45: con rollback, la consulta siguiente funciona tras un error.
     executor.execute_sql("SELECT count(*) FROM prestamos, libros, socios", timeout_ms=1)
     out = executor.execute_sql("SELECT id FROM socios")
     assert out.executed is True

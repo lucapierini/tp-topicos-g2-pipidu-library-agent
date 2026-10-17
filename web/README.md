@@ -8,15 +8,22 @@ en el [README de la raíz](../README.md#interfaz-web-d93). Requisitos y criterio
 
 ## Desarrollo
 
-Con la API local en `http://127.0.0.1:8000` (`uvicorn api.app:app --port 8000`):
+Requisitos: Node 24 (es la versión de la imagen `docker/Dockerfile.web`; `package.json` no declara `engines`) y la API
+local en `http://127.0.0.1:8000` (`uvicorn api.app:app --port 8000`, ver el README de la raíz).
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173; /api se reenvía a la API (VITE_API_TARGET lo cambia)
-npm test         # vitest
-npm run lint
-npm run build
+npm run dev          # http://localhost:5173; /api se reenvía a la API (VITE_API_TARGET lo cambia)
+npm test             # vitest, una corrida (npm run test:watch: modo interactivo)
+npm run lint         # eslint
+npm run typecheck    # tsc --noEmit
+npm run build        # tsc -b + vite build, deja los estáticos en dist/
+npm run preview      # sirve dist/ localmente
+npm run format       # prettier sobre los .ts/.tsx
 ```
+
+`VITE_API_TARGET` es una variable del proceso de Vite (no del `.env` de la raíz): por ejemplo
+`VITE_API_TARGET=http://127.0.0.1:8080 npm run dev` para apuntar a la API de `docker compose`.
 
 ## Componentes de shadcn/ui
 

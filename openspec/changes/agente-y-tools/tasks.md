@@ -1,178 +1,97 @@
 # Tasks
 
-## Estado actual
-
-Avanzado por la parte de agente/tools (2026-10-10): 1.1, 1.4, 2.3, 4.1, 4.2, 4.5, 5.2, el esqueleto del
-golden set y el executor de SQL con la política de regeneración. `pytest -q` → 59 passed, 1 skipped,
-9 deselected (los deselected son `integration` y `llm`: `pytest` pasa en una máquina limpia, Art. 6).
-
-Los tests offline del executor usan una conexión inyectada: prueban clamp de filas, timeout,
-regeneración y que una sentencia rechazada nunca abre conexión. La verificación contra la base real
-está pendiente y se corre con `pytest -m integration`.
-
-**Base local y trazabilidad (2026-10-10):** el esquema real compartido está en `db/schema.sql` (D64,
-D65) y corre en Docker (`docker compose up -d --wait`) con los roles `agent_ro` y `agent_logger`,
-`agent_runs` y datos de desarrollo. `pytest -q` → 354 passed; `pytest -m integration` → 28 passed contra
-Postgres real (permisos por rol, CHECKs, esquema vs whitelist, flujo completo y pgvector). Medición con
-base real y `gemini-3.1-flash-lite`: los 5 casos SQL (G1–G5) devuelven el contenido esperado y las 5
-consultas quedan en `agent_runs`.
-
-Lo que bloquea la continuación: el seed con volumen (T2.4, T2.5), los PDFs y la ingesta (T3.1–T3.5).
-El resto del agente y las tools no depende de nadie.
-
-**Orquestador (2026-10-10):** `agent/agent.py`, `classifier.py`, `tools/rag_tool.py`, los prompts y el
-reintento ante 429 están implementados y probados offline (`pytest -q` → 322 passed). El flujo se valida
-primero contra un **modelo local** (Strata, servidor OpenAI-compatible) y la **aceptación** se mide con
-Gemini (R-2.8). Medición registrada: `gemini-3.1-flash-lite` → 13/13 clasificaciones, 3/3 híbridos con las
-dos tools, 1/1 `none` sin tools, 0/8 SQL rechazado (`TP/evidencia/`), con backends falsos: el contenido
-no se evalúa hasta que existan el seed y los PDFs. Pendiente: repetir con el modelo definitivo si cambia
-(T6.7), verificar idioma y evidencia con casos reales (7.2, 7.3) y la interfaz (8.x, descartada por D80).
-
-**Verificación contra el enunciado (2026-10-11):** se cruzaron los criterios de aprobación, promoción y
-entregables de `TP/Enunciado TP - 2026.pdf` con lo implementado. Quedaron cubiertos el agente, el
-framework agéntico y SDD; se agregaron las tareas 2.9, 7.6, 7.7 y 9.6–9.9 (idioma inglés, export de
-`agent_runs`, volumen de `documentos`, base en la nube, roles en la base compartida, entregables de datos
-y coloquio) y se corrigió el README, que marcaba como cubiertos la UI y el despliegue. Medición con el
-modelo definitivo (`gemini-3.1-flash-lite`, base local y RAG simulado): 13/13 en clasificación y en
-contenido (D71, D72). `pytest -q` → 393 passed; `pytest -m integration` → 28 passed. Después: casos en inglés con idioma
-instruido en el prompt (7.2, 7.6, D73) y export de `agent_runs` (7.7) hechos; 9.4 queda con las capturas.
-
-**API como único acceso (2026-10-13):** el PR #2 trajo la API HTTP con streaming y la UI Streamlit; el
-PR #3 lo **revirtió completo** (API y UI). Por decisión del equipo (D80) el agente se accede solo por la
-API y el frontend es un cliente externo, así que el endpoint se restituyó **sin la UI** en la rama
-`feature/api-endpoint`, con el lock, los eventos de progreso, la cancelación (D75–D77), las correcciones
-de D79, las specs (`consulta-por-api` R-7.0 a R-7.7, R-1.3, R-6.7) y `tests/test_api.py`. Se eliminaron
-`ui/` y la dependencia de Streamlit; la imagen `runtime` sirve `uvicorn`. `pytest -q` → 421 passed.
-Abiertas: 9.11 (consultas en serie) y 9.12 (CORS; la autenticación se descarta por D81). Por D81 (decisión
-del equipo, 2026-10-13) el agente no se despliega en la nube: se prepara todo para correr en entorno local,
-9.3 queda sin efecto y el criterio de promoción 1 (nube) deja de estar cubierto.
-
-**Alcance local (2026-10-13):** el sistema corre en entorno local (D81), la interfaz está descartada (D80) y
-el CORS está implementado y verificado (R-7.8, D82). Quedan abiertas 9.1, 9.4, 9.5, 9.7 (opcional), 9.8, 9.9,
-9.11 y 9.12 (la llamada real desde el frontend), más los ítems de los otros integrantes. 9.13 (confirmar con
-la cátedra, riesgo D83) quedó abierta al registrar D83.
-
 ## 1. Setup y entorno
 
-- [x] 1.1 Crear la estructura de carpetas (`db/`, `rag/`, `agent/`, `api/`, `tests/`, `docker/`; la `ui/` original se retiró por D80) y verificar que `tree` muestra la estructura de `openspec/project.md`
-- [x] 1.2 Definir dependencias y verificar que `pip install -r requirements.txt` instala `smolagents`, `psycopg2-binary`, `pypdf`, `google-genai`, `fastapi`, `uvicorn`, `pytest`, `faker`, `sqlglot` (`streamlit` se retiró por D80)
+Agrupan la estructura del repo, las dependencias de ejecución y desarrollo, la base local en Docker y la
+configuración por variables de entorno.
+
+- [x] 1.1 Crear la estructura de carpetas (`db/`, `rag/`, `agent/`, `api/`, `tests/`, `docker/`) y verificar que `tree` muestra la estructura de `openspec/project.md`
+- [x] 1.2 Definir dependencias y verificar que `pip install -r requirements.txt` instala `smolagents[litellm]`, `psycopg2-binary`, `pypdf`, `google-genai`, `sqlglot`, `python-dotenv`, `fastapi`, `uvicorn` y que `pip install -r requirements-dev.txt` agrega `pytest`, `faker`, `ruff` (la separación es D54)
 - [x] 1.3 Crear `docker-compose.yml` con Postgres + pgvector y verificar que `docker compose up -d` levanta la base y que `CREATE EXTENSION vector` funciona
 - [x] 1.4 Crear `.env.example` y `.gitignore` y verificar que `grep -rE "GEMINI_API_KEY\s*=\s*[\"']" --include="*.py"` no encuentra claves hardcodeadas (leer el nombre de la variable de `os.environ` no cuenta como hardcodeo)
-- [ ] 1.5 Documentar el flujo de arranque en `README.md` y verificar que los comandos del README se ejecutan tal como están escritos
-  _(parcial. Reejecutado 2026-10-13 con Docker 29.6.1, en el orden del README: `docker compose up -d --wait` (`pipidu-db` healthy); `docker build -f docker/Dockerfile -t pipidu-agent .` (etapa `runtime`); `docker run --env-file .env -e POSTGRES_HOST=host.docker.internal -p 8080:8080 pipidu-agent` -> `GET /health` 200 `{"status":"ok"}` y `POST /ask` con consulta vacía 422. Sin el override la conexión a la base falla: `POSTGRES_HOST=127.0.0.1` dentro del contenedor apunta al propio contenedor (Connection refused), por eso el README lo consigna. `pytest` y `ruff` verificados. Abierta porque faltan `seed` e `ingest` (T2.4, T3.3) y porque `POST /ask` con una consulta real no se ejecutó: `.env` no apunta a un modelo local accesible y no se invocó la API paga de Gemini. Nota de entorno: si otro proceso del host ya ocupa 127.0.0.1:8080, el tráfico local va a ese proceso y no al contenedor)_
 
 ## 2. Modelo de datos y datos sintéticos
 
+El esquema, los roles de acceso a la base y la configuración de los valores del sistema.
+
 - [x] 2.1 Escribir `db/schema.sql` con las 7 tablas del dominio (`autores`, `categorias`, `editoriales`, `libros`, `libros_autores`, `socios`, `prestamos`) más `documentos` y `documentos_chunks` (D64) y verificar que `psql -f db/schema.sql` crea el esquema sin errores de FK
-- [x] 2.2 Crear el usuario dedicado `agent_ro` con `GRANT SELECT` sobre las 6 tablas, `statement_timeout = 10000` y `search_path` restringido, y verificar que un `INSERT` con ese usuario es rechazado por PostgreSQL (D14, R-3.5)
+- [x] 2.2 Crear el usuario dedicado `agent_ro` con `GRANT SELECT` sobre las 7 tablas del dominio, la vista `v_prestamos_estado` y `documentos` + `documentos_chunks`, `statement_timeout = 10s` y `default_transaction_read_only`, y verificar que un `INSERT` con ese usuario es rechazado por PostgreSQL (D14, R-3.5, D64, D65; los permisos se aplican en `db/post_restore.sql:19-30`)
 - [x] 2.3 Crear `agent/config/__init__.py` con el rango de cuatrimestre (2026-08-01 a 2026-11-30), zona horaria única, top-k, umbral, límite de filas y máximo de intentos, y verificar que ningún valor queda hardcodeado en el código (D6, D12, D15, R-3.11)
-- [ ] 2.4 Implementar `db/seed_data.py` con semilla fija y verificar que dos ejecuciones con `--seed 42` producen el mismo output
-- [ ] 2.5 Verificar el volumen: `SELECT count(*)` ≥ 15 en cada una de las 7 tablas del dominio (el enunciado exige más de 15 registros por tabla); el caso de `documentos` se resuelve en 2.9
-  _(medido 2026-10-13 con `tests/test_seed_contract.py -m integration` contra la base local de Docker, rol `agent_ro`, solo lectura: autores 6, categorias 3, editoriales 3, libros 7, libros_autores 8, prestamos 11, socios 6 — las 7 por debajo de 15, el test falla. Es evidencia, no se ajustó el seed para hacerlo pasar: el volumen lo trae `db/seed_data.py` (2.4). En la misma corrida, consistencia (2.7): 0 filas con `ejemplares_disponibles > ejemplares_totales` y 0 vencidos que no cumplan la regla de la vista)_
 - [x] 2.6 Implementar el estado de vencimiento como vista o columna generada (no como valor escrito por el seed) y verificar que coincide con el caso G3 del golden set (D7, R-3.12)
-- [ ] 2.7 Verificar las reglas de consistencia: ningún `ejemplares_disponibles > ejemplares_totales`, y todo préstamo vencido cumple `fecha_devolucion_real IS NULL AND CURRENT_DATE > fecha_devolucion_prevista`
-- [ ] 2.8 Generar `db/dump.sql` como entregable y verificar que restaura el mismo conteo por tabla
-- [ ] 2.9 Decidir y documentar el volumen de `documentos`: con 4–6 PDFs queda por debajo de 15 registros, y el enunciado pide "al menos 15 registros" en cada tabla del modelo. Opciones: cargar ≥ 15 documentos, o justificar en el informe que `documentos` es el índice del repositorio RAG y no una tabla del modelo relacional; verificar que la decisión figura en `TP/CHANGELOG.md` y en el informe (enunciado, criterios de aprobación 1)
-
-## 3. Pipeline de ingesta RAG
-
-- [ ] 3.1 Crear los 4–6 PDFs en `rag/documents/` (responsable: integrante de RAG y base de datos, D19) y verificar que `pypdf` extrae texto de cada uno y que el contenido cubre plazo de devolución, sinopsis, pasos del sistema y horario
-- [ ] 3.2 Implementar `rag/chunking.py` por cláusula/párrafo con tope de 800 tokens y solapamiento de 150 desde configuración, y verificar que una cláusula de prueba de más de 800 tokens no queda cortada (D10, R-4.3)
-- [ ] 3.3 Implementar `rag/ingest.py` (extracción → chunking → embeddings con `gemini-embedding-001` a 768 dimensiones → pgvector) y verificar que cada chunk guarda id, documento, ubicación, texto, hash y vector (D5, R-4.2)
-- [ ] 3.4 Verificar que `documentos_chunks` (esquema compartido, D64) tiene `embedding vector(768)` e índice HNSW `vector_cosine_ops`, y verificar que el índice aparece al inspeccionar la tabla (D5, D13)
-- [ ] 3.5 Verificar idempotencia con `sha256(contenido)` como unique: ejecutar la ingesta dos veces sobre el mismo PDF y comprobar que el conteo de chunks no cambia (D11, R-4.5)
-- [ ] 3.6 Calibrar top-k = 5 y umbral de similitud = 0.35 según el procedimiento de `TP/05-validacion.md`, y verificar que el valor medido queda registrado en `TP/CHANGELOG.md` con la tabla de similitudes (D12, R-4.8)
-- [ ] 3.7 Escribir `tests/test_rag_tool.py` para el retrieval y verificar que las preguntas R1–R3 del golden set devuelven el documento esperado en top-1 (R-4.4)
-- [ ] 3.8 Verificar el caso de umbral: una pregunta sin cobertura devuelve "no se encontró información relevante" (R-4.6)
+- [x] 2.7 Verificar las reglas de consistencia: ningún `ejemplares_disponibles > ejemplares_totales`, y todo préstamo vencido cumple `fecha_devolucion_real IS NULL AND CURRENT_DATE > fecha_devolucion_prevista`
+  _(medido contra la base local de Docker con el rol `agent_ro`: 0 filas con `ejemplares_disponibles > ejemplares_totales` y 0 vencidos que no cumplan la regla de la vista (`tests/test_seed_contract.py:171` y `:181`))_
 
 ## 4. Tool `execute_sql`
 
+Validación estática de sentencias y ejecución de solo lectura sobre la base.
+
 - [x] 4.1 Definir la whitelist de tablas y columnas en `agent/config/schema_whitelist.py` y verificar que coincide con `db/schema.sql` (R-3.4)
-- [x] 4.2 Implementar la validación estática con `sqlglot` (parseo con `error_level=RAISE`, statement raíz `SELECT`, extracción de tablas, columnas y funciones, expansión de `*` a la whitelist (R-3.14), normalización de identificadores a minúsculas (R-3.15), rechazo de `FOR UPDATE`) y verificar que los casos adversos S1–S22 de `TP/05-validacion.md` devuelven el error tipado esperado, sin ejecutar ninguna consulta (D4, R-3.2, R-3.3, R-3.4, R-3.7, R-3.13)
+- [x] 4.2 Implementar la validación estática con `sqlglot` (parseo con `error_level=RAISE`, statement raíz `SELECT`, extracción de tablas, columnas y funciones, expansión de `*` a la whitelist (R-3.14), normalización de identificadores a minúsculas (R-3.15), rechazo de `FOR UPDATE`) y verificar que los casos adversos de `TP/05-validacion.md` §2 (S1–S20 en `tests/test_sql_validator.py` y los de endurecimiento B1–B31 en `tests/test_sql_validator_hardening.py`) devuelven el error tipado esperado, sin ejecutar ninguna consulta (D4, R-3.2, R-3.3, R-3.4, R-3.7, R-3.13)
 - [x] 4.3 Implementar `execute_sql(sql)` que recibe la sentencia ya formada por el agente, ejecuta con el usuario `agent_ro`, aplica límite de 50 filas y timeout de 10 s, y verificar que la tool corre sin credenciales de API (D1, R-3.1, R-3.5, R-3.6, R-3.16) — *implementado en `agent/tools/sql_tool.py`; verificado con Postgres real en `tests/test_sql_tool.py` y `tests/test_runs_integration.py` (`pytest -m integration`, rol `agent_ro`, D45, D46)*
-- [x] 4.4 Implementar la regeneración limitada (máximo 2 intentos) y verificar el caso de rechazo-then-éxito y el caso de dos rechazos consecutivos, con reporte del error al usuario (D8, R-3.10, R-5.7) — *el tope lo aplica el orquestador (`ToolSession`, `SQL_MAX_ATTEMPTS`) y se verifica en `tests/test_agent.py` (regeneración con motivo, intentos agotados); `run_with_regeneration()` queda como utilidad de la tool para uso fuera del agente*
+- [x] 4.4 Implementar la regeneración limitada (máximo 2 intentos) y verificar el caso de rechazo-then-éxito y el caso de dos rechazos consecutivos, con reporte del error al usuario (D8, R-3.10, R-5.7) — *el tope lo aplica el orquestador (`ToolSession`, `SQL_MAX_ATTEMPTS`) y se verifica en `tests/test_agent.py`; `run_with_regeneration()` queda como utilidad de la tool para uso fuera del agente*
 - [x] 4.5 Implementar el contrato `SqlResult` y verificar que `tests/test_sql_tool.py` pasa con los 5 casos SQL del golden set (R-3.1, R-3.9)
 - [x] 4.6 Verificar el reporte de resultado vacío con un socio sin préstamos (R-3.8)
 
 ## 5. Tool `rag_search_tool`
 
-- [x] 5.1 Implementar el retrieval top-k por similitud de coseno con umbral desde configuración y verificar que `tests/test_rag_tool.py` pasa (R-4.4). Embedder y store son protocolos: la política se prueba sin PDFs ni base; la calibración del umbral (R-4.8) queda para `scripts/calibrate_threshold.py` con los documentos reales
+Retrieval vectorial sobre `documentos_chunks` con umbral configurable.
+
+- [x] 5.1 Implementar el retrieval top-k por similitud de coseno con umbral desde configuración y verificar que `tests/test_rag_tool.py` pasa (R-4.4). Embedder y store son protocolos: la política se prueba sin PDFs ni base
 - [x] 5.2 Implementar el contrato `RagResult`/`Chunk` con documento y ubicación por fragmento y verificar que una prueba asserts la referencia de origen (R-4.7)
 
 ## 6. Orquestador y selección de fuente
 
-- [x] 6.1 Escribir `agent/prompts/system_prompt.md` con rol, esquema resumido, semántica temporal configurada, reglas de selección de fuente y 8 few-shot NL→SQL, y verificar que el prompt exige emitir la clasificación antes de invocar herramientas (R-2.1, R-3.11, D3)
+Prompt, clasificación y el agente que invoca las dos herramientas.
+
+- [x] 6.1 Escribir `agent/prompts/system_prompt.md` con rol, esquema resumido, semántica temporal configurada, reglas de selección de fuente y 9 few-shot NL→SQL, y verificar que el prompt exige emitir la clasificación antes de invocar herramientas (R-2.1, R-3.11, D3)
 - [x] 6.2 Implementar la clasificación mediante salida estructurada obligatoria (function calling con campo `classification`) y verificar que la clasificación se resuelve antes de la primera invocación a herramienta (D3, R-2.7)
 - [x] 6.3 Implementar el `ToolCallingAgent` de Smolagents con las dos tools, temperatura 0, `max_steps = 6` y timeout de API 30 s, y verificar que los 13 casos del golden set producen la clasificación esperada (≥11/13) (D2, D15, R-2.1)
 - [x] 6.4 Verificar los 3 casos híbridos: invocan ambas herramientas (R-2.4)
 - [x] 6.5 Verificar el caso `none`: no invoca herramientas y no inventa (R-2.5)
 - [x] 6.6 Validar el flujo completo contra un **modelo local** (`LLM_MODEL`, `LLM_API_BASE`) con `scripts/measure_golden.py` y verificar clasificación previa a las tools, herramientas por fuente y SQL aceptado por el validador. No cuenta como aceptación (R-2.8)
 - [x] 6.7 Repetir la medición con **Gemini** (`GEMINI_API_KEY`, sin cambios de código), versionar la corrida en `TP/evidencia/` consignando el modelo y verificar ≥ 11/13, 3/3 híbridos y 1/1 `none` (R-2.1, R-2.8, R-6.5)
-  _(modelo definitivo `gemini-3.1-flash-lite` (D71): 13/13, 3/3 y 1/1, con la última corrida sobre base local y RAG simulado (`TP/05` §4.1). `gemini-3-flash-preview` no entra en la cuota gratuita de 20 requests por día (D70). Contenido 13/13 con el criterio de D72. Salvedades vigentes: el retrieval es simulado y las esperas por cuota inflan la latencia)_
+  _(modelo definitivo `gemini-3.1-flash-lite` (D71): 13/13 clasificaciones, 3/3 híbridos, 1/1 `none` y 13/13 de contenido sobre base local y RAG simulado (`TP/evidencia/golden_gemini-3.1-flash-lite_2026-10-11_db-mock.json`, `TP/05` §4.1))_
 
 ## 7. Composición de respuesta y trazabilidad
 
-- [x] 7.1 Implementar el contrato `AgentAnswer` y verificar que toda respuesta del golden set declara fuente (R-5.2)
-  _(contrato y reglas en `agent/contracts.py` + `tests/test_contracts.py`; composición en `LibraryAgent._compose`, `agent/agent.py`; la medición con modelos reales, 13/13 con fuente declarada antes de tools, está en `TP/05` §4.1)_
-- [x] 7.2 Verificar idioma de respuesta con un caso en inglés y uno en castellano (R-5.1)
-  _(B1 y B2 (`tests/golden_set.py::BILINGUAL_SET`) con `gemini-3.1-flash-lite`: 2/2 con idioma declarado `en`, contenido y prosa en inglés; los 13 casos en castellano salen con la plantilla en castellano. Primera corrida 0/2 por respuesta en castellano; corregido en D73. `TP/05` §4.1)_
-- [x] 7.3 Verificar la evidencia exhibida: SQL muestra la sentencia, RAG muestra el fragmento citado (R-5.3, R-5.4)
-  _(sin UI propia (D80), el agente entrega la evidencia y el frontend la exhibe: `evidence.sql` con la sentencia ejecutada y `evidence.chunks` con documento, ubicación y texto de cada fragmento, verificado en `tests/test_agent.py` (`test_sql_answer_declares_source_and_shows_the_executed_statement`, `test_rag_answer_cites_document_and_location`). Que el frontend lo muestre queda fuera de este repositorio)_
-- [x] 7.4 Crear la tabla `agent_runs` y verificar que una consulta exitosa genera una fila con los ocho campos (R-6.1, R-6.2)
-- [x] 7.5 Verificar que una consulta rechazada también genera una fila con el motivo (R-6.3)
-- [x] 7.6 Agregar al golden set dos casos en **inglés** (uno SQL y uno RAG, ids `B1` y `B2`), **fuera** de los 13 que miden R-2.1 para no cambiar el criterio ≥ 11/13, y verificar con el modelo definitivo que se clasifican bien y la respuesta sale en inglés. El enunciado pide "castellano o inglés" y los 13 casos actuales están en castellano; 7.2 depende de esto (R-5.1)
-  _(B1 (SQL) y B2 (RAG), flag `--bilingual` en `measure_golden.py`, fuera del denominador de R-2.1; D73)_
-- [x] 7.7 Implementar `scripts/export_runs.py` que vuelque `agent_runs` a un archivo versionado en `TP/evidencia/`, y verificar que contiene las 13 consultas del golden set con sus campos. El fixture de integración hace `TRUNCATE agent_runs` (`tests/test_runs_integration.py`), así que exportar **antes** de correr `pytest -m integration`; la tabla no es una evidencia durable (R-6.1, R-6.2)
-  _(`scripts/export_runs.py` (`--last N`), 7 tests; exportadas las 15 consultas en `TP/evidencia/agent_runs_2026-10-11.json`)_
+Contrato de la respuesta, idioma, evidencia exhibida, bitácora `agent_runs` y su export.
 
-- [x] 7.8 Retirar la línea de fuente del texto de la respuesta y declararla solo en `sources` (R-5.2, R-2.6, D84), y verificar que `answer` no termina con `Fuente: …` / `Source: …` en ningún caso (`sql`, `rag`, `hybrid`, `none`, error) y que una línea de fuente escrita por el modelo se retira
-  _(`tests/test_agent.py`: `_has_source_line` en los casos de composición y `test_a_source_line_written_by_the_model_is_removed_from_the_answer`; `tests/test_api.py::test_the_result_event_carries_the_complete_agent_answer`; `pytest -q`)_
+- [x] 7.1 Implementar el contrato `AgentAnswer` y verificar que toda respuesta del golden set declara fuente (R-5.2)
+  _(contrato en `agent/contracts.py` y `tests/test_contracts.py`; composición en `LibraryAgent._compose` de `agent/agent.py`; la medición con modelos reales, 13/13 con fuente declarada antes de las tools, está en `TP/05` §4.1)_
+- [x] 7.2 Verificar idioma de respuesta con un caso en inglés y uno en castellano (R-5.1)
+  _(B1 y B2 (`tests/golden_set.py::BILINGUAL_SET`) con `gemini-3.1-flash-lite`: 2/2 con idioma declarado `en`, contenido y prosa en inglés; los 13 casos en castellano salen con la plantilla en castellano (`TP/05` §4.1))_
+- [x] 7.3 Verificar la evidencia exhibida: SQL muestra la sentencia, RAG muestra el fragmento citado (R-5.3, R-5.4)
+  _(`evidence.sql` con la sentencia ejecutada y `evidence.chunks` con documento, ubicación y texto de cada fragmento, verificado en `tests/test_agent.py`; el frontend que la exhibe es la SPA `web/` (D93), cuya verificación corresponde al cambio `frontend-web-vite`)_
+- [x] 7.4 Crear la tabla `agent_runs` y verificar que una consulta exitosa genera una fila con los ocho campos (R-6.1, R-6.2)
+  _(tabla en `db/migrations/001_agent_runs.sql`; la fila se verifica en `tests/test_runs_integration.py` (`-m integration`, rol `agent_logger`, D63) y está exportada en `TP/evidencia/agent_runs_2026-10-11.json` — 13 filas con `status: ok`)_
+- [x] 7.5 Verificar que una consulta rechazada también genera una fila con el motivo (R-6.3)
+  _(`status` `error`/`no_coverage` con `error_code` y `error_detail` en la misma tabla; verificado en `tests/test_runs_integration.py:220` (`-m integration`))_
+- [x] 7.6 Agregar al golden set dos casos en **inglés** (uno SQL y uno RAG, ids `B1` y `B2`), **fuera** de los 13 que miden R-2.1 para no cambiar el criterio ≥ 11/13, y verificar con el modelo definitivo que se clasifican bien y la respuesta sale en inglés. El enunciado pide "castellano o inglés" y los 13 casos actuales están en castellano; 7.2 depende de esto (R-5.1)
+  _(B1 (SQL) y B2 (RAG), flag `--bilingual` en `scripts/measure_golden.py`, fuera del denominador de R-2.1; D73)_
+- [x] 7.7 Implementar `scripts/export_runs.py` que vuelque `agent_runs` a un archivo versionado en `TP/evidencia/`, y verificar que contiene las 13 consultas del golden set con sus campos. El fixture de integración hace `TRUNCATE agent_runs` (`tests/test_runs_integration.py`), así que exportar **antes** de correr `pytest -m integration`; la tabla no es una evidencia durable (R-6.1, R-6.2)
+  _(`scripts/export_runs.py` con `--last N`, verificado en `tests/test_export_runs.py`; las 13 consultas exportadas en `TP/evidencia/agent_runs_2026-10-11.json` (`count: 13`))_
+- [x] 7.8 Declarar la fuente en `sources` y retirar del texto la línea `Fuente: …` / `Source: …` y las citas entre paréntesis con ese formato (R-5.2, R-2.6, D84), y verificar que la que escriba el modelo se retira en los casos `sql`, `rag`, `hybrid`, `none` y error
+  _(`tests/test_agent.py`, `tests/test_prompts.py::test_the_prompt_forbids_naming_the_source_in_the_answer` y `tests/test_api.py::test_the_result_event_carries_the_complete_agent_answer`)_
 
 ## 8. API HTTP (único acceso al agente, sin interfaz gráfica propia)
 
-Las tareas 8.1 a 8.3 correspondían a la interfaz Streamlit y quedan **descartadas por D80**: el frontend
-es un cliente externo que consume la API. Se conservan los IDs para no renumerar.
+La API es el único acceso al agente (D80); la SPA `web/` la consume por `POST /ask` (D93, cambio
+`frontend-web-vite`) y sus tareas no están en esta sección.
 
-- ~~8.1 Implementar `ui/app.py` con campo de texto, respuesta, fuente y evidencia~~ — descartada (D80). Lo que exhibe el frontend se apoya en `result.evidence` (7.3)
-- ~~8.2 Verificar el rechazo de consulta vacía en la UI~~ — descartada (D80). El rechazo vive en la API: 422 sin invocar al agente (R-7.4, `tests/test_api.py`)
-- ~~8.3 Verificar que el historial de la UI es solo visual~~ — descartada (D80). El agente es de un solo turno y recibe solo la consulta actual (R-7.0, D17)
 - [x] 8.4 Exponer el agente por HTTP con streaming de progreso (`api/app.py`, `POST /ask`, `GET /health`) y verificar los eventos, el latido, el rechazo de la consulta vacía y el error inesperado (R-7.1 a R-7.4, R-7.6, R-7.7, D75)
-  _(`tests/test_api.py`, 13 tests. Al verificarlo se encontró y corrigió un retraso de hasta `HEARTBEAT_S` en cada `result`, D79)_
+  _(`tests/test_api.py`, 17 tests)_
 - [x] 8.5 Implementar la cancelación cooperativa y la atención en serie, y verificar que una consulta cancelada no se registra y que dos simultáneas no se pisan (R-7.5, R-6.7, R-1.3, D76, D77)
   _(`tests/test_agent.py`, `tests/test_agent_smolagents.py` y `tests/test_api.py::test_closing_the_stream_cancels_the_agent`)_
 - [x] 8.6 Retirar la interfaz Streamlit: eliminar `ui/`, la dependencia `streamlit` y el `CMD` de la imagen, y verificar que no queda ninguna referencia en el código ni en la imagen (R-7.0, D80)
-  _(`tests/test_dockerfile.py::test_the_runtime_stage_serves_the_http_api_and_no_ui` y `::test_the_runtime_dependencies_do_not_include_a_ui_framework`; en la imagen construida: sin `ui/` y `pip list` sin `streamlit`)_
+  _(`tests/test_dockerfile.py::test_the_runtime_stage_serves_the_http_api_and_no_ui` y `::test_the_runtime_dependencies_do_not_include_a_ui_framework`)_
 
 ## 9. Integración y despliegue
 
-- [ ] 9.1 Ejecutar el golden set completo contra el sistema integrado y verificar que `tests/test_golden_set.py` pasa sin regresiones, con aserción sobre clasificación, SQL y filas (no sobre la prosa) y rúbrica manual de 3 criterios para el texto (D16)
-  _(los 13 casos y los 4 de retrieval están en `tests/golden_set.py`. En `tests/test_golden_set.py` corren siempre, sin agente: la forma del set y los `check`. Bajo `-m llm` corren la exactitud de clasificación, los híbridos con ambas tools, el caso `none` y el SQL aceptado por el validador, contra el agente real sobre backends falsos — hace falta `GEMINI_API_KEY` o `LLM_API_BASE` de un servidor local. La corrida contra el sistema integrado falta: los `check` de contenido se evalúan con `scripts/measure_golden.py --db --rag-mock` y dependen del seed (2.4) y de la ingesta (3.3).)_
+Imagen de Docker, ejecución en entorno local (D81) y los mensajes fijos que recibe el usuario.
+
 - [x] 9.2 Crear `docker/Dockerfile` y verificar que la imagen se construye y corre localmente
-  _(`docker/Dockerfile` (etapas `base`, `measure`, `runtime`), `.dockerignore` y `tests/test_dockerfile.py`. Verificado con Docker 2026-10-11: ambas etapas construyen; `runtime` corre como uid 10001 y sin `tests/` ni `.env`; `measure` corrió G1, G6 y G13 dentro del contenedor contra la base del host (`POSTGRES_HOST=host.docker.internal`) y la API de Gemini, con las variables por `--env-file`: 3/3 en clasificación y contenido, 3/3 en `agent_runs`. Actualización (D80): el `CMD` de `runtime` pasó a servir la API con `uvicorn` en `$PORT`, verificado en 9.10)_
-- ~~9.3 Desplegar en Cloud Run + Cloud SQL con Secret Manager y verificar que las mismas 13 preguntas responden igual que en local~~ — descartada (D81). No se despliega en la nube: el sistema corre en entorno local. Las 13 preguntas contra el sistema integrado ya no pertenecen a 9.3, se verifican en 9.1 (la imagen `runtime` se verificó en 9.2 y 9.10)
-- [ ] 9.4 Exportar `agent_runs` con las 13 consultas (con 7.7) y capturas de funcionamiento como evidencias para el informe. El enunciado pide "capturas, logs": las capturas se toman de la terminal o de la API local, con `scripts/measure_golden.py` y `scripts/export_runs.py`
-- [ ] 9.5 Redactar el informe técnico (máx. 10 páginas) con modelo de datos, arquitectura, consultas de ejemplo y evidencias, y verificar que cubre los 4 puntos exigidos por el enunciado
-
-- ~~9.6 Decidir dónde vive la base en la nube: la de **Neon** que ya comparte el equipo o **Cloud SQL** (D18). El enunciado exige que el agente y la base estén en un servicio cloud; Neon ya cumple la parte de la base y evita el riesgo de pgvector en Cloud SQL. Verificar que la decisión queda en `TP/CHANGELOG.md` con su motivo y, si cambia D18, que se registra como reemplazo~~ — descartada (D81). La base de trabajo es la de Docker local; lo que sigue abierto es el uso de Neon para los datos compartidos del equipo, y se aplica en 9.7
-- [ ] 9.7 (Opcional, decisión del equipo: solo hace falta si el equipo sigue usando Neon como base compartida) Aplicar en esa base los roles `agent_ro` y `agent_logger`, sus permisos y `db/migrations/001_agent_runs.sql` (hoy solo existen en el Docker local), con `PGSSLMODE=require`, y verificar que `pytest -m integration` pasa contra esa base y que `agent_ro` no puede escribir ni leer `agent_runs` (D14, D63). Requiere al dueño de la base
-  _(con D81 la verificación sobre la base local de Docker ya está corrida: `pytest -m integration` → 28 passed y `agent_ro` no puede escribir ni leer `agent_runs`. Queda solo aplicarlo en Neon si el equipo decide seguir usando esa base)_
-- [ ] 9.8 Verificar los entregables de datos ("Datos empleados: bases de datos y archivos PDF"): `db/dump.sql` y `rag/documents/*.pdf` están versionados y ninguna regla de `.gitignore` los excluye; desde un clon limpio, `docker compose up -d --wait` y la ingesta reproducen la base (2.8, 3.1)
-- [ ] 9.9 Preparar el coloquio (23 o 30/10/2026, criterio de aprobación): guion de demostración con una consulta SQL, una RAG, una híbrida y una sin cobertura; respuestas preparadas sobre las decisiones técnicas (`TP/CHANGELOG.md`), los límites del sistema (retrieval simulado hasta la ingesta, cuota de la API, modelo local vs definitivo) y qué mide cada evidencia. El guion debe explicar por qué el despliegue es local (D81), qué criterios de promoción quedan cubiertos y el riesgo de esa decisión
-
+  _(etapas `base`, `measure` y `runtime` con `.dockerignore`, verificadas en `tests/test_dockerfile.py`; `runtime` corre sin `tests/` ni `.env` y sirve la API (9.10))_
 - [x] 9.10 Ejecutar la API como único servicio en entorno local (D81): la imagen `runtime` copia `api/`, arranca `uvicorn api.app:app` en `$PORT` y no incluye ninguna UI (D80); verificar con `docker build` y `docker run` que `GET /health` responde
-  _(verificado con Docker 2026-10-13: `GET /health` → 200 `{"status":"ok"}`; consulta vacía → 422; `POST /ask` real contra la base del host y la API del modelo → `start`, `classified`, `result` (`no_coverage`, `run_id` registrado); el contenedor corre como uid 10001 y no contiene `ui/`, `tests/`, `.env` ni `streamlit`)_
-- [ ] 9.11 Revisar el costo de atender las consultas en serie (D77) antes de una demostración con varias personas: una consulta puede esperar hasta el tiempo de las anteriores (3–170 s cada una). Opciones: un agente por sesión o un pool de conexiones
-  - Medido 2026-10-13 con `scripts/measure_queue.py` (sin base, sin credenciales, sin modelo): la espera de la k-ésima consulta es `(k-1)·S`; con S simulado de 1 s dio 0, 1, 2, 3, 4 s para N=1..5, y con S=6 s el cliente en la cola recibió latidos (1, 2, 3). El script usa el `answer()` real de `LibraryAgent` con su `_lock` real y un runner doble que duerme S, así que la espera observada es la serialización real y no la de un doble. Tabla y forma de reproducir en `TP/05-validacion.md` §7.1.
-  - El no-solapamiento de dos consultas en la llamada al modelo está probado por el test determinista `tests/test_agent.py::test_two_concurrent_answers_do_not_overlap_in_the_model_call` (20/20 corridas, sin reloj de pared); la serialización del agente la cubre `test_concurrent_answers_are_serialized` (C1).
-  - Con las latencias reales de `TP/evidencia/` (mediana 8,9 s): espera típica 17,8 s para 3 personas y 35,6 s para 5; peor caso 192,5 s y 219,1 s.
-  - Recomendación (no implementada): mantener la serialización para la demostración; cambiar solo si la consigna exige simultaneidad real. Falta la decisión del equipo, por eso la tarea sigue abierta.
-- [ ] 9.12 Definir el acceso a la API para un frontend externo: CORS para los orígenes del frontend (sin CORS, un navegador en otro origen no puede llamar a `POST /ask`) y restricción de acceso (sin autenticación, un endpoint público consume la cuota del modelo). Verificar desde el frontend real que la llamada funciona y que un origen no autorizado es rechazado
-  _(implementado y verificado con `tests/test_api_cors.py` — 8 tests, 2026-10-13: preflight 200 con `Access-Control-Allow-Origin` para el origen declarado en `API_ALLOWED_ORIGINS`, 400 sin el header para un origen no declarado, sin wildcard `*` con la lista vacía, el stream SSE conserva el header y no se requieren credenciales. La autenticación se descarta por D81: el servicio corre en entorno local (D82, R-7.8). **Pendiente:** la llamada real desde el frontend, falta el origen que declara el integrante del frontend para cargarlo en `API_ALLOWED_ORIGINS`. El procedimiento está documentado en `TP/02` §6.2)_
-- [ ] 9.13 Confirmar con la cátedra que la ejecución local es aceptable para el criterio de despliegue y que el criterio de interfaz gráfica puede evidenciarse con un frontend externo; registrar la respuesta en `TP/CHANGELOG.md` (riesgo D83)
-
-## Workflow follow-up
-
-- Archivar el change con `openspec archive agente-y-tools` cuando las tareas estén completas.
-- Correr `openspec validate --strict` antes de archivar.
+  _(verificado con Docker: `GET /health` → 200 `{"status":"ok"}`, consulta vacía → 422; la imagen no contiene `ui/`, `tests/`, `.env` ni `streamlit` (`tests/test_dockerfile.py`))_
 - [x] 9.14 Rechazar los pedidos de escritura con un mensaje fijo y de tono cercano, dejar una sola nota del sistema en la respuesta y reescribir los mensajes fijos (R-2.9, R-5.8, R-5.9, D94)
-  _(campo `write_request` en el clasificador, `_strip_model_notes` en `agent/agent.py`, `MESSAGES`; tests en `tests/test_agent.py` y `tests/test_classifier.py`)_
+  _(campo `write_request` en el clasificador, `_strip_model_notes` en `agent/agent.py` y `MESSAGES`; verificado en `tests/test_agent.py` y `tests/test_classifier.py`)_

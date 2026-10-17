@@ -47,7 +47,7 @@ def test_the_container_does_not_run_as_root() -> None:
 def test_dependencies_come_from_the_pinned_runtime_file() -> None:
     text = DOCKERFILE.read_text(encoding="utf-8")
     assert "requirements.txt" in text
-    assert "requirements-dev.txt" not in text, "pytest/faker no van a la imagen de producción (Art. 8)"
+    assert "requirements-dev.txt" not in text, "pytest no va a la imagen de producción (Art. 8)"
 
 
 def test_the_build_context_excludes_the_env_file_and_the_git_history() -> None:

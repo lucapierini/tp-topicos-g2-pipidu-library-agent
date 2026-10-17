@@ -1,4 +1,5 @@
-"""Ingesta del RAG: documentos fuente -> `documentos` y `documentos_chunks` en Neon (D19, R-4.7).
+"""Ingesta del RAG: documentos fuente -> `documentos` y `documentos_chunks` en la base local de Docker, donde
+la corre `docker compose` (D19, R-4.7).
 
 Para cada `rag/documents/*.md` (el PDF de `rag/documents/pdf/` se genera con su mismo texto, R-9.5):
 1. se parte por secciones `## ...` (artículos o pasos numerados), que son lo que se cita;
@@ -6,12 +7,13 @@ Para cada `rag/documents/*.md` (el PDF de `rag/documents/pdf/` se genera con su 
 3. se guarda con `metadata.seccion` para que la respuesta pueda decir "Art. 2" (R-4.7).
 
 Escribe, así que usa el dueño de la base. Destino, en este orden (Art. 9: nunca un literal en el repo):
-`INGEST_DATABASE_URL`, `NEON_DATABASE_URL` (del entorno o de `.env`) o las variables `PG*` de libpq
+`INGEST_DATABASE_URL` (del entorno o de `.env`) o las variables `PG*` de libpq
 (así lo usa docker compose contra la base local). El agente en ejecución NO usa esta conexión: lee con `agent_ro`.
 
-Es idempotente: si el `sha256` del PDF no cambió y ya tiene fragmentos, se saltea (`--force` lo rehace).
-La carpeta `rag/documents/` es la fuente de verdad: los documentos que ya no están se borran de la base
-(`--keep-orphans` lo evita).
+Es idempotente: si el `sha256` del PDF no cambió y la base ya tiene esa cantidad de fragmentos, se saltea
+(`--force` lo rehace).
+La carpeta `rag/documents/` es la fuente de verdad: los documentos ausentes de la carpeta se borran
+de la base (`--keep-orphans` lo evita).
 
     python rag/ingest.py --dry-run     # muestra los fragmentos; sin red ni base
     python rag/ingest.py               # ingesta
@@ -23,7 +25,6 @@ import hashlib
 import json
 import math
 import os
-import re
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -136,9 +137,9 @@ def main() -> int:
         print(f"total: {sum(len(p[2]) for p in plan)} fragmentos")
         return 0
 
-    url = os.environ.get("INGEST_DATABASE_URL") or os.environ.get("NEON_DATABASE_URL") or ""
+    url = os.environ.get("INGEST_DATABASE_URL") or ""
     if not url and not os.environ.get("PGHOST"):
-        raise SystemExit("Falta el destino: definí INGEST_DATABASE_URL, NEON_DATABASE_URL o PGHOST")
+        raise SystemExit("Falta el destino: definí INGEST_DATABASE_URL o PGHOST")
 
     import psycopg2
 

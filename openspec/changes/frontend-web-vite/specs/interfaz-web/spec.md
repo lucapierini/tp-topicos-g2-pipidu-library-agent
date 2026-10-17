@@ -37,7 +37,7 @@ pero SHALL permitir escribir la siguiente mientras se espera la respuesta.
 
 ### Requirement: R-8.2 — Progreso en vivo
 Mientras la consulta está en curso, la interfaz SHALL mostrar el progreso real a medida que llegan los
-eventos `classified`, `tool_call`, `tool_result`, `step`, `composing` y `heartbeat`. SHALL NO presentar
+eventos `classified`, `tool_call`, `tool_result`, `composing` y `heartbeat`. SHALL NO presentar
 ninguna fuente como respuesta antes del evento `result` (R-7.2, Art. 4).
 
 #### Scenario: eventos de progreso
@@ -47,7 +47,7 @@ ninguna fuente como respuesta antes del evento `result` (R-7.2, Art. 4).
 
 #### Scenario: indicador de espera
 - **WHEN** la consulta está en curso
-- **THEN** la interfaz muestra un texto de estado con efecto shimmer, sin spinner
+- **THEN** la interfaz muestra un texto de estado animado, sin spinner
 
 #### Scenario: espera larga
 - **GIVEN** una consulta que tarda más de 5 segundos sin eventos de progreso
@@ -74,7 +74,8 @@ mostrarlo como encabezado de la tarjeta y dejar `answer` como cuerpo.
 #### Scenario: error del agente
 - **GIVEN** un `result` con `answer_kind` `error`, o un evento `error`
 - **WHEN** la interfaz lo recibe
-- **THEN** muestra el error y permite reintentar
+- **THEN** muestra el error como una falla, con su título si lo trae
+- **AND** la persona vuelve a consultar escribiendo la consulta de nuevo; el reintento con un botón queda para las fallas de conexión (R-8.6)
 
 ### Requirement: R-8.4 — Evidencia consultable
 La interfaz SHALL permitir ver la evidencia del `result`: la sentencia SQL ejecutada y sus filas, y los

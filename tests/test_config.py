@@ -5,8 +5,17 @@ import os
 
 from agent.config import load_config
 
+DEFAULTED_VARS = (
+    "CUATRIMESTRE_START", "CUATRIMESTRE_END", "APP_TIMEZONE", "RAG_TOP_K", "RAG_SIMILARITY_THRESHOLD",
+    "SQL_MAX_ROWS", "SQL_STATEMENT_TIMEOUT_MS", "SQL_MAX_ATTEMPTS", "AGENT_MAX_STEPS", "AGENT_TEMPERATURE",
+    "AGENT_API_TIMEOUT_S", "EMBEDDING_DIM",
+)
 
-def test_defaults_are_the_decided_values() -> None:
+
+def test_defaults_are_the_decided_values(monkeypatch) -> None:
+    # Un `.env` local puede fijar estas variables (por ejemplo otro umbral): el test mide los defaults del código.
+    for name in DEFAULTED_VARS:
+        monkeypatch.delenv(name, raising=False)
     c = load_config()
     assert (c.cuatrimestre_start.isoformat(), c.cuatrimestre_end.isoformat()) == ("2026-08-01", "2026-11-30")
     assert c.timezone == "America/Argentina/Buenos_Aires"

@@ -41,9 +41,15 @@ qué fuente de información hace falta para responder la consulta. No respondas 
 ## Salida
 
 Devolvé un JSON con: `classification` (`sql`, `rag`, `hybrid` o `none`), `language` (`es` o `en`, el
-idioma en que está escrita la consulta) `write_request` (booleano) y `rationale` (una frase corta con el motivo).
+idioma en que está escrita la consulta), `write_request` (booleano), `greeting` (booleano) y `rationale`
+(una frase corta con el motivo).
+
+`greeting` es `true` solo cuando la consulta es **únicamente un saludo o una presentación** («hola», «buenas
+tardes», «hey», «hi there», «¿cómo andás?») y no pide nada más. Si el saludo viene acompañado de una pregunta
+(«hola, ¿qué libros tiene Juan?»), `greeting` es `false` y se clasifica la pregunta. Cuando `greeting` es `true`,
+`classification` es `none`.
 
 `write_request` es `true` cuando la consulta pide **crear, modificar o borrar** algo: eliminar o agregar un libro,
 una reseña, un socio o un préstamo, cambiar el stock, registrar una devolución. El agente solo lee: esos pedidos
 se rechazan. Preguntar por algo que ya pasó («¿qué libros se devolvieron ayer?») o por una norma («¿cómo se
-renueva un préstamo?») es `false`. En ese caso `classification` es `none`.
+renueva un préstamo?») es `false`. Cuando `write_request` es `true`, `classification` es `none`.

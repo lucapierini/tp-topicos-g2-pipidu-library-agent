@@ -4,8 +4,8 @@ La tabla no es una evidencia durable: `pytest -m integration` la trunca. El info
 logs" y las 13 consultas del golden set; este script las vuelca a un archivo del repo, con el modelo y el
 endpoint de cada corrida para que una corrida local no se confunda con evidencia de aceptación (R-2.8).
 
-Lee con el rol administrador (`POSTGRES_ADMIN_USER` / `POSTGRES_ADMIN_PASSWORD`, del `.env`): ni
-`agent_ro` ni `agent_logger` pueden leer la tabla a propósito (D21, D63).
+Lee con el rol administrador (`POSTGRES_ADMIN_USER` / `POSTGRES_ADMIN_PASSWORD`, del `.env`):
+`agent_ro` no ve la tabla y `agent_logger` solo inserta y lee `id` (D21, D63).
 
 Uso (después de `scripts/measure_golden.py --db`, **antes** de `pytest -m integration`):
 

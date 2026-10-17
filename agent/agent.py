@@ -33,6 +33,7 @@ from agent.config import Config, load_config
 from agent.contracts import (
     ANSWER_KIND_ANSWER,
     ANSWER_KIND_ERROR,
+    ANSWER_KIND_GREETING,
     ANSWER_KIND_NO_COVERAGE,
     TRACE_CLASSIFICATION,
     AgentAnswer,
@@ -57,13 +58,19 @@ TOOLS_BY_CLASSIFICATION = {
 }
 SOURCES_BY_CLASSIFICATION = {"sql": {"sql"}, "rag": {"rag"}, "hybrid": {"sql", "rag"}}
 
-# La fuente se declara en `AgentAnswer.sources` y no en el texto (R-5.2, D84). Si el modelo escribe de
-# todos modos una última línea "Fuente: …" / "Source: …", se retira del cuerpo.
+# La fuente se declara en `AgentAnswer.sources` (R-5.2, D84). Si el modelo escribe una última línea
+# "Fuente: …" / "Source: …", o una cita entre paréntesis que empieza con "Fuente:" o nombra un documento
+# (`reglamento_biblioteca.pdf`), se retira del cuerpo.
 _TRAILING_SOURCE_LINE = re.compile(r"(?:\n+|^)[ \t]*(?:Fuentes?|Sources?)[ \t]*:[^\n]*\s*$", re.IGNORECASE)
+_SOURCE_CITATION = re.compile(
+    r"[ \t]*\((?:[ \t]*\*?(?:Fuentes?|Sources?)[ \t]*:[^()]*|[^()]*\b[\w\-]+\.pdf\b[^()]*)\)", re.IGNORECASE
+)
 
 
 def _strip_source_line(text: str) -> str:
-    return _TRAILING_SOURCE_LINE.sub("", text).strip()
+    text = _SOURCE_CITATION.sub("", text)
+    text = _TRAILING_SOURCE_LINE.sub("", text)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
 # El sistema agrega sus propias notas (límite de filas, dato faltante). Si el modelo ya escribió una al
@@ -105,6 +112,8 @@ TITLES = {
 
 MESSAGES = {
     "es": {
+        "greeting": "¡Hola! Soy el agente de PiPiDu Library y puedo ayudarte con consultas como ¿Qué libros "
+                    "tiene prestados el socio Juan Pérez? o ¿Cuántos días tengo para devolver un libro?",
         "write_denied": "Soy bibliotecario de solo lectura: puedo consultar libros, socios, préstamos y "
                         "reglamentos, pero crear, modificar o borrar datos no está entre mis poderes, así que "
                         "no hice ningún cambio. Eso queda en manos de quien administra la biblioteca.",
@@ -121,6 +130,8 @@ MESSAGES = {
         "truncated": "Nota: el resultado se limitó a {n} filas; hay más datos que no se muestran.",
     },
     "en": {
+        "greeting": "Hello! I'm the PiPiDu Library agent and I can help you with questions like Which books "
+                    "does the member Juan Pérez currently have on loan? or How many days do I have to return a book?",
         "write_denied": "I'm a read-only librarian: I can look up books, members, loans and regulations, but "
                         "creating, changing or deleting data is beyond my powers, so I made no changes. That "
                         "is up to whoever manages the library.",
@@ -168,7 +179,8 @@ class AgentRunner(Protocol):
 
 
 class SmolagentsRunner:
-    """`ToolCallingAgent` (D2) sobre Gemini vía LiteLLM, con temperatura 0 y timeout (D15)."""
+    """`ToolCallingAgent` (D2) sobre el modelo configurado (`LLM_MODEL`, vía LiteLLM), con
+    temperatura 0 y timeout (D15)."""
 
     def __init__(self, config: Config | None = None, model: Any = None) -> None:
         self.cfg = config or load_config()
@@ -505,6 +517,12 @@ class LibraryAgent:
                 text, "none", classification.language, ANSWER_KIND_NO_COVERAGE, trace,
                 MESSAGES[classification.language]["write_denied"],
                 evidence={"write_request": True}, key="write_denied",
+            )
+        if classification.greeting:
+            # Solo un saludo: bienvenida fija con ejemplos de consultas, sin llamar al modelo ni a las tools.
+            return self._gap_answer(
+                text, "none", classification.language, ANSWER_KIND_GREETING, trace,
+                MESSAGES[classification.language]["greeting"],
             )
         if classification.label == "none":
             return self._gap_answer(

@@ -30,6 +30,7 @@ class Classification:
     language: str    # es | en: idioma de la consulta, para responder en el mismo (R-5.1)
     rationale: str = ""
     write_request: bool = False  # pide crear, modificar o borrar datos: el agente es de solo lectura
+    greeting: bool = False       # la consulta es solo un saludo: se responde con una bienvenida fija
 
 
 class ClassificationError(Exception):
@@ -41,7 +42,8 @@ class Classifier(Protocol):
 
 
 def parse_classification(raw: str) -> Classification:
-    """Valida la salida estructurada. El enum es case-sensitive: `"SQL"` se normaliza (D50)."""
+    """Valida la salida estructurada; la etiqueta y el idioma se normalizan (minúsculas, sin espacios)
+    antes de compararlos."""
     try:
         data = json.loads(raw)
     except (TypeError, ValueError) as exc:
@@ -57,8 +59,10 @@ def parse_classification(raw: str) -> Classification:
     if language not in LANGUAGES:
         language = DEFAULT_LANGUAGE
     write_request = data.get("write_request") is True  # solo un booleano real; "false"/1/null no cuentan
+    greeting = data.get("greeting") is True
     return Classification(
-        label=label, language=language, rationale=str(data.get("rationale", ""))[:300], write_request=write_request
+        label=label, language=language, rationale=str(data.get("rationale", ""))[:300],
+        write_request=write_request, greeting=greeting,
     )
 
 
@@ -82,9 +86,8 @@ class LiteLLMClassifier:
     `parse_classification`, que rechaza cualquier etiqueta fuera del vocabulario.
     """
 
-    # Los modelos que razonan antes de contestar gastan tokens en eso: con un tope bajo devuelven
-    # `content: None` (observado con Strata y `max_tokens=16`) o `finish_reason=length` con el JSON
-    # incompleto (G12 con `max_tokens=1024`, 3 de 3 intentos). Con 2048 completó la misma consulta.
+    # Los modelos que razonan gastan tokens antes de contestar: con un tope bajo devuelven
+    # `content: None` o `finish_reason=length` con el JSON incompleto. 4096 deja margen.
     MAX_TOKENS = 4096
 
     def __init__(self, config: Config | None = None, completion=None) -> None:
@@ -121,7 +124,8 @@ class LiteLLMClassifier:
         except ClassificationError:
             raise
         except Exception as exc:  # noqa: BLE001
-            # El motivo se conserva: "ClassificationError" a secas escondió un `finish_reason=length`.
+            # Se conserva el motivo real del fallo (clase y primeros 200 caracteres del mensaje) para
+            # distinguir cuota, límite de tokens y salida inválida.
             raise ClassificationError(
                 f"falló la llamada de clasificación: {type(exc).__name__}: {str(exc)[:200]}"
             ) from exc
@@ -166,6 +170,7 @@ class GeminiClassifier:
                 "language": types.Schema(type=types.Type.STRING, enum=list(LANGUAGES)),
                 "rationale": types.Schema(type=types.Type.STRING),
                 "write_request": types.Schema(type=types.Type.BOOLEAN),
+                "greeting": types.Schema(type=types.Type.BOOLEAN),
             },
             required=["classification", "language"],
         )
@@ -190,7 +195,8 @@ class GeminiClassifier:
         except ClassificationError:
             raise
         except Exception as exc:  # noqa: BLE001
-            # El motivo se conserva (igual que en LiteLLM): `ClientError` a secas escondió una cuota agotada.
+            # Se conserva el motivo real del fallo (clase y primeros 200 caracteres del mensaje) para
+            # distinguir cuota, límite de tokens y salida inválida.
             raise ClassificationError(
                 f"falló la llamada de clasificación: {type(exc).__name__}: {str(exc)[:200]}"
             ) from exc

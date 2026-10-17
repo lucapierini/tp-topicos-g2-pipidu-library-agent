@@ -38,7 +38,7 @@ ALLOWED_TABLES: dict[str, set[str]] = {
         "id", "nombre", "apellido", "legajo", "tipo_socio", "email", "fecha_alta",
     },
     # `estado` existe pero solo vale 'activo' o 'devuelto' (CHECK en el esquema): un préstamo
-    # vencido sigue siendo 'activo' acá. El vencimiento se consulta en la vista (D64, reemplaza D51).
+    # vencido sigue siendo 'activo' acá. El vencimiento se consulta en la vista (D64).
     "prestamos": {
         "id", "libro_id", "socio_id", "fecha_prestamo", "fecha_devolucion_prevista",
         "fecha_devolucion_real", "estado",
@@ -50,8 +50,8 @@ ALLOWED_TABLES: dict[str, set[str]] = {
     },
 }
 
-# Explícitamente fuera de la whitelist, para que el test de regresión no se
-# apoye en un olvido. `documentos_embeddings` es el nombre que se asumió antes de conocer el esquema.
+# Explícitamente fuera de la whitelist. `documentos_embeddings` no existe en el esquema; se lista
+# para que el test no dependa de un olvido.
 FORBIDDEN_TABLES: set[str] = {
     "agent_runs",
     "documentos",

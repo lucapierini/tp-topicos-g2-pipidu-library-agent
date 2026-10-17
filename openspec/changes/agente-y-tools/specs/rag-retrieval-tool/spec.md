@@ -24,20 +24,21 @@ Cada fragmento SHALL conservar identificador, documento de origen, ubicación (p
 - **WHEN** se consulta un fragmento almacenado
 - **THEN** es posible determinar a qué documento y a qué página o sección pertenece
 
-### Requirement: R-4.3 — Chunking por cláusula con tope de 800 tokens
-El sistema SHALL dividir los documentos por cláusula o párrafo, con un tope de 800 tokens y un
-solapamiento de 150 tokens, sin cortar una cláusula entre fragmentos.
+### Requirement: R-4.3 — Chunking por sección, sin tope de tokens ni solapamiento
+El sistema SHALL dividir cada documento en un fragmento por sección (artículo o paso numerado), sin
+cortar una sección entre fragmentos, sin tope de tokens y sin solapamiento (D10).
 
 #### Scenario: reproducibilidad del chunking
-- **GIVEN** los parámetros de chunking fijados por el propio requisito (tope 800, solapamiento 150, D10)
+- **GIVEN** un documento partido por sección (D10)
 - **WHEN** se reejecuta la ingesta sobre el mismo documento
-- **THEN** la cantidad de fragmentos coincide con lo esperado por esa configuración
+- **THEN** la cantidad de fragmentos es la misma que en la corrida anterior
+- **AND** cada fragmento es una sección completa de ese documento
 
-#### Scenario: cláusula más larga que el tope
-- **GIVEN** una cláusula del reglamento de más de 800 tokens
+#### Scenario: sección extensa
+- **GIVEN** una sección extensa del reglamento
 - **WHEN** se divide el documento
-- **THEN** la cláusula queda completa en un único fragmento
-- **AND** no se corta en el límite del tope
+- **THEN** la sección queda completa en un único fragmento
+- **AND** no se corta en ningún límite de tokens
 
 ### Requirement: R-4.4 — Recuperación por similitud con umbral
 La herramienta SHALL devolver los top-k fragmentos más similares por similitud de coseno, aplicando un
@@ -57,6 +58,12 @@ La ingesta SHALL ser idempotente: reejecutarla sobre el mismo documento no dupli
 - **WHEN** se vuelve a ejecutar la ingesta sobre el mismo archivo
 - **THEN** no se crean fragmentos duplicados
 
+#### Scenario: clave de idempotencia
+- **GIVEN** un documento cuyo archivo no cambió desde la última ingesta
+- **WHEN** se vuelve a ejecutar la ingesta
+- **THEN** el documento se saltea y su cantidad de fragmentos no cambia
+- **AND** cada fragmento queda identificado de forma única por su documento y su posición (D11)
+
 ### Requirement: R-4.6 — Reporte de ausencia de resultados relevantes
 La herramienta SHALL reportar "no se encontró información relevante" cuando la similitud máxima esté
 por debajo del umbral.
@@ -75,10 +82,12 @@ Cada fragmento devuelto SHALL incluir el documento de origen, para permitir la c
 - **THEN** la evidencia muestra el nombre del documento y su ubicación
 - **AND** el texto citado coincide con ese fragmento
 
-### Requirement: R-4.8 — Top-k y umbral calibrados
-El top-k (5) y el umbral de similitud de coseno (0.35) SHALL estar en configuración y haberse calibrado
-contra los documentos reales antes de fijarse como valor de aceptación.
+### Requirement: R-4.8 — Top-k y umbral en configuración, calibrados
+El top-k (5) y el umbral de similitud de coseno SHALL estar en configuración y haberse calibrado
+contra los documentos reales antes de fijarse como valor de aceptación. El umbral vigente es 0,64, calibrado
+contra los documentos reales, y es el valor por defecto de configuración (D12).
 
 #### Scenario: calibración documentada
 - **WHEN** se fija el umbral de similitud
 - **THEN** el valor y la evidencia de la calibración quedan registrados en el CHANGELOG
+- **AND** el valor se lee de configuración y no del código

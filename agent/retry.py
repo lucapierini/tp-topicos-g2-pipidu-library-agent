@@ -2,8 +2,8 @@
 
 La cuenta gratuita permite unas pocas requests por minuto y la API informa cuánto esperar
 (`Please retry in 17.9s`). Reintentar respetando esa espera, con un tope, es mejor que fallar la
-consulta: pero sin pasarse de `AGENT_API_TIMEOUT_S` por llamada (Art. 7) ni reintentar errores que
-no son de cuota (una clave inválida no mejora esperando).
+consulta: con cada espera acotada a `MAX_WAIT_S` y cada llamada limitada por `AGENT_API_TIMEOUT_S`
+(Art. 7), ni reintentar errores que no son de cuota (una clave inválida no mejora esperando).
 """
 from __future__ import annotations
 

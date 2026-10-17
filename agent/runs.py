@@ -1,8 +1,8 @@
 """Trazabilidad de ejecución: una fila de `agent_runs` por consulta (T7.4, T7.5; R-6.1 a R-6.5, Art. 5).
 
 El registro se arma **solo desde el `AgentAnswer`**: no hay una segunda fuente de verdad que pueda
-divergir de lo que se le mostró al usuario. Cada consulta se registra, resuelta o no (R-6.3): una
-respuesta con `answer_kind` `error` o `no_coverage` también deja su fila, con el motivo.
+divergir de lo que se le mostró al usuario. Cada consulta respondida se registra, resuelta o no
+(R-6.3): también las de `answer_kind` `error` o `no_coverage`, que dejan su fila con el motivo.
 
 Dos reglas de diseño:
 
@@ -26,6 +26,7 @@ from agent.config import Config, load_config
 from agent.contracts import (
     ANSWER_KIND_ANSWER,
     ANSWER_KIND_ERROR,
+    ANSWER_KIND_GREETING,
     ANSWER_KIND_NO_COVERAGE,
     TRACE_CLASSIFICATION,
     AgentAnswer,
@@ -35,6 +36,7 @@ logger = logging.getLogger("agent.runs")
 
 STATUS_BY_KIND = {
     ANSWER_KIND_ANSWER: "ok",
+    ANSWER_KIND_GREETING: "ok",
     ANSWER_KIND_NO_COVERAGE: "no_coverage",
     ANSWER_KIND_ERROR: "error",
 }

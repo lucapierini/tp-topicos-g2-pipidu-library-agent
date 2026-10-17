@@ -3,9 +3,9 @@
 -- Se aplica DESPUÉS de crear o restaurar el esquema, porque las tablas llegan con él. Es idempotente y
 -- tolera tablas que todavía no existen (avisa y sigue).
 --
--- Quedan fuera a propósito (D21): `agent_runs` (trazabilidad) y `documentos` (metadatos internos).
--- `documentos_chunks` entra: la herramienta de RAG la lee por una conexión propia con este rol; la
--- whitelist de la herramienta SQL la sigue excluyendo, así que el agente no puede consultarla con SQL.
+-- `agent_runs` queda fuera a propósito (D21): la trazabilidad no se concede a este rol.
+-- `documentos` y `documentos_chunks` entran: la herramienta de RAG las lee con este rol por una vía propia;
+-- la whitelist de la herramienta SQL las excluye (D99), así que el agente no puede consultarlas con SQL.
 
 DO $$
 DECLARE

@@ -1,4 +1,4 @@
--- Datos de DESARROLLO para probar el agente contra una base real (no es el seed entregable, T2.4).
+-- Datos de desarrollo deterministas para probar el agente contra una base real.
 --
 -- Son pocas filas, deterministas y con fechas relativas a CURRENT_DATE: "vencido", "hace 20 días" y
 -- "este cuatrimestre" dan resultados reproducibles sin importar cuándo se levante la base. Las fechas
@@ -6,8 +6,8 @@
 -- hoy, truncar las tablas del dominio y recargar este archivo (no asertar días de atraso literales).
 -- Contiene las entidades que nombra el golden set (`tests/golden_set.py::SEED_ENTITIES`).
 --
--- El volumen exigido (>= 15 por tabla, T2.5) y la semilla fija los entrega `db/seed_data.py`: esto
--- solo existe para poder correr `pytest -m integration` y `scripts/measure_golden.py --db`.
+-- Es el seed mínimo (`DEV_SEED=1`) para `pytest -m integration` y `scripts/measure_golden.py --db`;
+-- el catálogo completo está en `db/seed.sql`.
 
 INSERT INTO categorias (nombre, descripcion) VALUES
   ('Ciencias de la Computación', 'Informática, sistemas y redes'),
@@ -78,7 +78,8 @@ INSERT INTO socios (nombre, apellido, legajo, tipo_socio, email, fecha_alta) VAL
   ('Sofía', 'Díaz', 'A-1004', 'alumno', 'sofia.diaz@uni.example', CURRENT_DATE - 100);  -- sin préstamos (R-3.8)
 
 -- Préstamos (fechas relativas a hoy).
---   * Juan Pérez: 'Cien años de soledad' hace 20 días, plazo de 15 -> VENCIDO hace 5 días (G3, G10).
+--   * Juan Pérez: 'Cien años de soledad' hace 20 días, plazo de 15 días en este seed
+--     (el reglamento fija 14 para alumnos) -> VENCIDO hace 5 días (G3, G10).
 --   * Juan Pérez: 'Rayuela' hace 3 días -> ACTIVO.
 --   * Pedro Ruiz: 'Sistemas Operativos Modernos' hace 35 días -> VENCIDO hace 20 días (G3).
 --   * El resto devueltos, para los rankings (G2) y el socio con más préstamos (G11).

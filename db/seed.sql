@@ -1,10 +1,11 @@
 -- =============================================================================
--- Pipidu Library Agent — Seed de datos (change base-de-datos-neon)
+-- Pipidu Library Agent — Seed de datos (change base-de-datos)
 -- Catálogo REAL (70 libros: títulos, autores, editoriales, ISBN verificados en Open Library).
 -- Socios y préstamos SINTÉTICOS. Fechas de préstamos relativas a CURRENT_DATE,
 -- así siempre hay préstamos activos y vencidos.
 -- Requiere db/schema.sql aplicado (más sus roles/permisos si corre en una base local).
--- Aplicar con DATABASE_URL_UNPOOLED. No es idempotente: aborta si ya hay datos.
+-- Se aplica solo al crear el volumen: `DEV_SEED=full` (el valor por defecto de compose) lo corre desde
+-- db/init/10-roles.sh. No es idempotente: aborta si ya hay datos.
 -- =============================================================================
 
 BEGIN;

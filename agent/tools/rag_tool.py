@@ -7,10 +7,10 @@ La recuperación depende de dos piezas que se inyectan como protocolos:
   `PgVectorStore`; en los tests, `InMemoryVectorStore`.
 
 Así el umbral, el top-k, la ausencia de resultados y la referencia de origen se prueban sin
-base ni API (Art. 6). La ingesta (extracción, chunking, embeddings de documentos, tabla) es
-del integrante de RAG y base de datos (D19): esta herramienta solo **lee** `documentos_chunks`.
+base ni API (Art. 6). La ingesta (`rag/ingest.py`) escribe `documentos` y `documentos_chunks`;
+esta herramienta solo los lee.
 
-Contrato con la ingesta (a confirmar con quien la implemente):
+Contrato con la ingesta:
 - `documentos(id, nombre_archivo, tipo, sha256, ...)` y
   `documentos_chunks(id, documento_id, chunk_index, contenido, embedding vector(768), metadata jsonb)`;
 - la ubicación de un fragmento (R-4.7) se lee de `metadata`: `seccion`, `ubicacion` o `pagina`. Si la
@@ -19,7 +19,7 @@ Contrato con la ingesta (a confirmar con quien la implemente):
   coseno no lo aprovecha;
 - los documentos se embeben con `task_type=RETRIEVAL_DOCUMENT` y la consulta con `RETRIEVAL_QUERY`;
 - el rol `agent_ro` necesita `GRANT SELECT` sobre la tabla (la whitelist de la herramienta SQL la
-  excluye a propósito: D21; esta herramienta la lee por una vía distinta).
+  excluye a propósito: D102; esta herramienta la lee por una vía distinta).
 """
 from __future__ import annotations
 

@@ -1,9 +1,6 @@
-"""Regresión de la auditoría del 2026-10-10 sobre el validador (D38–D44, D51, D53).
+"""Regresión del validador de SQL: casos que deben rechazarse y casos que deben aceptarse (D38–D44, D53).
 
-Verificado contra el validador de `HEAD` (antes del fix): de los 28 casos de `REJECTED`, 17 se
-aceptaban (B1, B2, B5–B7, B9, B10, B13, B14, B20), se rechazaban con otro código (B3, B8, B15, B16,
-B19) o lanzaban una excepción (B22, B26). Los otros 11 ya se rechazaban —varios por coincidencia
-de columnas, no por diseño— y quedan como regresión preventiva. Corren sin base ni credenciales.
+Corren sin base ni credenciales.
 """
 from __future__ import annotations
 
@@ -26,7 +23,7 @@ _TOO_MANY_TABLES = "SELECT a.id FROM " + ", ".join(
 )
 
 REJECTED = [
-    # --- #1: una CTE homónima en otra subquery ocultaba la tabla prohibida del FROM externo ---
+    # --- CTE homónima en otra subquery (D38) ---
     ("B1", "SELECT l.id FROM libros l, (WITH agent_runs AS (SELECT id FROM libros) "
            "SELECT id FROM agent_runs) t, agent_runs", TABLE_NOT_ALLOWED),
     ("B2", "SELECT l.id FROM libros l CROSS JOIN agent_runs, (WITH agent_runs AS "
@@ -43,17 +40,17 @@ REJECTED = [
     ("B7", "WITH i AS (INSERT INTO autores (id) VALUES (1) RETURNING id) SELECT id FROM i",
      SQL_NOT_READONLY),
     ("B8", "SELECT id INTO nueva FROM libros", SQL_NOT_READONLY),
-    # --- #2: columnas sin calificar o inexistentes en consultas con varias tablas ---
+    # --- columnas sin calificar (D38) ---
     ("B9", "SELECT secreto FROM socios s JOIN prestamos p ON p.socio_id = s.id", COLUMN_NOT_ALLOWED),
     ("B10", "SELECT id FROM libros l JOIN editoriales e ON e.id = l.editorial_id", COLUMN_NOT_ALLOWED),
-    # `libros` ya no tiene `autor_id` (N:M por `libros_autores`): el modelo no puede usarlo (D64).
+    # `libros` no tiene `autor_id` (N:M por `libros_autores`, D64): el modelo no puede usarlo.
     ("B29", "SELECT l.autor_id FROM libros l", COLUMN_NOT_ALLOWED),
     # El repositorio documental es interno: la herramienta de RAG lo lee por su vía, no el SQL (D21).
     ("B30", "SELECT contenido FROM documentos_chunks", TABLE_NOT_ALLOWED),
     ("B31", "SELECT nombre_archivo FROM documentos", TABLE_NOT_ALLOWED),
     ("B11", "SELECT s.secreto FROM socios s", COLUMN_NOT_ALLOWED),
     ("B12", "SELECT x FROM (SELECT secreto AS x FROM socios) t", COLUMN_NOT_ALLOWED),
-    # --- #3: schema distinto de `public` ---
+    # --- schema distinto de `public` (D40) ---
     ("B13", "SELECT id FROM otro_schema.libros", TABLE_NOT_ALLOWED),
     ("B14", "SELECT id FROM otra_db.public.libros", TABLE_NOT_ALLOWED),
     # --- funciones de tabla y funciones de efecto en cualquier posición ---
@@ -89,19 +86,19 @@ def test_audit_regressions_are_rejected(case_id: str, sql: str, expected: str) -
 
 
 ACCEPTED = [
-    # `AND`/`OR` son `Func` para sqlglot: la versión intermedia del fix los rechazaba
+    # `AND`/`OR` son `Func` para sqlglot pero no son llamadas (D41)
     "SELECT id FROM libros WHERE titulo = 'x' AND ejemplares_disponibles > 0",
     "SELECT id FROM libros WHERE ejemplares_disponibles = 0 OR anio_publicacion < 1900",
     "SELECT id FROM libros WHERE (anio_publicacion > 2000 AND isbn IS NOT NULL) OR id = 1",
-    # #5: construcciones de control que no son funciones
+    # construcciones de control (D41)
     "SELECT CASE WHEN ejemplares_disponibles > 0 THEN 'disponible' ELSE 'agotado' END AS d FROM libros",
     "SELECT id FROM socios s WHERE EXISTS (SELECT 1 FROM prestamos p WHERE p.socio_id = s.id)",
     "SELECT id FROM socios s WHERE NOT EXISTS (SELECT 1 FROM prestamos p WHERE p.socio_id = s.id)",
-    # #6 del informe: sin FROM (D42) y `;` final (D43)
+    # sin FROM y `;` final (D42, D43)
     "SELECT now()",
     "SELECT CURRENT_DATE",
     "SELECT id FROM libros;",
-    # `*` sobre CTEs y subqueries (#4)
+    # `*` sobre CTEs y subqueries (D38)
     "WITH top AS (SELECT libro_id, count(*) AS c FROM prestamos GROUP BY libro_id) SELECT * FROM top",
     "SELECT t.* FROM (SELECT id FROM libros) t",
     "SELECT * FROM (SELECT id FROM libros) t",
@@ -125,7 +122,7 @@ def test_legitimate_queries_are_accepted(sql: str) -> None:
     assert result.normalized_sql
 
 
-# --- #5: cada función de la allowlist es alcanzable (el test que hubiera cazado el defecto) ---
+# --- cada función de la allowlist es alcanzable ---
 
 FUNCTION_SAMPLES = {
     "count": "count(*)", "sum": "sum(id)", "avg": "avg(id)", "min": "min(id)", "max": "max(id)",

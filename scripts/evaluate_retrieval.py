@@ -25,7 +25,6 @@ from __future__ import annotations
 import argparse
 import json
 import math
-import os
 import re
 import sys
 import unicodedata
@@ -37,14 +36,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from agent.tools.reranker import (  # noqa: E402
     DENSE_HIGH,
     DENSE_LOW,
-    RERANK_MAX,
+    RERANK_MAX,  # noqa: F401 - re-exportado para los tests
     build_prompt,
     normalize_dense,
-    parse_relevance,
+    parse_relevance,  # noqa: F401 - re-exportado para los tests
     rerank_score,
 )
 from agent.tools.reranker import GeminiReranker as ProductionReranker  # noqa: E402
 from scripts.calibrate_threshold import auc, build_cases, pick_thresholds, sweep  # noqa: E402
+
 
 def build_validation_cases():
     """Las consultas del set de validación, con el mismo formato que `build_cases()`."""

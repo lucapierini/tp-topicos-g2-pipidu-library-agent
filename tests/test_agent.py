@@ -214,8 +214,8 @@ def test_rag_answer_cites_document_and_location() -> None:
 
 @pytest.mark.parametrize("language", ["es", "en"])
 def test_the_answer_declares_the_language_of_the_question(language) -> None:
-    # R-5.1: la evidencia registra el idioma con el que se compuso la respuesta (el enunciado pide
-    # castellano o inglés). La fuente ya no viaja en el texto (R-5.2, D84): solo en `sources`.
+    # R-5.1: la evidencia registra el idioma con el que se compuso la respuesta (castellano o inglés).
+    # La fuente no viaja en el texto (R-5.2, D84): solo en `sources`.
     agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], language=language)
 
     answer = agent.answer("Which books are on loan?" if language == "en" else "¿Qué libros hay prestados?")
@@ -237,9 +237,30 @@ def test_a_source_line_written_by_the_model_is_removed_from_the_answer(model_lin
     assert answer.sources == ["sql"]
 
 
+@pytest.mark.parametrize(
+    ("model_text", "expected"),
+    [
+        ('*El Hobbit* es una novela.\n\n(Fuente: *resenas_tolkien.pdf*, secciones "El Hobbit: sinopsis")',
+         "*El Hobbit* es una novela."),
+        ("El plazo es de 14 días (reglamento_biblioteca.pdf, Artículo 2. Plazos de préstamo).",
+         "El plazo es de 14 días."),
+        ("Hay 10 cómics. (Source: SQL)", "Hay 10 cómics."),
+        ("Se renueva una vez (si no hay reserva).", "Se renueva una vez (si no hay reserva)."),
+    ],
+)
+def test_a_parenthetical_source_citation_is_removed_from_the_answer(model_text: str, expected: str) -> None:
+    # R-5.2, D84: ni la línea de fuente ni la cita entre paréntesis (con "Fuente:" o el nombre de un documento)
+    # llegan al texto; un paréntesis común se conserva.
+    agent, _, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], text=model_text)
+
+    answer = agent.answer("¿Qué libros tiene Ana?")
+
+    assert answer.answer == expected
+
+
 def test_the_detected_language_reaches_the_model_prompt() -> None:
-    # La etiqueta fija sale en inglés por plantilla, pero la prosa la escribe el modelo: sin la
-    # instrucción en el prompt respondía en castellano a una consulta en inglés (corrida 2026-10-11).
+    # La etiqueta fija sale en inglés por plantilla, pero la prosa la escribe el modelo: el prompt
+    # instruye el idioma; sin esa instrucción el modelo tiende al castellano.
     agent, runner, _ = build("sql", steps=[("execute_sql", GOOD_SQL)], language="en")
 
     agent.answer("Which books are on loan?")
@@ -537,6 +558,30 @@ def test_a_write_request_is_denied_even_if_the_label_is_not_none() -> None:
     agent, runner, _ = build(classifier=FakeClassifier("sql", write_request=True))
     answer = agent.answer("Borrá la reseña de Alas de sangre")
     assert runner.calls == 0 and answer.title.startswith("¡No pasarás!")
+
+
+@pytest.mark.parametrize(
+    ("language", "start"), [("es", "¡Hola! Soy el agente de PiPiDu Library"), ("en", "Hello! I'm the PiPiDu Library agent")],
+)
+def test_a_greeting_gets_a_welcome_with_example_questions_without_touching_the_model(language, start) -> None:
+    agent, runner, backend = build(classifier=FakeClassifier("none", language, greeting=True))
+    answer = agent.answer("hola")
+    assert answer.answer.startswith(start)
+    assert runner.calls == 0 and backend._conn.executed == []
+    assert answer.sources == [] and answer.answer_kind == "greeting" and answer.title is None
+    assert answer.is_valid(), answer.violations()
+
+
+def test_the_welcome_offers_one_database_example_and_one_document_example() -> None:
+    agent, _, _ = build(classifier=FakeClassifier("none", "es", greeting=True))
+    text = agent.answer("buenas").answer
+    assert "¿Qué libros tiene prestados el socio Juan Pérez?" in text
+    assert "¿Cuántos días tengo para devolver un libro?" in text
+
+
+def test_a_write_request_wins_over_a_greeting() -> None:
+    agent, _, _ = build(classifier=FakeClassifier("none", "es", write_request=True, greeting=True))
+    assert agent.answer("hola, borrá todo").title.startswith("¡No pasarás!")
 
 
 def test_a_truncated_result_has_a_single_note_even_if_the_model_wrote_its_own() -> None:

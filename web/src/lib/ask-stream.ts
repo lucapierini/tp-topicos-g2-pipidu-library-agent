@@ -1,7 +1,7 @@
 // Cliente de `POST /ask` (SSE). `EventSource` solo hace GET: se lee `response.body` a mano.
 
 export type Classification = "sql" | "rag" | "hybrid" | "none"
-export type AnswerKind = "answer" | "no_coverage" | "error"
+export type AnswerKind = "answer" | "no_coverage" | "error" | "greeting"
 
 export interface SqlEvidence {
   sql?: string | null
@@ -25,7 +25,14 @@ export type AskEvent =
   | { type: "start"; question: string }
   | { type: "classified"; classification: Classification; language?: string }
   | { type: "tool_call"; tool: string; sql?: string; query?: string }
-  | { type: "tool_result"; tool: string; ok: boolean; rows?: number; chunks?: number; error?: string }
+  | {
+      type: "tool_result"
+      tool: string
+      ok: boolean
+      rows?: number
+      chunks?: number
+      error?: string
+    }
   | { type: "composing" }
   | {
       type: "step"
@@ -81,7 +88,8 @@ function parseBlock(block: string): RawEvent | null {
   for (const line of block.split("\n")) {
     if (line.startsWith(":")) continue // comentario
     if (line.startsWith("event:")) event = line.slice(6).trim()
-    else if (line.startsWith("data:")) data.push(line.slice(5).replace(/^ /, ""))
+    else if (line.startsWith("data:"))
+      data.push(line.slice(5).replace(/^ /, ""))
   }
   return data.length ? { event, data: data.join("\n") } : null
 }
@@ -127,7 +135,10 @@ export async function* askStream(
   try {
     response = await fetchImpl(`${baseUrl}/ask`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "text/event-stream",
+      },
       body: JSON.stringify({ question }),
       signal,
     })
@@ -140,7 +151,11 @@ export async function* askStream(
     throw new AskHttpError("invalid", "La consulta no es válida.", 422)
   }
   if (!response.ok || !response.body) {
-    throw new AskHttpError("http", `La API respondió ${response.status}.`, response.status)
+    throw new AskHttpError(
+      "http",
+      `La API respondió ${response.status}.`,
+      response.status
+    )
   }
 
   const reader = response.body.getReader()

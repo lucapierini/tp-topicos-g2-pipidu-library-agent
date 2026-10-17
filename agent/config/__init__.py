@@ -12,7 +12,7 @@ from pathlib import Path
 
 try:
     from dotenv import load_dotenv
-except ImportError:  # pragma: no cover - dotenv es dependencia de desarrollo
+except ImportError:  # pragma: no cover - sin python-dotenv solo se usa el entorno
     load_dotenv = None
 
 # Path explícito: `find_dotenv()` falla al ejecutar desde stdin o desde otro cwd.
@@ -90,7 +90,7 @@ class Config:
     db_name: str
     db_host: str
     db_port: int
-    # `require` para Neon (TLS obligatorio); vacío = el valor por defecto de libpq (base local).
+    # Modo TLS de libpq (`require`, etc.); vacío = el valor por defecto de libpq (base local).
     db_sslmode: str
 
     # Frontend externo (R-7.8, D82): orígenes permitidos para CORS. Vacío = ninguno.

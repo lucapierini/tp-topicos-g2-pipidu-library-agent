@@ -50,14 +50,14 @@ rechazar cláusulas de bloqueo como `FOR UPDATE`, que no son lectura.
 - **WHEN** la herramienta evalúa la sentencia
 - **THEN** rechaza la ejecución con `SQL_NOT_READONLY`
 
-### Requirement: R-3.3 — Rechazo de múltiples statements y comentarios
+### Requirement: R-3.3 — Rechazo de múltiples sentencias y comentarios
 La herramienta SHALL rechazar las entradas con más de una sentencia, los comentarios `--` o `/*`, y las
 instrucciones `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, `CREATE`, `TRUNCATE`, `GRANT`, `COPY`,
 `CALL` o `EXEC`, en cualquier posición de la sentencia. Un único `;` final se tolera: no separa
 sentencias y los modelos lo emiten con frecuencia. La herramienta SHALL NO lanzar excepciones ante
 una entrada malformada (sentencia vacía, literal sin cerrar): la rechaza con `SQL_NOT_READONLY`.
 
-#### Scenario: inyección por statement múltiple
+#### Scenario: inyección por sentencia múltiple
 - **GIVEN** la sentencia `SELECT 1; DROP TABLE libros`
 - **WHEN** la herramienta evalúa la sentencia
 - **THEN** rechaza la ejecución
@@ -214,7 +214,7 @@ configuración, no una interpretación libre del modelo.
 - **GIVEN** el rango de cuatrimestre configurado (2026-08-01 a 2026-11-30)
 - **WHEN** el usuario pregunta por "este cuatrimestre"
 - **THEN** la sentencia filtra por ese rango
-- **AND** el mismo rango se aplica a todas las consultas del golden set
+- **AND** el caso G2 del golden set, el único que menciona el cuatrimestre, filtra por ese rango
 
 #### Scenario: días transcurridos
 - **WHEN** el usuario pregunta por un préstamo "hace 20 días"

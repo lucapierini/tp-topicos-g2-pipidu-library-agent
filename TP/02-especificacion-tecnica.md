@@ -1,7 +1,5 @@
 # Especificación Técnica — Pipidu Library Agent
 
-> Documento incremental. Se irá completando/ajustando a medida que avance el diseño e implementación.
->
 > **Nivel en el ciclo SDD:** Plan (HOW). Los requisitos verificables del agente y sus tools están en
 > `openspec/changes/agente-y-tools/specs/<capacidad>/spec.md`; la división en tareas en
 > `openspec/changes/agente-y-tools/tasks.md`; la validación en `05-validacion.md`.
@@ -40,7 +38,7 @@ flowchart TB
 | Framework agéntico | Smolagents |
 | Acceso al agente | API HTTP con FastAPI + uvicorn y respuesta en streaming SSE (D75, D80, `consulta-por-api`). El servidor del agente no sirve interfaz: la SPA de `web/` (D93) es un cliente de la API |
 | Embeddings | Gemini Embeddings API, `gemini-embedding-001` con `output_dimensionality = 768` (D5) |
-| Despliegue | **Entorno local** (Docker + `uvicorn`), D81. La alternativa de nube queda registrada en §7 |
+| Despliegue | **Entorno local** (Docker + `uvicorn`), D81. |
 | Control de versiones | GitHub |
 | ORM / acceso a datos | psycopg2 directo, sin ORM (D9) |
 
@@ -56,7 +54,7 @@ flowchart TB
 **`autores`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | nombre | VARCHAR(100) | |
 | apellido | VARCHAR(100) | |
 | nacionalidad | VARCHAR(50) | |
@@ -65,21 +63,21 @@ flowchart TB
 **`editoriales`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | nombre | VARCHAR(100) | |
 | pais | VARCHAR(50) | |
 
 **`categorias`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | nombre | VARCHAR(80) | ej. "Ciencias de la Computación", "Literatura" |
 | descripcion | TEXT | |
 
 **`libros`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | titulo | VARCHAR(200) | |
 | isbn | VARCHAR(20) | único |
 | editorial_id | FK → editoriales.id | |
@@ -98,7 +96,7 @@ flowchart TB
 **`socios`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | nombre | VARCHAR(100) | |
 | apellido | VARCHAR(100) | |
 | legajo | VARCHAR(20) | único, para alumnos |
@@ -109,7 +107,7 @@ flowchart TB
 **`prestamos`**
 | Columna | Tipo | Notas |
 |---|---|---|
-| id | SERIAL PK | |
+| id | INTEGER GENERATED ALWAYS AS IDENTITY PK | |
 | libro_id | FK → libros.id | |
 | socio_id | FK → socios.id | |
 | fecha_prestamo | DATE | |
@@ -150,7 +148,8 @@ como "fragmento N". El índice HNSW usa `vector_cosine_ops` (D13). La herramient
 ### 3.2.2 Trazabilidad `agent_runs` (R-6.x)
 
 Una fila por consulta, resuelta o no (`db/migrations/001_agent_runs.sql`). Se escribe con el rol
-`agent_logger`, que solo puede `INSERT`; `agent_ro` no la ve (D63).
+`agent_logger`, que solo puede `INSERT` y leer el id generado (`SELECT (id)` para `RETURNING`); `agent_ro`
+no la ve (D63).
 
 | Columna | Origen / requisito |
 |---|---|
@@ -171,21 +170,23 @@ respuesta, pero tampoco se finge que se registró.
 
 ### 3.2.3 Entorno local con Docker
 
-`docker compose up -d --wait db` levanta PostgreSQL + pgvector y ejecuta `db/init/10-roles.sh`: crea
-los roles `agent_ro` y `agent_logger`, aplica `db/schema.sql`, `db/migrations/001_agent_runs.sql`, los
-permisos (`db/post_restore.sql`) y, por defecto, `db/dev_seed.sql` (pocas filas deterministas con
-fechas relativas a `CURRENT_DATE`). `scripts/replicate_neon.sh` trae el esquema y los datos de Neon con
-`pg_dump` desde un contenedor, solo lectura y sin imprimir la connection string.
+`docker compose up -d --build --wait` levanta PostgreSQL + pgvector (`db`), ingesta el RAG (`ingest`, D92) y arranca la
+API y la web. `db` ejecuta `db/init/10-roles.sh` al crear el volumen: crea los roles `agent_ro` y
+`agent_logger`, aplica `db/schema.sql`, `db/migrations/001_agent_runs.sql`, los permisos (`db/post_restore.sql`) y
+el seed que elige `DEV_SEED`: `full` (por defecto, D91) = `db/seed.sql`, el catálogo completo, que es el
+seed que necesita el test de volumen de `tests/test_seed_contract.py`; `1` = `db/dev_seed.sql` (pocas filas
+deterministas con fechas relativas a `CURRENT_DATE`, la foto que esperan `tests/test_golden_seed.py` y
+`tests/test_runs_integration.py`); `0` = base vacía.
 
 ### 3.3 Datos sintéticos
 
-- Generación programática (ej. con `Faker` para nombres/fechas + reglas de negocio simples para consistencia de disponibilidad de ejemplares).
-- Volumen objetivo: **15-20 registros por tabla** (mínimo exigido: 15).
-- Script de seed versionado en el repo (`db/seed_data.py`, pendiente: T2.4).
+- Catálogo real (títulos, autores, editoriales e ISBN verificados en Open Library) con socios y préstamos sintéticos.
+- Volumen objetivo: **≥15 registros por tabla** del dominio. Lo verifica `tests/test_seed_contract.py` contra la base real con el seed completo (`db/seed.sql`, `DEV_SEED=full`); el seed mínimo (`db/dev_seed.sql`, `DEV_SEED=1`) no llega a 15 filas en todas las tablas.
+- Seed versionado en el repo: `db/seed.sql` (catálogo completo, lo carga `docker compose up`) y `db/dev_seed.sql` (datos de desarrollo, `DEV_SEED=1`).
 
 ### 3.4 Contrato de datos que lee el agente
 
-Lo que el agente lee, verificado contra el código (no contra la propuesta inicial). Es el único lugar donde
+Lo que el agente lee, verificado contra el código. Es el único lugar donde
 se enuncia este contrato: el DDL no se copia acá, vive en `db/schema.sql`; la lista vinculante de tablas y
 columnas para la herramienta SQL es `agent/config/schema_whitelist.py` (R-3.4).
 
@@ -213,19 +214,15 @@ El rol `agent_ro` necesita `GRANT SELECT` sobre los diez objetos (`db/post_resto
 tablas documentales: la herramienta de recuperación las lee por una conexión propia y necesita el JOIN
 `documentos` ↔ `documentos_chunks` para el nombre del PDF y el `sha256` del documento.
 
-Pendiente para la parte de datos: el comentario de `db/post_restore.sql` dice que `documentos` queda fuera de
-los permisos, pero la lista de `GRANT` lo incluye. El comportamiento correcto es el que necesita
-`agent/tools/rag_tool.py` (SELECT concedido); el comentario está desalineado y lo corrige el integrante de BD.
-
 #### 3.4.2 Lo que los casos G1–G5 y la semántica temporal necesitan del seed
 
 Las entidades son las de `tests/golden_set.py::SEED_ENTITIES`; las filas nombradas son las de
-`db/dev_seed.sql`, que es la foto actual de la base local.
+`db/dev_seed.sql` (`DEV_SEED=1`), que es la foto de la base de pruebas; el catálogo completo (`db/seed.sql`) conserva esas entidades.
 
 | Caso | Qué necesita del seed | Entidades / filas de las que depende |
 |---|---|---|
 | G1 | un socio con al menos un préstamo | `socios` Juan Pérez (`A-1001`) y sus `prestamos` |
-| G2 | al menos un préstamo con `fecha_prestamo` dentro del rango configurado (`CUATRIMESTRE_START` / `CUATRIMESTRE_END`, D6, R-3.11); el ranking no puede quedar vacío | los 11 `prestamos` de `dev_seed.sql` caen en el rango solo mientras `CURRENT_DATE` esté dentro de él: el seed entregable debe fijar fechas dentro del rango, no solo relativas a `CURRENT_DATE` |
+| G2 | al menos un préstamo con `fecha_prestamo` dentro del rango configurado (`CUATRIMESTRE_START` / `CUATRIMESTRE_END`, D6, R-3.11); el ranking no puede quedar vacío | los 11 `prestamos` de `dev_seed.sql` tienen fechas relativas a `CURRENT_DATE` |
 | G3 | al menos una fila con `estado_calculado = 'vencido'` en `v_prestamos_estado`; el seed **no** escribe `vencido` (D7, R-3.12) | `A-1001` (préstamo de hace 20 días) y `A-1003` (hace 35 días) |
 | G4 | la categoría con libros y `ejemplares_disponibles > 0` | `categorias` Ciencias de la Computación; `libros` Sistemas Operativos Modernos y Redes de Computadoras |
 | G5 | la editorial con libros vinculados a autores por `libros_autores` (no existe `libros.autor_id`, D64) | `editoriales` Sudamericana; `libros_autores` |
@@ -236,8 +233,11 @@ Reglas de consistencia que el seed debe cumplir (T2.7): `ejemplares_disponibles 
 `libros`, y todo préstamo vencido satisface `fecha_devolucion_real IS NULL AND CURRENT_DATE >
 fecha_devolucion_prevista`, resuelto por la vista y no por un valor escrito.
 
-Volumen (T2.5): >= 15 filas en cada una de las 7 tablas del dominio de la tabla de §3.4.1 (la vista no
-cuenta). El caso de `documentos` se resuelve en 2.9. Los conteos medidos se registran en `tasks.md` 2.5.
+Volumen: >= 15 filas en cada una de las 7 tablas del dominio de la tabla de §3.4.1 (la vista no
+cuenta). El seed completo (`db/seed.sql`, `DEV_SEED=full`) carga entre 18 y 95 filas (libros 70, autores 57,
+editoriales 28, categorías 18, libros_autores 95, socios 20, préstamos 28) y
+`tests/test_seed_contract.py` lo verifica contra la base real con el rol `agent_ro` con ese seed; el seed
+mínimo (`db/dev_seed.sql`, `DEV_SEED=1`) no llega a 15 filas en todas las tablas.
 
 #### 3.4.3 Lo que la recuperación necesita de la ingesta
 
@@ -247,11 +247,8 @@ cuenta). El caso de `documentos` se resuelve en 2.9. Los conteos medidos se regi
 | Ubicación citable | `metadata` con `seccion`, `ubicacion` o `pagina`; si la ingesta no la guarda, la cita queda como "fragmento N" (R-4.7, D66) |
 | Vector | `embedding vector(768)` con `gemini-embedding-001` y `output_dimensionality = 768` (D5); documentos con `task_type = RETRIEVAL_DOCUMENT` y la consulta con `RETRIEVAL_QUERY` |
 | Distancia | coseno (`<=>`), similitud = 1 − distancia; índice HNSW declarado con `vector_cosine_ops` (D13) |
-| Idempotencia | `sha256` es la clave de idempotencia (D11, R-4.5). En `db/schema.sql` el UNIQUE está sobre `nombre_archivo` y sobre `(documento_id, chunk_index)`, **no** sobre `sha256`: la ingesta debe hacer upsert por `nombre_archivo` (o se agrega el UNIQUE, lo define la parte de BD). Reejecutar la ingesta no cambia el conteo de chunks |
+| Idempotencia | `sha256` es la clave de idempotencia (D11, R-4.5). En `db/schema.sql` el UNIQUE está sobre `nombre_archivo` y sobre `(documento_id, chunk_index)`, **no** sobre `sha256`: la ingesta hace upsert por `nombre_archivo` y salta un documento cuyo `sha256` no cambió (`rag/ingest.py`). Reejecutar la ingesta no cambia el conteo de chunks |
 | Identidad del fragmento | el `Chunk` que devuelve la tool lleva `document` = `nombre_archivo` y `content_hash` = `sha256` + `:` + `chunk_index` (D66) |
-
-Resuelto (D87): el nombre almacenado en `documentos.nombre_archivo` es el del PDF real (`resenas_tolkien.pdf`, etc.) y
-el golden set compara por prefijo (`resenas_`, o el de la saga cuando el caso la nombra).
 
 ## 4. Repositorio documental para RAG
 
@@ -261,16 +258,22 @@ el golden set compara por prefijo (`resenas_`, o el de la saga cuando el caso la
 | `politicas_universidad.pdf` | Políticas institucionales generales |
 | `resenas_cien_anios_de_soledad.pdf`, `resenas_clean_code.pdf`, `resenas_tolkien.pdf`, `resenas_empyrean.pdf` | Reseñas de libros y sagas del catálogo |
 
-Total: entre 4 y 6 PDFs (mínimo exigido: 2).
+Total: 6 PDF.
 
 ### 4.1 Pipeline de ingesta RAG
 
-1. Extracción de texto de los PDFs (`pypdf`).
-2. Chunking por cláusula/párrafo, con tope de 800 tokens y solapamiento de 150 (D10).
+1. Lectura del texto fuente: `rag/documents/*.md` (el PDF de `rag/documents/pdf/` se genera con el mismo texto,
+   `rag/build_pdfs.py`, y aporta el `sha256` de idempotencia).
+2. Chunking por sección `## ` (un fragmento por artículo o paso numerado, con el título del documento antepuesto),
+   sin tope de tokens ni solapamiento (D10).
 3. Generación de embeddings (Gemini Embeddings API).
 4. Almacenamiento en `pgvector`: un registro en `documentos` y un fragmento por fila en
    `documentos_chunks` (`embedding vector(768)`, `metadata jsonb` con la ubicación citable). Ver §3.2.1.
-5. Retrieval por similitud coseno (top-k) en tiempo de consulta.
+5. Retrieval en tiempo de consulta (R-4.4, R-4.11): los 5 fragmentos de mayor similitud de coseno son los candidatos.
+   Con `RAG_STRATEGY=rerank` (valor por defecto, D100) el modelo puntúa de 0 a 3 si cada candidato contiene la
+   respuesta y el corte usa el puntaje combinado `0.7·relevancia + 0.3·coseno normalizado ≥ RAG_RERANK_THRESHOLD`
+   (0.40); se devuelven los fragmentos con relevancia ≥ 1. Con `RAG_STRATEGY=dense`, o si la llamada de re-ranking
+   falla en esa consulta, el corte es el umbral de coseno `RAG_SIMILARITY_THRESHOLD` (0.64, D12).
 
 ## 5. Arquitectura del agente
 
@@ -301,9 +304,9 @@ con cualquier otro proveedor, validado contra el mismo vocabulario (`sql`, `rag`
 un límite de cuota (429) se reintenta con la espera que informa la API (D57).
 
 El LLM (Gemini) actúa como **orquestador**: clasifica la consulta mediante salida estructurada
-obligatoria (R-2.7), decide qué tool(s) invocar, genera el SQL y redacta la respuesta final. La
-diferencia con el diseño anterior es que **el SQL lo genera el agente, no la tool** (D1): así la tool
-puede testearse sin credenciales de API y el SQL queda atribuido al agente.
+obligatoria (R-2.7), decide qué tool(s) invocar, genera el SQL y redacta la respuesta final. **El SQL lo
+genera el agente, no la tool** (D1): así la tool puede testearse sin credenciales de API y el SQL queda
+atribuido al agente.
 
 ### 5.2 Seguridad en generación de SQL
 
@@ -314,7 +317,6 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
   - statement raíz `SELECT`/`WITH` (y operaciones de conjunto): se rechaza cualquier statement que no
     sea lectura, incluyendo `DROP`, `DELETE`, `UPDATE`, `INSERT`, `TRUNCATE`, `GRANT`, `COPY`, `CALL`,
     `EXEC` y las cláusulas de bloqueo (`FOR UPDATE`),
-  - rechazo de cláusulas de bloqueo (`FOR UPDATE`),
   - extracción de tablas y columnas contra la whitelist, con identificadores normalizados a minúsculas
     (`FROM "Libros"` no se rechaza falsamente),
   - `SELECT *` se **expande a las columnas de la whitelist** antes de ejecutar: sin esto la whitelist de
@@ -336,7 +338,10 @@ puede testearse sin credenciales de API y el SQL queda atribuido al agente.
 
 ### 5.3 Prompt engineering
 
-- Prompt de sistema con: rol del agente, esquema de la base de datos (DDL resumido), instrucciones de cuándo usar SQL vs RAG, formato de respuesta esperado.
+- Prompt de sistema con: rol del agente, el esquema generado desde la whitelist (tablas, columnas permitidas
+  y relaciones), instrucciones de uso de cada tool y del orden en los híbridos, formato de respuesta
+  esperado. La elección de la fuente no está en el prompt: la hace el clasificador antes de invocar
+  cualquier tool (D3).
 - Few-shot examples de preguntas NL → SQL para mejorar precisión del text-to-SQL.
 
 ### 5.4 Contratos de las tools
@@ -360,7 +365,7 @@ class SqlResult:
     truncated: bool           # había más filas que el límite de 50 (R-3.6)
 ```
 
-**`rag_search_tool(question: str) -> RagResult`**
+**`rag_search_tool(question: str) -> RagResult`** — en el código es `RagRetriever.retrieve(query)`
 
 ```python
 @dataclass
@@ -373,9 +378,9 @@ class RagResult:
 class Chunk:
     id: int
     document: str            # nombre del PDF de origen
-    location: str            # página o sección
+    location: str            # `metadata`: sección, ubicación o página; si no hay nada, "fragmento N" (R-4.7)
     text: str
-    content_hash: str        # sha256(contenido), unique para idempotencia (D11)
+    content_hash: str        # `sha256` del documento + `chunk_index`; estable entre corridas (D11)
     similarity: float
 ```
 
@@ -387,10 +392,13 @@ class AgentAnswer:
     question: str
     classification: str      # sql | rag | hybrid | none
     sources: list[str]       # fuentes efectivamente usadas
-    answer: str              # texto sin línea de fuente: la fuente va en `sources` (R-5.2, D84)
-    evidence: dict           # sql, rows, truncated, chunks, language, model, sql_attempts, sql_errors, error
+    answer: str              # texto de la respuesta; la fuente se declara en `sources` (R-5.2, D84)
+    evidence: dict           # model (id, endpoint), language, sql, sql_original, rows, truncated, attempts,
+                             # chunks, sql_attempts, sql_errors, error (code, detail), write_request,
+                             # inconsistency, run_recording_error
     run_id: int | None       # fila en agent_runs; None si el registro falló o está desactivado (R-6.6)
-    answer_kind: str         # answer | no_coverage | error
+    answer_kind: str         # answer | no_coverage | error | greeting
+    title: str | None        # frase corta de un mensaje fijo de ausencia o error (R-5.9, D96); None en una respuesta normal
     trace: list[str]         # eventos en orden: "classification" primero (D3)
 
 # Punto de entrada. `on_event(nombre, datos)` recibe el progreso a medida que ocurre y `cancel`
@@ -408,12 +416,13 @@ declare explícitamente la ausencia de información.
 El agente se consulta **solo** por HTTP (D80, capacidad `consulta-por-api`). La interfaz gráfica
 (`web/`, D93) es un cliente de esta API en su propio servicio: se ocupa de presentar la respuesta, la
 evidencia y el historial. En Docker llega por un proxy del mismo origen; un frontend en otro origen (por
-ejemplo `npm run dev`) necesita `API_ALLOWED_ORIGINS` (tarea 9.12).
+ejemplo `npm run dev`) necesita `API_ALLOWED_ORIGINS`.
 
 ### 6.1 Contrato HTTP
 
 `uvicorn api.app:app --port 8000`. `POST /ask` con `{"question": "..."}` responde `text/event-stream`;
-`GET /health` responde `{"status":"ok"}`. Una consulta vacía devuelve 422 sin abrir el stream (R-1.2,
+`GET /health` responde `{"status":"ok"}`. Ambos con `200`. No hay longitud máxima en el cuerpo: se valida
+solo que la consulta no esté vacía, y en ese caso `POST /ask` devuelve `422` sin abrir el stream (R-1.2,
 R-7.4).
 
 `answer()` es bloqueante y no emite tokens: lo que se transmite es el progreso real del agente.
@@ -423,38 +432,41 @@ R-7.4).
 | `start` | `question` |
 | `classified` | `classification`, `language` |
 | `tool_call` | `tool`, `sql` o `query` |
-| `tool_result` | `tool`, `ok`, `rows` o `chunks`, `error` |
+| `tool_result` | `tool`, `ok`, `rows` o `chunks`, `error`, `detail` (solo en `execute_sql`) |
 | `step` | `step`, `duration_s`, `input_tokens`, `output_tokens`, `tools` (callbacks de smolagents) |
 | `composing` | — |
 | `heartbeat` | `elapsed_s`, cada 5 s sin eventos |
 | `result` | el `AgentAnswer` completo |
 | `error` | `detail` |
 
-**Cancelación (R-7.5, R-6.7, D76):** si el cliente cierra la conexión, se activa un `threading.Event` y el agente se detiene antes del siguiente paso (`interrupt()` de smolagents). Una llamada al modelo en vuelo termina. La consulta cancelada no se registra en `agent_runs` y no emite `result`.
+**Cancelación (R-7.5, R-6.7, D76):** si el cliente cierra la conexión, se activa un `threading.Event` y el agente se detiene antes del siguiente paso (`interrupt()` de smolagents); una llamada al modelo que ya está en vuelo se completa (D76). La consulta cancelada no se registra en `agent_runs` y no emite `result`.
 
 **Cómo debe consumirlo el frontend** (a partir del evento `result`, que es un `AgentAnswer`):
 
-- `answer`: texto final, sin línea de fuente (D84): mostrar la fuente a partir de `sources` y no del texto.
-- `answer_kind`: `answer`, `no_coverage` o `error`; conviene mostrarlos distinto.
+- `answer`: texto final (D84): mostrar la fuente a partir de `sources` y de `evidence`.
+- `answer_kind`: `answer`, `no_coverage`, `error` o `greeting` (bienvenida a un saludo, sin fuentes ni evidencia); conviene mostrarlos distinto.
 - `sources`: `sql`, `rag` o ambas; vacío cuando se declara ausencia de información o un error.
-- `evidence`: `sql` (sentencia ejecutada), `rows`, `truncated`, `chunks` (cada uno con `document`,
-  `location`, `text`, `similarity`), `language`, `model`, `sql_attempts`, `sql_errors`, `error` y, si
-  falló el registro, `run_recording_error`.
+- `title`: `null` en una respuesta normal; frase corta en los mensajes fijos de ausencia o error (R-5.9).
+- `evidence`: `sql` (sentencia ejecutada), `rows`, `truncated`, `chunks` (cada uno con `id`, `document`,
+  `location`, `text`, `similarity`, `content_hash`), `language`, `model` (`id` y `endpoint`), `sql_attempts`,
+  `sql_errors`, `error` (`code` y `detail`) y, si falló el registro, `run_recording_error`. En un híbrido
+  puede venir `inconsistency` (clasificación declarada vs fuentes realmente invocadas, R-2.7); cuando la
+  consulta pedía escribir, `write_request` (R-2.9, Art. 3).
 - `run_id`: puede ser `null` (registro desactivado o fallido, R-6.6).
 - El historial lo conserva el frontend; el agente es de un solo turno y recibe solo la consulta actual
   (R-7.0, D17).
 - Una consulta tarda de 3 a 170 s según la cuota: el frontend necesita un indicador de espera y tolerar
   los eventos `heartbeat`.
 
-**Llamada directa (uso interno):** `from agent.agent import answer, EmptyQuestionError`. La usan el golden
-set (`scripts/measure_golden.py`) y los tests; no es un punto de acceso para clientes. Una consulta vacía
-lanza `EmptyQuestionError`.
+**Llamada directa (uso interno):** `from agent.agent import answer, EmptyQuestionError`. La usan la API y
+`scripts/ask.py`; el golden set (`scripts/measure_golden.py`) y los tests construyen un `LibraryAgent` con
+backends inyectados. No es un punto de acceso para clientes. Una consulta vacía lanza `EmptyQuestionError`.
 
 **Concurrencia (R-1.3, D77):** el agente guarda una sola conexión por backend; `LibraryAgent.answer()`
 serializa las consultas con un `threading.Lock`, por lo que dos sesiones simultáneas se atienden una detrás
 de otra y la segunda espera la latencia completa de la primera.
 
-**Requisitos y decisiones:** el contrato HTTP está en la capacidad `consulta-por-api` (R-7.0 a R-7.8); las decisiones, en D75 a D83. Las pruebas están en `tests/test_api.py` y `tests/test_api_cors.py`, y se listan en `TP/05` §7.
+**Requisitos y decisiones:** el contrato HTTP está en la capacidad `consulta-por-api` (R-7.0 a R-7.8); las decisiones, en D75 a D82. Las pruebas están en `tests/test_api.py` y `tests/test_api_cors.py`, y se listan en `TP/05` §7.
 
 **Garantías del flujo:**
 
@@ -463,14 +475,14 @@ de otra y la segunda espera la latencia completa de la primera.
 - Una excepción inesperada produce `error` y cierra el flujo sin `result` (R-7.6).
 - Fechas y valores decimales de las filas se serializan como texto.
 
-**Qué no hay:** streaming de tokens del modelo (D75) ni autenticación (D81, D82). El CORS está implementado: los orígenes del frontend se declaran en `API_ALLOWED_ORIGINS` (R-7.8, D82); lo pendiente es la llamada desde el frontend real (9.12). El procedimiento de integración está en §6.2. Con la ejecución local (D81) el servicio no queda expuesto; exponerlo públicamente exigiría un control de acceso como condición previa, porque un endpoint público consume la cuota de la API del modelo.
+**Qué no hay:** streaming de tokens del modelo (D75) ni autenticación (D81, D82). El CORS está implementado: los orígenes del frontend se declaran en `API_ALLOWED_ORIGINS` (R-7.8, D82). El procedimiento de integración está en §6.2. Con la ejecución local (D81) el servicio no queda expuesto; exponerlo públicamente exigiría un control de acceso como condición previa, porque un endpoint público consume la cuota de la API del modelo.
 
 **Despliegue:** la imagen `runtime` sirve la API con `uvicorn` en `$PORT` (8080 por defecto, D80); no hay otro proceso en la imagen.
 
 ### 6.2 Integración del frontend: CORS y origen
 
 Lugar canónico del procedimiento de acceso del frontend. El requisito es R-7.8 y la decisión D82; acá no se
-repite su texto, solo cómo se aplica. Comprobado contra `uvicorn` local y `tests/test_api_cors.py` (2026-10-13).
+repite su texto, solo cómo se aplica. Verificado con `tests/test_api_cors.py` (casos O1–O7 de `TP/05` §7).
 
 | Situación | Hace falta declarar el origen |
 | --- | --- |
@@ -499,8 +511,8 @@ petición simple: siempre dispara preflight. Una petición simple (GET sin ese h
 `Access-Control-Allow-Origin`. Un origen no declarado recibe 400 en el preflight; en una petición simple la
 respuesta llega normal (200) pero sin el header, y el navegador impide leerla. No es un bug del servidor.
 
-**Comprobación mínima sin el frontend** (corrida real, 2026-10-13, `uvicorn` en `127.0.0.1:8000` con
-`API_ALLOWED_ORIGINS=http://localhost:5173`):
+**Comprobación mínima sin el frontend**, con `uvicorn` en `127.0.0.1:8000` y
+`API_ALLOWED_ORIGINS=http://localhost:5173`:
 
 ```bash
 curl -s -i -X OPTIONS http://127.0.0.1:8000/ask \
@@ -511,10 +523,6 @@ Salida: `200` con `access-control-allow-origin: http://localhost:5173`. Con un o
 (`Disallowed CORS origin`) y sin ese header.
 
 **Sin autenticación** (D81, D82): el servicio se ejecuta en entorno local.
-
-**Pendiente (9.12):** falta la llamada real desde el frontend. La cierra una corrida desde el frontend con su
-origen declarado que muestre el preflight 200 con el header y el rechazo de un origen no declarado, registrada
-en `TP/05`.
 
 ## 7. Despliegue
 
@@ -528,59 +536,61 @@ local.
 - La imagen `runtime` no incluye interfaz gráfica (D80); la SPA corre en el servicio `web` (D93). La etapa `measure` agrega
   los scripts de medición y no forma parte del servicio.
 
-**Alternativa no ejecutada (D81):** Cloud Run para el servicio y Cloud SQL (PostgreSQL con pgvector) para la
-base.
-
 ## 8. Estructura de repositorio
 
-Estado real, verificada con `git ls-files`. Lo marcado *pendiente* no existe todavía.
+Estado real, verificada con `git ls-files`.
 
 ```
-pipidu-library-agent/
+tp-topicos-g2-pipidu-library-agent/
 ├── README.md
 ├── requirements.txt              # dependencias de ejecución
-├── requirements-dev.txt          # pytest, faker, ruff
+├── requirements-dev.txt          # pytest, ruff
 ├── pyproject.toml                # configuración de ruff
 ├── pytest.ini                    # marcadores `integration` y `llm` (D34)
 ├── .env.example
-├── docker/Dockerfile             # etapas base, measure, runtime (D74)
-├── docker-compose.yml            # Postgres + pgvector local
+├── .dockerignore, .gitattributes, .gitignore
+├── docker/Dockerfile             # etapas base, measure, local y runtime (D74, D91)
+├── docker/Dockerfile.web         # SPA compilada y servida con nginx (D93)
+├── docker/nginx.conf             # SPA con fallback y proxy de /api/ a la API, sin buffering (D93)
+├── docker-compose.yml            # db (Postgres + pgvector), ingest, api y web; perfil `tools`: agent
 ├── db/
 │   ├── schema.sql                # 7 tablas del dominio + documentos(+chunks) + vista v_prestamos_estado
 │   ├── migrations/               # 001_agent_runs.sql (trazabilidad, R-6.x)
 │   ├── init/                     # roles agent_ro / agent_logger y orden de inicialización (Docker)
 │   ├── post_restore.sql          # permisos de agent_ro tras crear o restaurar el esquema
-│   ├── dev_seed.sql              # datos de desarrollo (no es el seed entregable)
-│   ├── seed_data.py              # pendiente (T2.4)
-│   └── dump.sql                  # pendiente (T2.8)
+│   ├── seed.sql                  # catálogo completo: lo carga `docker compose up` (DEV_SEED=full, D91)
+│   └── dev_seed.sql              # seed mínimo de pruebas (DEV_SEED=1)
 ├── rag/
-│   ├── documents/                # PDFs fuente (pendiente, T3.1)
-│   ├── chunking.py               # pendiente (T3.2)
-│   └── ingest.py                 # pendiente (T3.3)
+│   ├── documents/                # fuente .md y pdf/ (6 documentos)
+│   ├── build_pdfs.py             # genera los PDF desde los .md
+│   ├── ingest.py                 # ingesta a documentos y documentos_chunks (chunking por sección incluido)
+│   └── requirements.txt          # fpdf2: solo para build_pdfs.py
 ├── agent/
 │   ├── agent.py                  # orquestador: ToolCallingAgent (D2), eventos y cancelación (D75, D76), lock (D77)
 │   ├── classifier.py             # clasificación con salida estructurada (D3)
 │   ├── retry.py                  # reintento ante 429 (D57)
 │   ├── runs.py                   # registro en agent_runs (R-6.x, D67)
 │   ├── contracts.py              # SqlResult, Chunk, RagResult, AgentAnswer
-│   ├── errors.py                 # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, COLUMN_NOT_ALLOWED, FUNCTION_NOT_ALLOWED, TIMEOUT, EXECUTION_ERROR
+│   ├── errors.py                 # SQL_NOT_READONLY, TABLE_NOT_ALLOWED, COLUMN_NOT_ALLOWED, FUNCTION_NOT_ALLOWED, QUERY_TOO_COMPLEX, TIMEOUT, EXECUTION_ERROR, NO_RELEVANT_RESULTS, RETRIEVAL_ERROR
 │   ├── sql_validator.py          # validación estática con sqlglot (D4)
 │   ├── config/                   # Config desde entorno (D6, D12, D15) + schema_whitelist.py (R-3.4)
 │   ├── prompts/                  # system_prompt.md, classifier_prompt.md
-│   └── tools/                    # sql_tool.py (execute_sql, D1), rag_tool.py, smol_tools.py
+│   └── tools/                    # sql_tool.py (execute_sql, D1), rag_tool.py, reranker.py (D100), smol_tools.py
 ├── api/
 │   ├── __init__.py
 │   └── app.py                    # FastAPI: POST /ask (SSE), GET /health; único acceso al agente (D75, D80)
 ├── web/                          # SPA Vite + shadcn/ui: cliente de la API (D93)
-├── scripts/                      # measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, probe_llm.py, replicate_neon.sh
-├── TP/                           # artefactos SDD legibles para la entrega
-├── informe/                      # pendiente (T9.5)
+├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, evaluate_retrieval.py, measure_retrieval.py, probe_llm.py
+├── openspec/                     # cambios con specs, design y tasks; `project.md`, `config.yaml`
+├── TP/                           # versión legible de los artefactos SDD
+├── informe/                      # informe técnico (informe-tecnico.md y su PDF)
 └── tests/
     ├── golden_set.py             # fixtures compartidas (D16)
+    ├── calibration_set.py, validation_set.py   # consultas etiquetadas del RAG (D97, D99)
     ├── fakes.py, rag_fixture.py, conftest.py
     ├── test_sql_validator.py y test_sql_validator_hardening.py (casos S1–S35)
     ├── test_sql_tool.py, test_sql_tool_offline.py
-    ├── test_rag_tool.py, test_rag_fixture.py
+    ├── test_rag_tool.py, test_rag_fixture.py, test_rerank_retrieval.py
     ├── test_golden_set.py, test_golden_seed.py, test_seed_contract.py
     ├── test_agent.py, test_agent_smolagents.py, test_classifier.py, test_retry.py
     ├── test_contracts.py, test_prompts.py, test_config.py, test_schema_whitelist.py
@@ -590,25 +600,45 @@ pipidu-library-agent/
 
 ## 9. Plan de pruebas
 
-- Unit tests sobre `sql_tool` (validación de sanitización, ejecución correcta de queries conocidas).
-- Unit tests sobre `rag_tool` (retrieval devuelve chunks esperados para preguntas de prueba).
-- Casos de prueba end-to-end: set de preguntas de ejemplo (SQL puras, RAG puras, mixtas) con respuesta esperada, documentadas en el informe técnico como evidencia.
-- Tests de la API (`tests/test_api.py`) sin modelo ni base: un doble de `answer()` sobre `TestClient`. El mapeo requisito → test está en `TP/05` §7.
+Corren sin base, sin API y sin `smolagents` (Art. 6); lo marcado `integration` o `llm` se deselecciona por
+defecto (`pytest.ini`, D34). Los casos y los criterios de aceptación están en `TP/05` §1 y §2; acá solo qué
+prueba cada archivo.
 
-## 10. Metodología SDD (artefactos a entregar)
+- Validación estática de SQL: `tests/test_sql_validator.py` (los casos S de `TP/05` §2) y
+  `tests/test_sql_validator_hardening.py` (regresión de la auditoría del 2026-10-10, D38–D44, que cubre
+  S23–S33).
+- `execute_sql`: `tests/test_sql_tool_offline.py` (sanitización, límite de filas, regeneración, sin base ni
+  credenciales) y `tests/test_sql_tool.py` (ejecución correcta de queries conocidas con el rol `agent_ro`,
+  `integration`).
+- `rag_tool`: `tests/test_rag_tool.py` (top-k, umbral y no-relevancia con el embedder y el store como dobles),
+  `tests/test_rerank_retrieval.py` (re-ranking, corte combinado y vuelta al coseno si la llamada falla, D100)
+  y `tests/test_rag_fixture.py` (el corpus simulado responde a las preguntas del golden set; no mide
+  semántica, D16).
+- Calibración y evaluación del RAG (D97–D100): `tests/calibration_set.py` y `tests/validation_set.py` (consultas
+  etiquetadas, verificables sin red ni base por `tests/test_calibration_set.py` y `tests/test_validation_set.py`),
+  `tests/test_calibrate_threshold.py`, `tests/test_evaluate_retrieval.py` y `tests/test_measure_retrieval.py`.
+- Golden set: `tests/golden_set.py` (fixtures compartidas, D16) y `tests/test_golden_set.py` (SQL puras, RAG
+  puras, mixtas y no-cobertura, G1–G13); `tests/test_golden_seed.py` verifica que el seed contenga las
+  entidades que las preguntas nombran (`integration`). La evidencia de las corridas medidas va en
+  `TP/evidencia/`.
+- Orquestador, contratos y configuración: `tests/test_agent.py`, `tests/test_agent_smolagents.py`,
+  `tests/test_classifier.py`, `tests/test_contracts.py`, `tests/test_prompts.py`, `tests/test_config.py`,
+  `tests/test_schema_whitelist.py`, `tests/test_seed_contract.py`, `tests/test_retry.py`.
+- Trazabilidad: `tests/test_runs.py` y `tests/test_export_runs.py` (offline) y `tests/test_runs_integration.py`
+  (`integration`).
+- API: `tests/test_api.py` (contrato SSE con un doble de `answer()` sobre `TestClient`) y
+  `tests/test_api_cors.py` (orígenes que reciben `Access-Control-Allow-Origin` y los que no, D82). El mapeo
+  requisito → test está en `TP/05` §7.
+- Imagen: `tests/test_dockerfile.py` (chequeos estáticos, sin construir la imagen).
+- Smoke con el modelo real: `tests/test_llm_smoke.py` (`llm`, deseleccionado por defecto).
 
-1. Este documento + `01-especificacion-funcional.md` (versión inicial, previa a implementación)
-2. Actualizaciones incrementales de ambos documentos a medida que se tomen decisiones de diseño durante el desarrollo
-3. Changelog informal de decisiones relevantes (al final de cada documento o en un `CHANGELOG.md` dentro de `TP/`)
+## 10. Metodología SDD
 
-## 11. Pendientes técnicos (cerrados el 2026-10-10)
+Los artefactos del desarrollo son:
 
-Los cuatro pendientes originales se cerraron en `CHANGELOG.md`:
-
-- Capa de acceso a datos: **psycopg2 directo** (D9).
-- Estrategia de chunking: **por cláusula, tope 800 tokens / 150 de solapamiento** (D10).
-- Memoria conversacional: **single-turn**, historial solo visual (D17).
-- Despliegue: **entorno local** (Docker + `uvicorn`), D81, que reemplaza D18 para la parte del servicio. La base de trabajo es la local de Docker; el uso de Neon para los datos compartidos del equipo queda opcional en 9.7 (9.6 descartada por D81).
-
-Queda un pendiente numérico, no conceptual: el umbral de similitud definitivo (D12), que se cierra con
-la medición de T3.6.
+1. Este documento y `01-especificacion-funcional.md`, que se actualizan a medida que se toman decisiones de diseño.
+2. `00-constitucion.md`, con los principios que gobiernan el desarrollo.
+3. `openspec/changes/*/specs/`, con los requisitos y escenarios verificables, y `openspec/changes/*/tasks.md`, con
+   las tareas y su estado.
+4. `CHANGELOG.md`, con las decisiones vigentes, fechadas y con su motivo.
+5. `05-validacion.md` y `evidencia/`, con los casos de prueba y las corridas medidas.

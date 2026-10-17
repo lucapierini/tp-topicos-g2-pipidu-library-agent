@@ -1,6 +1,6 @@
 """Hace una pregunta al agente real (Gemini + base + RAG) y muestra la respuesta con su evidencia.
 
-Sirve para probar la infraestructura de punta a punta mientras no existe la UI (tarea 8.1):
+Sirve para probar la infraestructura de punta a punta sin pasar por la interfaz web (el servicio `web`, D93):
 
     python scripts/ask.py "¿Cuántos días puedo tener un libro prestado siendo alumno?"
     docker compose run --rm agent "¿Qué libros de Borges hay?"

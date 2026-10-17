@@ -1,7 +1,7 @@
 """Golden set como fixtures compartidas (T9.1, D16).
 
-Se define **antes** de implementar el agente, para que los dos integrantes codeen
-contra la misma definición de "terminado".
+Es la definición compartida de "terminado" para el agente: los tests y
+scripts/measure_golden.py la usan.
 
 Las afirmaciones van sobre **clasificación, SQL y filas**, nunca sobre la prosa
 generada por el modelo. La prosa se valida con la rúbrica manual de 3 criterios
@@ -15,15 +15,14 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 
-# Entidades que el seed (`db/seed_data.py`, T2.x) debe contener para que las preguntas
-# tengan respuesta. Eran placeholders literales (`X`, "el libro X") que ninguna base satisface.
+# Entidades que el seed (`db/seed.sql`) contiene para que las preguntas tengan respuesta.
 # `tests/test_golden_seed.py` verifica que existan cuando haya base.
 SEED_ENTITIES = {
     "socio_nombre": "Juan",
     "socio_apellido": "Pérez",
     "categoria": "Ciencias de la Computación",
     "editorial": "Sudamericana",
-    "libro_con_resena": "Cien años de soledad",   # tiene reseña en `resenas_libro_*.pdf`
+    "libro_con_resena": "Cien años de soledad",   # tiene reseña en `resenas_cien_anios_de_soledad.pdf`
     "libro_sin_precio": "Rayuela",                 # el modelo de datos no registra precios (G13)
 }
 SOCIO = f"{SEED_ENTITIES['socio_nombre']} {SEED_ENTITIES['socio_apellido']}"
@@ -62,7 +61,7 @@ def _both_sources(out: dict) -> bool:
 
     Las filas pueden ser 0: "sin resultados" es una respuesta válida (R-3.8) y, en un híbrido, la
     última sentencia suele ser una verificación (p. ej. "¿tiene vencidos?") cuya respuesta correcta es
-    vacía. Exigir filas daba por fallida a G11 aun con la respuesta correcta.
+    vacía. Exigir filas rechazaría a G11 aun con la respuesta correcta.
     """
     return {"sql", "rag"} <= set(out.get("sources", [])) and bool(out.get("sql")) and bool(out.get("chunks"))
 
@@ -101,7 +100,7 @@ def _all(*checks: Callable[[dict], bool]) -> Callable[[dict], bool]:
 
 
 GOLDEN_SET: list[GoldenCase] = [
-    # --- SQL (criterio de aprobación 2) ---
+    # --- SQL ---
     GoldenCase("G1", f"¿Qué libros tiene prestados el socio {SOCIO}?", "sql", _min_rows(1),
                "lista de títulos con fecha de préstamo"),
     GoldenCase("G2", "¿Cuáles son los 5 libros más prestados este cuatrimestre?", "sql", _min_rows(1),
@@ -113,7 +112,7 @@ GOLDEN_SET: list[GoldenCase] = [
     GoldenCase("G5", f"¿Qué autor tiene más libros publicados por la editorial {SEED_ENTITIES['editorial']}?",
                "sql", _min_rows(1), "autor + cantidad"),
 
-    # --- RAG (criterio de aprobación 3) ---
+    # --- RAG ---
     GoldenCase("G6", "¿Cuántos días tengo para devolver un libro antes de que me multen?", "rag",
                _document("reglamento_biblioteca"), "plazo exacto citado"),
     GoldenCase("G7", f'¿De qué trata el libro "{SEED_ENTITIES["libro_con_resena"]}"?', "rag",
@@ -137,7 +136,7 @@ GOLDEN_SET: list[GoldenCase] = [
                "declara ausencia de información (Art. 4)"),
 ]
 
-# Casos en inglés (R-5.1, T7.6). El enunciado pide "castellano o inglés" y los 13 casos de arriba están
+# Casos en inglés (R-5.1, T7.6). El agente responde en castellano o en inglés y los 13 casos de arriba están
 # en castellano. Van aparte para no cambiar el denominador del criterio ≥ 11/13 (R-2.1).
 BILINGUAL_SET: list[GoldenCase] = [
     GoldenCase("B1", f"Which books does {SOCIO} currently have on loan?", "sql",
@@ -177,4 +176,3 @@ CALIBRATION_EXTRA: list[GoldenCase] = [
 ]
 
 ACCEPTANCE_MIN = 11  # ≥ 11/13 (R-2.1)
-ACCENT = ACCEPTANCE_MIN  # alias del nombre anterior

@@ -59,7 +59,7 @@ def test_clasificacion_estructurada_devuelve_el_enum() -> None:
 
 
 def test_embedding_con_768_dimensiones() -> None:
-    # D5: define vector(768) en documentos_embeddings.
+    # D5: la columna documentos_chunks.embedding es vector(768).
     cfg = load_config()
     c = client()
     e = c.models.embed_content(

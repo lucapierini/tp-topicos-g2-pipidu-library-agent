@@ -51,14 +51,13 @@ El agente SHALL clasificar la consulta como `none` cuando ninguna fuente contien
 
 #### Scenario: consulta sin cobertura
 - **GIVEN** una base de datos y un repositorio documental sin información sobre el tema
-- **WHEN** el usuario pregunta "¿Cuál es el precio del libro X?"
+- **WHEN** el usuario pregunta "¿Cuál es el precio del libro Rayuela?"
 - **THEN** el agente declara que no dispone de información suficiente
 - **AND** no inventa una respuesta
 - **AND** el resultado declara `sources` vacío
 
 ### Requirement: R-2.6 — Declaración de fuente en el resultado
-El agente SHALL declarar en el resultado la fuente o fuentes utilizadas, en un campo estructurado y no
-en el texto de la respuesta (R-5.2).
+El agente SHALL declarar en el resultado la fuente o fuentes utilizadas, en un campo estructurado (R-5.2).
 
 #### Scenario: fuente visible
 - **WHEN** el agente entrega una respuesta
@@ -109,7 +108,7 @@ El agente SHALL rechazar con un mensaje fijo, sin invocar al modelo de respuesta
 ### Requirement: R-2.8 — Proveedor del modelo configurable
 El sistema SHALL permitir cambiar el proveedor del modelo (clasificación y loop de herramientas) por
 configuración, sin cambios de código: un servidor local compatible con la API de OpenAI durante el
-desarrollo y Gemini mediante API key para la aceptación y para ejecutar el sistema (D81). El flujo
+desarrollo y Gemini mediante API key para la aceptación y para ejecutar el sistema (D56). El flujo
 (clasificación previa, herramientas expuestas por fuente, límites de intentos y pasos, composición de la respuesta) SHALL ser el
 mismo con cualquier proveedor.
 

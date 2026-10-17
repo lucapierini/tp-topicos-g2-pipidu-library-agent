@@ -1,6 +1,6 @@
 """Contratos entre herramientas, orquestador e interfaz (T4.5, T5.2, T7.1).
 
-Son la interfaz con el resto del equipo: se congelan acá y no se duplican en el frontend externo (la API).
+Son la interfaz con el resto del equipo y con la API: se definen acá y no se duplican.
 Traza a `TP/02-especificacion-tecnica.md` §5.4 y al Art. 4 de la constitución.
 
 Forma de `AgentAnswer.evidence` (D52):
@@ -21,9 +21,10 @@ CLASSIFICATIONS = {"sql", "rag", "hybrid", "none"}
 ANSWER_KIND_ANSWER = "answer"
 ANSWER_KIND_NO_COVERAGE = "no_coverage"  # ninguna fuente tiene información suficiente (R-2.5, R-4.6)
 ANSWER_KIND_ERROR = "error"              # una herramienta o el modelo fallaron (R-5.7)
+ANSWER_KIND_GREETING = "greeting"        # la consulta es solo un saludo: bienvenida fija, sin fuentes
 
-# Respaldo para respuestas que no traen `answer_kind`. El camino principal es el campo
-# estructural: una regex sobre prosa libre es frágil.
+# Respaldo para una respuesta `none` con `answer_kind` `answer`: acepta que la prosa declare la
+# ausencia. El camino principal es el campo estructural.
 NO_INFORMATION_PATTERNS = (
     r"no (se )?(encontr|dispon|encuentra)",
     r"no (hay|existe|cuento con) ",
@@ -131,7 +132,7 @@ class AgentAnswer:
 
         # Una respuesta que declara ausencia de información o un error no necesita fuentes ni
         # evidencia: precisamente declara que no las hay (Art. 4, R-5.7).
-        declared_gap = self.answer_kind in (ANSWER_KIND_NO_COVERAGE, ANSWER_KIND_ERROR)
+        declared_gap = self.answer_kind in (ANSWER_KIND_NO_COVERAGE, ANSWER_KIND_ERROR, ANSWER_KIND_GREETING)
 
         if self.classification == "none":
             if self.sources:

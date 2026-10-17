@@ -1,8 +1,8 @@
 """Calibra el umbral de similitud con los documentos reales (T3.6, R-4.8, D12, D97).
 
-El 0.35 inicial era una **hipótesis**. Este script mide, contra los PDFs ya indexados, la similitud máxima de
-~120 consultas etiquetadas (`tests/calibration_set.py` + los casos del golden set) y deja el umbral como una
-decisión con números, no con el mejor y el peor caso:
+Este script mide, contra los PDFs ya indexados, la similitud máxima de ~120 consultas etiquetadas
+(`tests/calibration_set.py` + los casos del golden set) y deja el umbral como una decisión con números, no con
+el mejor y el peor caso:
 
 - **Barrido**: para cada umbral, cuántas consultas cubiertas se aceptan (recall) y cuántas sin cobertura se
   dejan pasar (falsos positivos), con precisión y F1.

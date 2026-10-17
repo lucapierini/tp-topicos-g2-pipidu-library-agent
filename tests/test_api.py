@@ -152,8 +152,7 @@ def test_heartbeats_are_sent_while_the_agent_is_silent(client, monkeypatch) -> N
 
 
 def test_the_result_is_not_delayed_by_the_heartbeat_interval(monkeypatch) -> None:
-    # Regresión: el bucle esperaba el próximo evento y, al terminar el agente sin emitir nada más, el
-    # `result` salía recién al vencer el latido (hasta HEARTBEAT_S de retraso en cada consulta).
+    # Regresión: el `result` sale sin esperar al latido.
     def instant(question, on_event=None, cancel=None):
         on_event("composing", {})
         return _answer(question)
@@ -207,8 +206,7 @@ def test_a_cancelled_answer_does_not_emit_a_result(monkeypatch) -> None:
 
 
 def test_a_cancelled_answer_after_the_client_left_leaves_no_unretrieved_exception(monkeypatch) -> None:
-    # R-7.5: cortar la conexión no debe dejar la excepción de cancelación sin recuperar: asyncio la
-    # registra al recolectar la tarea y ese registro llegó a dejar la API sin responder.
+    # R-7.5: cortar la conexión no deja la excepción de cancelación sin recuperar.
     def waits_for_cancel(question, on_event=None, cancel=None):
         on_event("classified", {"classification": "sql", "language": "es"})
         cancel.wait(timeout=5)
@@ -234,7 +232,7 @@ def test_a_cancelled_answer_after_the_client_left_leaves_no_unretrieved_exceptio
 
 
 def test_the_loop_exception_handler_reports_without_going_through_logging(capsys) -> None:
-    # El registro por `logging` rompía dentro del filtro de litellm y ocultaba el error real.
+    # El registro va a stderr: `logging` rompe dentro del filtro de litellm y oculta el error real.
     loop = asyncio.new_event_loop()
     try:
         api_app._report_loop_exception(loop, {"message": "Task exception was never retrieved", "exception": ValueError("boom")})
@@ -252,8 +250,8 @@ def test_the_app_installs_the_loop_exception_handler_on_startup() -> None:
 
 
 def test_litellm_is_loaded_before_the_first_request() -> None:
-    # La primera consulta importaba litellm en el hilo del agente mientras el hilo del servidor registraba el
-    # acceso: el filtro de logging de litellm fallaba con `KeyError: 'litellm'` y la respuesta no llegaba.
+    # litellm se precarga antes de la primera consulta: el filtro de logging de litellm exige el módulo
+    # importado y la respuesta no llegaría.
     pytest.importorskip("litellm")
     import sys
 

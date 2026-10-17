@@ -37,7 +37,7 @@ eventos que SHALL terminar con un evento `result` que contiene la respuesta comp
 #### Scenario: consulta resuelta
 - **GIVEN** una consulta válida en lenguaje natural
 - **WHEN** el cliente la envía a `POST /ask`
-- **THEN** la respuesta es un flujo de eventos
+- **THEN** la respuesta es 200 con `text/event-stream` y un flujo de eventos
 - **AND** el primer evento es `start`
 - **AND** el último evento es `result` con `answer`, `answer_kind`, `sources`, `evidence` y `run_id`
 
@@ -116,20 +116,37 @@ a la base.
 
 ### Requirement: R-7.8 — Orígenes permitidos (CORS)
 El sistema SHALL aceptar las llamadas del frontend únicamente desde los orígenes declarados en
-`API_ALLOWED_ORIGINS`. Un origen no declarado SHALL NO recibir `Access-Control-Allow-Origin` y su
-preflight SHALL ser rechazado. El sistema SHALL NO usar un wildcard `*`. El acceso no requiere
-autenticación: el servicio corre en entorno local (D81).
+`API_ALLOWED_ORIGINS`, con comparación exacta y sin wildcard `*`. Un origen no declarado SHALL NO recibir
+`Access-Control-Allow-Origin` y su preflight SHALL ser rechazado con 400. El acceso no requiere
+autenticación ni credenciales: el servicio corre en entorno local (D81).
 
 #### Scenario: origen permitido
 - **GIVEN** un origen declarado en `API_ALLOWED_ORIGINS`
 - **WHEN** el navegador envía un preflight `OPTIONS` a `POST /ask`
 - **THEN** la respuesta es 200
 - **AND** `Access-Control-Allow-Origin` es ese origen
+- **AND** `Access-Control-Allow-Methods` declara `POST` y `OPTIONS`
+
+#### Scenario: método no permitido
+- **GIVEN** un origen declarado en `API_ALLOWED_ORIGINS`
+- **WHEN** el navegador envía un preflight con `Access-Control-Request-Method: GET`
+- **THEN** la respuesta es 400
+
+#### Scenario: cabeceras del preflight
+- **GIVEN** un origen declarado en `API_ALLOWED_ORIGINS`
+- **WHEN** un preflight pide la cabecera `Content-Type`
+- **THEN** la respuesta es 200
+- **AND** un preflight que pide una cabecera fuera de las permitidas es rechazado con 400
+
+#### Scenario: cliente del mismo origen
+- **GIVEN** la SPA servida por nginx que reenvía las llamadas a la API desde el mismo origen (D93)
+- **WHEN** consulta al agente
+- **THEN** la llamada no necesita `Access-Control-Allow-Origin` y no depende de `API_ALLOWED_ORIGINS`
 
 #### Scenario: origen no declarado
 - **GIVEN** un origen que no está en `API_ALLOWED_ORIGINS`
 - **WHEN** envía un preflight
-- **THEN** es rechazado
+- **THEN** es rechazado con 400
 - **AND** la respuesta no incluye `Access-Control-Allow-Origin`
 
 #### Scenario: sin orígenes configurados

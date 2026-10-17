@@ -4,8 +4,6 @@
 > las tareas no pueden contradecirla. No se modifican durante la implementación; cualquier cambio
 > requiere acuerdo del grupo y queda registrado en `CHANGELOG.md`.
 >
-> **Versión:** 1.0 · **Fecha:** 2026-10-08
-> Art. 8 y 9 alineados con la ejecución local (D81, 2026-10-13).
 
 ---
 
@@ -29,22 +27,22 @@ El agente **nunca** escribe en la base de datos. Defensa en profundidad en tres 
 
 1. Prompt de sistema restringido a `SELECT`.
 2. Validación estática en código (whitelist de tablas/columnas, rechazo de DML/DDL, `;`, comentarios, `COPY`, `CALL`).
-3. Rol `readonly` a nivel de PostgreSQL + timeout de ejecución.
+3. Rol `agent_ro` de solo lectura a nivel de PostgreSQL + timeout de ejecución.
 
 Si una de las tres capas se elimina, el Art. 3 se considera violado.
 
 ## Art. 4 — Provenencia obligatoria de la respuesta
 
 Toda respuesta del agente declara la fuente utilizada (`SQL`, `RAG`, `SQL+RAG` o `ninguna`) en el campo
-estructurado `sources` del resultado, no en el texto de la respuesta (R-5.2, D84).
+estructurado `sources` del resultado (R-5.2, D84).
 El agente **no afirma nada que no esté soportado por una fuente consultada**. Si ninguna fuente
 responde, declara explícitamente que no tiene información suficiente.
 
 ## Art. 5 — Trazabilidad de ejecución
 
 Cada consulta se registra en la tabla `agent_runs` (pregunta, clasificación, tools invocadas,
-SQL generado, chunks recuperados, latencia). Esto no es un extra: es la evidencia que el informe
-técnico exige.
+SQL generado, chunks recuperados, latencia). No es un extra: es la evidencia de cómo respondió el
+agente cada consulta.
 
 ## Art. 6 — Testeabilidad como definición de "done"
 
@@ -53,15 +51,15 @@ Una capacidad no está terminada sin su test. No se acepta un cambio que rompa u
 
 ## Art. 7 — Determinismo acotado
 
-El LLM es no determinista, pero el sistema lo acota: temperatura fija, top-k fijo, umbral de
-similitud fijo, y un golden set de preguntas con respuesta esperada. Cualquier cambio en un
+El LLM es no determinista, pero el sistema lo acota: temperatura fija, top-k fijo, estrategia de
+recuperación y umbrales fijos, y un golden set de preguntas con respuesta esperada. Cualquier cambio en un
 parámetro de configuración debe revalidarse contra el golden set.
 
 ## Art. 8 — Reproducibilidad
 
-Cualquier evaluador debe poder: `git clone` → `docker compose up` → `python -m rag.ingest` →
-`uvicorn api.app:app` (la API del agente; el frontend se levanta aparte). Si algo requiere una acción manual no documentada en el README, el
-criterio de aprobación está en riesgo.
+Cualquier persona debe poder: `git clone` → completar `.env` → `docker compose up -d --build --wait`, que
+levanta la base con el catálogo, ingesta el RAG (servicio `ingest`, D92) y arranca la API y la interfaz web (D93).
+Una acción manual que el README no documenta es un defecto de reproducibilidad.
 
 ## Art. 9 — Sin secretos en el repositorio
 
@@ -76,12 +74,10 @@ vinculantes. Un feature no pedido se trata como un cambio de spec, no como una m
 ## Art. 11 — Acceso uniforme a la información del dominio
 
 No hay política de privacidad ni roles de acceso diferenciados: todos los usuarios del agente acceden a
-toda la información del dominio, salvo que la consigna del trabajo práctico detalle lo contrario (la
-consigna 2026 no lo detalla).
+toda la información del dominio.
 
 La whitelist de tablas y columnas es un control de **alcance y de inyección** (R-3.4), no un control de
-privacidad. Si la consigna introdujera un requisito de privacidad, se trata como un cambio de spec
-(Art. 10), no como una mejora.
+privacidad. Un requisito de privacidad se trata como un cambio de spec (Art. 10), no como una mejora.
 
 ---
 
@@ -100,8 +96,6 @@ privacidad. Si la consigna introdujera un requisito de privacidad, se trata como
 
 ## Herramienta SDD adoptada
 
-**OpenSpec** (`@fission-ai/openspec`) — ver comparativa en la respuesta del chat.
-Motivo: los artefactos son Markdown plano versionado en el repo, que es exactamente lo que el TP
-pide adjuntar; la ceremonia es baja y el formato de requisitos es verificable con
-`openspec validate`. Los archivos de esta carpeta ya respetan ese formato, por lo que adoptarlo
-no exige reescribir nada.
+**OpenSpec** (`@fission-ai/openspec`).
+Motivo: los artefactos son Markdown plano versionado en el repo, la ceremonia es baja y el formato de
+requisitos es verificable con `openspec validate`.

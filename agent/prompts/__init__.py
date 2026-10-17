@@ -51,9 +51,8 @@ def schema_description() -> str:
     return "\n".join(lines)
 
 
-# Instrucción explícita de idioma (R-5.1). Con la regla genérica "en el idioma de la consulta" el
-# modelo respondió en castellano a consultas en inglés: el prompt, las herramientas y los documentos
-# están en castellano y arrastran la respuesta.
+# Instrucción explícita de idioma (R-5.1): el prompt, las herramientas y los documentos están en
+# castellano y arrastrarían la respuesta si la regla fuera genérica.
 LANGUAGE_RULES = {
     "es": "**Respondé en castellano.**",
     "en": (

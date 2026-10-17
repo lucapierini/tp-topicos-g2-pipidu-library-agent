@@ -17,13 +17,22 @@ def system_prompt(label="hybrid", tools=("execute_sql", "retrieve_documents")) -
 
 
 def test_the_prompt_states_the_language_of_the_answer_explicitly() -> None:
-    # R-5.1: con una instrucción genérica ("en el idioma de la consulta") el modelo respondió en
-    # castellano a dos preguntas en inglés, porque las herramientas y el prompt están en castellano.
+    # R-5.1: el prompt instruye el idioma de la respuesta; una instrucción genérica no alcanza
+    # porque las herramientas y el prompt están en castellano.
     english = render_system_prompt(load_config(), classification="sql", tools=["execute_sql"], language="en")
     spanish = render_system_prompt(load_config(), classification="sql", tools=["execute_sql"], language="es")
 
     assert "Answer in English" in english and "Respondé en castellano" not in english
     assert "Respondé en castellano" in spanish and "Answer in English" not in spanish
+
+
+def test_the_prompt_forbids_naming_the_source_in_the_answer() -> None:
+    # R-5.2, D84: la fuente va en `sources` y en la evidencia; ni la línea "Fuente" ni el nombre del documento
+    # deben llegar al texto, así que el prompt no puede pedir lo contrario.
+    prompt = system_prompt()
+
+    assert "No menciones la fuente en la respuesta" in prompt
+    assert "Citá el documento" not in prompt
 
 
 def test_the_language_defaults_to_spanish() -> None:
@@ -106,8 +115,13 @@ def test_the_classifier_prompt_asks_for_the_structured_fields() -> None:
     assert "classification" in prompt and "language" in prompt
 
 
+def test_the_classifier_prompt_defines_the_greeting_flag() -> None:
+    prompt = render_classifier_prompt()
+    assert "`greeting`" in prompt and "únicamente un saludo" in prompt
+
+
 def test_reviews_are_steered_to_the_documents_not_to_sql() -> None:
-    # Caso real (D90): "libros con reseña" se clasificó `sql` y el modelo inventó la tabla `reseñas`.
+    # D90: las consultas sobre reseñas no se resuelven con SQL.
     assert "reseñas" not in {t.lower() for t in ALLOWED_TABLES}
     classifier = render_classifier_prompt()
     assert "no son datos de la base" in classifier and "`rag`" in classifier

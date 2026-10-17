@@ -9,12 +9,23 @@ import { Markdown } from "./markdown"
 
 /** `no_coverage` y `error` no se presentan como una respuesta con fuente (R-8.3). */
 export function AnswerView({ result }: { result: AgentResult }) {
+  if (result.answer_kind === "greeting") {
+    return (
+      <Bubble variant="muted" className="max-w-full">
+        <BubbleContent>
+          <Markdown>{result.answer}</Markdown>
+        </BubbleContent>
+      </Bubble>
+    )
+  }
   if (result.answer_kind === "no_coverage") {
     return (
       <div className="flex flex-col gap-3">
         <Alert>
           <HugeiconsIcon icon={InformationCircleIcon} />
-          <AlertTitle>{result.title ?? "Sin información suficiente"}</AlertTitle>
+          <AlertTitle>
+            {result.title ?? "Sin información suficiente"}
+          </AlertTitle>
           <AlertDescription>{result.answer}</AlertDescription>
         </Alert>
       </div>
