@@ -251,7 +251,9 @@ def test_pgvector_search_returns_document_location_and_cosine_similarity(admin) 
                     "(%s, 1, 'El horario es de 9 a 20.', %s::vector, '{}'::jsonb)",
                     (doc_id, vector, '{"seccion": "Art. 12"}', doc_id, other))
     try:
-        chunks = PgVectorStore(load_config()).search([1.0] + [0.0] * 767, 2)
+        # La base puede tener los fragmentos reales de la ingesta: se pide de más y se filtra el documento de prueba.
+        found = PgVectorStore(load_config()).search([1.0] + [0.0] * 767, 100)
+        chunks = [c for c in found if c.document == "reglamento_test.pdf"]
     finally:
         with admin.cursor() as cur:
             cur.execute("DELETE FROM documentos WHERE id = %s", (doc_id,))  # cascada a los chunks

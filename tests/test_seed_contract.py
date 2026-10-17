@@ -31,6 +31,9 @@ TP02 = ROOT / "TP" / "02-especificacion-tecnica.md"
 # Las 7 tablas del dominio (T2.5). La vista no cuenta: se calcula, no se siembra.
 DOMAIN_TABLES = ("autores", "editoriales", "categorias", "libros", "libros_autores", "socios", "prestamos")
 MIN_ROWS = 15  # mínimo de registros por tabla del dominio (T2.5)
+# Filas por tabla que deja db/dev_seed.sql: con ese seed el volumen no se mide.
+DEV_SEED_COUNTS = {"autores": 6, "editoriales": 3, "categorias": 3, "libros": 7, "libros_autores": 8,
+                   "socios": 6, "prestamos": 11}
 DOCUMENT_TABLES = {"documentos", "documentos_chunks"}
 
 
@@ -149,17 +152,16 @@ def ro_cursor():
 
 
 @pytest.mark.integration
-@pytest.mark.skipif(
-    os.environ.get("DEV_SEED") == "1",
-    reason="con DEV_SEED=1 (dev_seed.sql) las tablas tienen menos de 15 filas; el volumen se mide con seed.sql",
-)
 def test_volume_min_rows_per_domain_table(ro_cursor) -> None:
-    """T2.5: >= 15 filas en cada tabla del dominio. Se mide con db/seed.sql y se saltea con db/dev_seed.sql.
+    """T2.5: >= 15 filas en cada tabla del dominio. Se mide con db/seed.sql y se saltea si la base tiene
+    el seed mínimo de db/dev_seed.sql (por `DEV_SEED=1` o porque los conteos son los de ese seed).
     """
     counts: dict[str, int] = {}
     for table in DOMAIN_TABLES:
         ro_cursor.execute(f"SELECT count(*) FROM {table}")  # nombres de una constante fija
         counts[table] = ro_cursor.fetchone()[0]
+    if os.environ.get("DEV_SEED") == "1" or counts == DEV_SEED_COUNTS:
+        pytest.skip("la base tiene el seed mínimo de db/dev_seed.sql; el volumen se mide con db/seed.sql")
     short = {table: count for table, count in counts.items() if count < MIN_ROWS}
     assert not short, f"volumen insuficiente (T2.5): {sorted(short.items())}; conteo completo {sorted(counts.items())}"
 
