@@ -1,6 +1,10 @@
 ---
 title: "Pipidu Library Agent: informe técnico"
 subtitle: "Trabajo Práctico Integrador, AI Engineering (UCSE, Ingeniería en Informática, 5.º año)"
+author:
+  - "Duelli, Agustín"
+  - "Pierini, Luca"
+  - "Pistarino, Bruno"
 ---
 
 # 1. Resumen
