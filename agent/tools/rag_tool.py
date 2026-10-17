@@ -19,10 +19,11 @@ Contrato con la ingesta:
   coseno no lo aprovecha;
 - los documentos se embeben con `task_type=RETRIEVAL_DOCUMENT` y la consulta con `RETRIEVAL_QUERY`;
 - el rol `agent_ro` necesita `GRANT SELECT` sobre la tabla (la whitelist de la herramienta SQL la
-  excluye a propósito: D99; esta herramienta la lee por una vía distinta).
+  excluye a propósito: D102; esta herramienta la lee por una vía distinta).
 """
 from __future__ import annotations
 
+import logging
 import math
 import os
 import time
@@ -33,6 +34,9 @@ from agent.config import Config, load_config
 from agent.contracts import Chunk, RagResult
 from agent.errors import NO_RELEVANT_RESULTS, RETRIEVAL_ERROR
 from agent.retry import call_with_retry
+from agent.tools.reranker import Reranker, combined_score
+
+logger = logging.getLogger(__name__)
 
 CHUNKS_TABLE = "documentos_chunks"
 DOCUMENTS_TABLE = "documentos"
@@ -179,12 +183,31 @@ class PgVectorStore:
 
 
 class RagRetriever:
-    """Top-k por coseno con umbral mínimo; sin resultados relevantes lo reporta (R-4.4, R-4.6)."""
+    """Top-k por coseno, filtrado por umbral o por re-ranking; sin resultados relevantes lo reporta (R-4.4, R-4.6, R-4.11).
 
-    def __init__(self, embedder: Embedder, store: VectorStore, config: Config | None = None) -> None:
+    Con `rag_strategy="rerank"` y un `reranker`, el modelo puntúa los candidatos y el corte usa el puntaje combinado.
+    Sin `reranker` (o con `rag_strategy="dense"`) se usa el umbral de coseno de siempre. Si el re-ranking falla en una
+    consulta (cuota, red), esa consulta vuelve al coseno en vez de fallar: es la medida validada antes de existir.
+    """
+
+    def __init__(
+        self, embedder: Embedder, store: VectorStore, config: Config | None = None, reranker: Reranker | None = None,
+    ) -> None:
         self.embedder = embedder
         self.store = store
         self.cfg = config or load_config()
+        self.reranker = reranker
+
+    def _reranked(self, query: str, candidates: list[Chunk]) -> list[Chunk]:
+        """Los fragmentos que contienen la respuesta, o `[]` si el puntaje combinado no alcanza el umbral."""
+        items = [(c.document, c.location, c.text) for c in candidates]
+        relevances = self.reranker.relevances(query, items)
+        if len(relevances) != len(candidates):
+            raise ValueError("el re-ranking devolvió una cantidad de puntajes distinta de la de fragmentos")
+        if combined_score(relevances, candidates[0].similarity) < self.cfg.rerank_threshold:
+            return []
+        ranked = sorted(zip(relevances, candidates, strict=True), key=lambda rc: (-rc[0], -rc[1].similarity))
+        return [c for rel, c in ranked if rel >= 1][: self.cfg.top_k]
 
     def _candidates(self, query: str) -> list[Chunk]:
         vector = self.embedder.embed_query(query)
@@ -203,10 +226,21 @@ class RagRetriever:
         except Exception:  # noqa: BLE001 - R-5.7: el error se reporta, no se responde sin datos
             return RagResult(chunks=[], error=RETRIEVAL_ERROR, latency_ms=elapsed_ms())
 
-        relevant = [c for c in candidates if c.similarity >= self.cfg.similarity_threshold][: self.cfg.top_k]
+        relevant: list[Chunk] | None = None
+        if candidates and self.reranker is not None and self.cfg.rag_strategy == "rerank":
+            try:
+                relevant = self._reranked(query, candidates)
+            except Exception as exc:  # noqa: BLE001 - se vuelve al coseno, no se pierde la consulta
+                logger.warning("re-ranking no disponible, se usa el coseno: %s", type(exc).__name__)
+        if relevant is None:
+            relevant = [c for c in candidates if c.similarity >= self.cfg.similarity_threshold][: self.cfg.top_k]
         if not relevant:
             return RagResult(chunks=[], error=NO_RELEVANT_RESULTS, latency_ms=elapsed_ms())
         return RagResult(chunks=relevant, error=None, latency_ms=elapsed_ms())
+
+    def ranked(self, query: str) -> list[Chunk]:
+        """Los `top_k` fragmentos de mayor a menor similitud, **sin** aplicar el umbral (calibración, R-4.8)."""
+        return self._candidates(query)
 
     def scores(self, query: str) -> list[float]:
         """Similitudes del top-k **sin** aplicar el umbral. Insumo de la calibración (R-4.8)."""

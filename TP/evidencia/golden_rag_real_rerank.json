@@ -1,0 +1,400 @@
+{
+  "date": "2026-10-16T01:10:16+00:00",
+  "model": "gemini/gemini-3.1-flash-lite",
+  "api_base": null,
+  "config": {
+    "max_steps": 6,
+    "temperature": 0.0,
+    "max_sql_attempts": 2,
+    "api_max_retries": 3
+  },
+  "backends": {
+    "sql": "PostgreSQL local (rol agent_ro, dev_seed.sql)",
+    "rag": "producción: pgvector + Gemini, estrategia rerank (umbral de re-ranking 0.4, de coseno 0.64)",
+    "content_evaluated_for": [
+      "sql",
+      "rag",
+      "hybrid",
+      "none"
+    ]
+  },
+  "summary": {
+    "classification_correct": "13/13",
+    "acceptance_min": 11,
+    "hybrids_with_both_tools": "3/3",
+    "none_without_tools": "1/1",
+    "classified_before_tools": "13/13",
+    "classifier_errors": 0,
+    "valid_answers": "13/13",
+    "sql_content_ok": "5/5",
+    "content_ok": "13/13",
+    "content_ok_by_expected": {
+      "sql": "5/5",
+      "rag": "4/4",
+      "hybrid": "3/3",
+      "none": "1/1"
+    },
+    "runs_recorded": "13/13",
+    "cases_with_sql_rejected": "0/8",
+    "seconds_total": 59.9,
+    "english": {
+      "cases": [
+        "B1",
+        "B2"
+      ],
+      "classification_correct": "2/2",
+      "declared_language_en": "2/2",
+      "content_ok": "2/2"
+    }
+  },
+  "cases": [
+    {
+      "case_id": "G1",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT l.titulo, p.fecha_prestamo, p.fecha_devolucion_prevista FROM prestamos p JOIN socios s ON s.id = p.socio_id JOIN libros l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.fecha_devolucion_real IS NULL",
+      "sql_rejections": [],
+      "seconds": 6.7,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 27,
+      "rows": 1,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G2",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT l.titulo, count(*) AS cantidad_prestamos FROM prestamos p JOIN libros l ON l.id = p.libro_id WHERE p.fecha_prestamo BETWEEN '2026-08-01' AND '2026-11-30' GROUP BY l.titulo ORDER BY cantidad_prestamos DESC LIMIT 5",
+      "sql_rejections": [],
+      "seconds": 3.2,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 28,
+      "rows": 5,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G3",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT DISTINCT s.nombre, s.apellido, v.dias_atraso FROM v_prestamos_estado v JOIN socios s ON s.id = v.socio_id WHERE v.estado_calculado = 'vencido' ORDER BY v.dias_atraso DESC",
+      "sql_rejections": [],
+      "seconds": 3.5,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 29,
+      "rows": 5,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G4",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT sum(l.ejemplares_disponibles) AS total_disponibles FROM libros l JOIN categorias c ON c.id = l.categoria_id WHERE c.nombre ILIKE 'Ciencias de la Computación'",
+      "sql_rejections": [],
+      "seconds": 3.1,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 30,
+      "rows": 1,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G5",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT a.nombre, a.apellido, count(l.id) AS cantidad_libros FROM autores a JOIN libros_autores la ON a.id = la.autor_id JOIN libros l ON la.libro_id = l.id JOIN editoriales e ON l.editorial_id = e.id WHERE e.nombre ILIKE '%Sudamericana%' GROUP BY a.id, a.nombre, a.apellido ORDER BY cantidad_libros DESC LIMIT 1",
+      "sql_rejections": [],
+      "seconds": 3.1,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 31,
+      "rows": 1,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G6",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 4.8,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 32,
+      "rows": 0,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G7",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 4.0,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 33,
+      "rows": 0,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G8",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 4.4,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 34,
+      "rows": 0,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G9",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 4.8,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 35,
+      "rows": 0,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G10",
+      "expected": "hybrid",
+      "got": "hybrid",
+      "tools": [
+        "execute_sql",
+        "retrieve_documents"
+      ],
+      "sources": [
+        "sql",
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT v.dias_atraso, v.estado_calculado FROM v_prestamos_estado v JOIN socios s ON s.id = v.socio_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND v.libro_id IS NOT NULL AND v.fecha_devolucion_real IS NULL AND v.fecha_prestamo <= CURRENT_DATE - INTERVAL '20 days'",
+      "sql_rejections": [],
+      "seconds": 6.9,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 36,
+      "rows": 1,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G11",
+      "expected": "hybrid",
+      "got": "hybrid",
+      "tools": [
+        "execute_sql",
+        "retrieve_documents",
+        "execute_sql"
+      ],
+      "sources": [
+        "sql",
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT s.id, s.nombre, s.apellido, v.estado_calculado FROM socios s LEFT JOIN v_prestamos_estado v ON s.id = v.socio_id WHERE s.id = 2 AND v.estado_calculado = 'vencido'",
+      "sql_rejections": [],
+      "seconds": 7.8,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 37,
+      "rows": 0,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G12",
+      "expected": "hybrid",
+      "got": "hybrid",
+      "tools": [
+        "execute_sql",
+        "retrieve_documents"
+      ],
+      "sources": [
+        "sql",
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT l.titulo, count(p.id) AS total_prestamos FROM prestamos p JOIN libros l ON l.id = p.libro_id GROUP BY l.id, l.titulo ORDER BY total_prestamos DESC LIMIT 1",
+      "sql_rejections": [],
+      "seconds": 6.6,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 38,
+      "rows": 1,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "G13",
+      "expected": "none",
+      "got": "none",
+      "tools": [],
+      "sources": [],
+      "valid": true,
+      "kind": "no_coverage",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 1.0,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 39,
+      "rows": 0,
+      "content_ok": true,
+      "language": "es"
+    },
+    {
+      "case_id": "B1",
+      "expected": "sql",
+      "got": "sql",
+      "tools": [
+        "execute_sql"
+      ],
+      "sources": [
+        "sql"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": "SELECT l.titulo FROM prestamos p JOIN socios s ON s.id = p.socio_id JOIN libros l ON l.id = p.libro_id WHERE s.nombre ILIKE 'Juan' AND s.apellido ILIKE 'Pérez' AND p.estado = 'activo' AND p.fecha_devolucion_real IS NULL",
+      "sql_rejections": [],
+      "seconds": 2.9,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 40,
+      "rows": 1,
+      "content_ok": true,
+      "language": "en"
+    },
+    {
+      "case_id": "B2",
+      "expected": "rag",
+      "got": "rag",
+      "tools": [
+        "retrieve_documents"
+      ],
+      "sources": [
+        "rag"
+      ],
+      "valid": true,
+      "kind": "answer",
+      "sql_original": null,
+      "sql_rejections": [],
+      "seconds": 5.0,
+      "error": "",
+      "violations": [],
+      "before_tools": true,
+      "run_id": 41,
+      "rows": 0,
+      "content_ok": true,
+      "language": "en"
+    }
+  ]
+}

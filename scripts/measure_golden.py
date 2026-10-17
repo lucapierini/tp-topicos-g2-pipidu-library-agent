@@ -29,7 +29,6 @@ from agent.classifier import build_classifier  # noqa: E402
 from agent.config import load_config  # noqa: E402
 from agent.contracts import AgentAnswer, RagResult  # noqa: E402
 from agent.runs import InMemoryRunRecorder, PgRunRecorder  # noqa: E402
-from agent.tools.rag_tool import GeminiEmbedder, PgVectorStore, RagRetriever  # noqa: E402
 from agent.tools.sql_tool import SqlExecutor  # noqa: E402
 from tests.fakes import FakeConn, FakeRetriever, make_chunk  # noqa: E402
 from tests.golden_set import ACCEPTANCE_MIN, BILINGUAL_SET, GOLDEN_SET  # noqa: E402
@@ -71,13 +70,13 @@ def build_agent(use_db: bool = False, rag_mock: bool = False, rag_real: bool = F
     real con embedder léxico); permite evaluar el contenido de los casos RAG e híbridos sin PDFs. Sin
     él, la recuperación devuelve siempre el mismo fragmento falso.
 
-    `rag_real=True`: la recuperación es la del sistema (embeddings de Gemini sobre `documentos_chunks`, que
-    debe estar ingestada).
+    `rag_real=True`: la recuperación es la de producción (embeddings de Gemini, pgvector y la estrategia
+    `RAG_STRATEGY`, con re-ranking por defecto); necesita la base con los documentos ingestados.
     """
     cfg = load_config()
     conn = FakeConn(rows=CANNED_ROWS, columns=CANNED_COLUMNS)
     if rag_real:
-        retriever = RagRetriever(GeminiEmbedder(cfg), PgVectorStore(cfg), cfg)
+        retriever = None  # `LibraryAgent` arma el recuperador de producción
     elif rag_mock:
         retriever = build_mock_retriever(cfg)
     else:
@@ -132,16 +131,17 @@ def run_case(agent: LibraryAgent, case, with_content: bool = False) -> CaseRepor
     return report
 
 
-def content_evaluable(expected: str, use_db: bool, rag_mock: bool) -> bool:
+def content_evaluable(expected: str, use_db: bool, rag_mock: bool, rag_real: bool = False) -> bool:
     """El `check` de un caso solo significa algo si las fuentes que usa no son falsas.
 
     SQL necesita la base local; RAG, el corpus simulado; un híbrido, las dos. `none` no depende de
     ninguna fuente: debe terminar sin filas ni fragmentos.
     """
+    rag = rag_mock or rag_real
     return {
         "sql": use_db,
-        "rag": rag_mock,
-        "hybrid": use_db and rag_mock,
+        "rag": rag,
+        "hybrid": use_db and rag,
         "none": True,
     }[expected]
 
@@ -197,8 +197,9 @@ def main() -> int:
                         help="recuperación sobre el corpus simulado de tests/rag_fixture.py (sin PDFs); "
                              "evalúa el contenido de los casos RAG; no calibra ni mide retrieval real")
     parser.add_argument("--rag-real", action="store_true",
-                        help="recuperación real (Gemini + pgvector sobre los PDFs ingestados); evalúa el "
-                             "contenido de los casos RAG e híbridos")
+                        help="recuperación de producción: pgvector con los documentos ingestados y la estrategia "
+                             "RAG_STRATEGY (re-ranking por defecto); evalúa el contenido de los casos RAG; "
+                             "requiere la base y gasta cuota de Gemini")
     parser.add_argument("--bilingual", action="store_true",
                         help="agrega los casos en inglés (B1, B2); no cuentan para el criterio R-2.1")
     args = parser.parse_args()
@@ -207,7 +208,8 @@ def main() -> int:
     pool = [*GOLDEN_SET, *(BILINGUAL_SET if args.bilingual else [])]
     cases = [c for c in pool if selected is None or c.id in selected]
 
-    rag_available = args.rag_mock or args.rag_real
+    if args.rag_real and args.rag_mock:
+        parser.error("--rag-real y --rag-mock son excluyentes")
     agent = build_agent(use_db=args.db, rag_mock=args.rag_mock, rag_real=args.rag_real)
     reports: list[CaseReport] = []
     print(f"modelo: {agent.cfg.llm_model} | api_base={agent.cfg.llm_api_base or '-'} | "
@@ -215,7 +217,7 @@ def main() -> int:
     for case in cases:
         report = run_case(
             agent, case,
-            with_content=content_evaluable(case.expected_classification, args.db, rag_available),
+            with_content=content_evaluable(case.expected_classification, args.db, args.rag_mock, args.rag_real),
         )
         reports.append(report)
         mark = "OK " if report.classified_ok else "ERR"
@@ -247,14 +249,15 @@ def main() -> int:
             "backends": {
                 "sql": ("PostgreSQL local (rol agent_ro)" if args.db
                         else "FakeConn (validador real)"),
-                "rag": ("RagRetriever real: embeddings de Gemini sobre documentos_chunks (pgvector)"
-                        if args.rag_real else
-                        "corpus simulado tests/rag_fixture.py (RagRetriever real, embedder léxico; no "
-                        "mide retrieval semántico ni calibra el umbral)" if args.rag_mock
+                "rag": (f"producción: pgvector + Gemini, estrategia {cfg.rag_strategy} "
+                        f"(umbral de re-ranking {cfg.rerank_threshold}, de coseno {cfg.similarity_threshold})"
+                        if args.rag_real
+                        else "corpus simulado tests/rag_fixture.py (RagRetriever real, embedder léxico; no "
+                             "mide retrieval semántico ni calibra el umbral)" if args.rag_mock
                         else "FakeRetriever (un fragmento fijo)"),
                 "content_evaluated_for": [
                     kind for kind in ("sql", "rag", "hybrid", "none")
-                    if content_evaluable(kind, args.db, rag_available)
+                    if content_evaluable(kind, args.db, args.rag_mock, args.rag_real)
                 ],
             },
             "summary": summary,

@@ -266,7 +266,7 @@ curl -N -X POST http://localhost:8080/ask -H "content-type: application/json" -d
 ```bash
 python scripts/measure_golden.py --out TP/evidencia/<corrida>.json   # mide R-2.1 con el modelo configurado
 python scripts/measure_golden.py --db --rag-mock                      # golden set contra la base local, recuperación simulada
-python scripts/measure_golden.py --db --rag-real                      # golden set contra la base y la recuperación reales (PDFs ingestados)
+python scripts/measure_golden.py --db --rag-real                      # golden set contra la base y la recuperación de producción (PDFs ingestados, re-ranking por defecto; gasta cuota de Gemini)
 python scripts/export_runs.py --last 15                               # agent_runs -> TP/evidencia/
 docker build -f docker/Dockerfile --target measure -t pipidu-measure . # imagen con los scripts de medición
 ```

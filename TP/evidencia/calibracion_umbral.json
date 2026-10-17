@@ -1,13 +1,3005 @@
 {
-  "threshold": 0.67,
+  "threshold": 0.64,
   "top_k": 5,
   "embedding_model": "gemini-embedding-001",
+  "n_covered": 77,
+  "n_uncovered": 49,
+  "auc_similarity": 0.983,
+  "auc_margin": 0.9678,
+  "at_configured": {
+    "threshold": 0.64,
+    "tp": 77,
+    "fn": 0,
+    "fp": 10,
+    "tn": 39,
+    "recall": 1.0,
+    "specificity": 0.7959,
+    "precision": 0.8851,
+    "f1": 0.939,
+    "youden": 0.7959
+  },
+  "candidates": {
+    "best_f1": {
+      "threshold": 0.645,
+      "f1": 0.9506,
+      "recall": 1.0,
+      "fp": 8
+    },
+    "youden": {
+      "threshold": 0.675,
+      "youden": 0.8497,
+      "recall": 0.8701,
+      "fp": 1
+    },
+    "min_recall": {
+      "threshold": 0.655,
+      "target": 0.95,
+      "recall": 0.961,
+      "fp": 6,
+      "specificity": 0.8776
+    },
+    "no_false_positive": {
+      "threshold": 0.705,
+      "recall": 0.7013,
+      "fn": 23
+    }
+  },
+  "groups": {
+    "ajeno": {
+      "n": 8,
+      "min": 0.501,
+      "median": 0.55,
+      "max": 0.639
+    },
+    "dominio_dificil": {
+      "n": 20,
+      "min": 0.58,
+      "median": 0.634,
+      "max": 0.704
+    },
+    "en": {
+      "n": 8,
+      "min": 0.655,
+      "median": 0.675,
+      "max": 0.717
+    },
+    "en_negativo": {
+      "n": 5,
+      "min": 0.499,
+      "median": 0.549,
+      "max": 0.618
+    },
+    "golden": {
+      "n": 21,
+      "min": 0.597,
+      "median": 0.732,
+      "max": 0.802
+    },
+    "libro_sin_resena": {
+      "n": 10,
+      "min": 0.527,
+      "median": 0.557,
+      "max": 0.602
+    },
+    "politicas": {
+      "n": 10,
+      "min": 0.663,
+      "median": 0.73,
+      "max": 0.81
+    },
+    "reglamento": {
+      "n": 18,
+      "min": 0.647,
+      "median": 0.73,
+      "max": 0.779
+    },
+    "resena_cien_anios": {
+      "n": 6,
+      "min": 0.647,
+      "median": 0.75,
+      "max": 0.786
+    },
+    "resena_clean_code": {
+      "n": 6,
+      "min": 0.686,
+      "median": 0.74,
+      "max": 0.776
+    },
+    "resena_empyrean": {
+      "n": 6,
+      "min": 0.658,
+      "median": 0.723,
+      "max": 0.77
+    },
+    "resena_tolkien": {
+      "n": 8,
+      "min": 0.697,
+      "median": 0.737,
+      "max": 0.77
+    }
+  },
+  "retrieval_top1_accuracy": 0.984,
+  "verdict": {
+    "separable": false,
+    "worst_positive": 0.646,
+    "best_negative": 0.704,
+    "reason": "las similitudes de los casos con y sin cobertura se solapan"
+  },
+  "sweep": [
+    {
+      "threshold": 0.5,
+      "tp": 77,
+      "fn": 0,
+      "fp": 48,
+      "tn": 1,
+      "recall": 1.0,
+      "specificity": 0.0204,
+      "precision": 0.616,
+      "f1": 0.7624,
+      "youden": 0.0204
+    },
+    {
+      "threshold": 0.505,
+      "tp": 77,
+      "fn": 0,
+      "fp": 47,
+      "tn": 2,
+      "recall": 1.0,
+      "specificity": 0.0408,
+      "precision": 0.621,
+      "f1": 0.7662,
+      "youden": 0.0408
+    },
+    {
+      "threshold": 0.51,
+      "tp": 77,
+      "fn": 0,
+      "fp": 46,
+      "tn": 3,
+      "recall": 1.0,
+      "specificity": 0.0612,
+      "precision": 0.626,
+      "f1": 0.77,
+      "youden": 0.0612
+    },
+    {
+      "threshold": 0.515,
+      "tp": 77,
+      "fn": 0,
+      "fp": 46,
+      "tn": 3,
+      "recall": 1.0,
+      "specificity": 0.0612,
+      "precision": 0.626,
+      "f1": 0.77,
+      "youden": 0.0612
+    },
+    {
+      "threshold": 0.52,
+      "tp": 77,
+      "fn": 0,
+      "fp": 46,
+      "tn": 3,
+      "recall": 1.0,
+      "specificity": 0.0612,
+      "precision": 0.626,
+      "f1": 0.77,
+      "youden": 0.0612
+    },
+    {
+      "threshold": 0.525,
+      "tp": 77,
+      "fn": 0,
+      "fp": 46,
+      "tn": 3,
+      "recall": 1.0,
+      "specificity": 0.0612,
+      "precision": 0.626,
+      "f1": 0.77,
+      "youden": 0.0612
+    },
+    {
+      "threshold": 0.53,
+      "tp": 77,
+      "fn": 0,
+      "fp": 45,
+      "tn": 4,
+      "recall": 1.0,
+      "specificity": 0.0816,
+      "precision": 0.6311,
+      "f1": 0.7739,
+      "youden": 0.0816
+    },
+    {
+      "threshold": 0.535,
+      "tp": 77,
+      "fn": 0,
+      "fp": 43,
+      "tn": 6,
+      "recall": 1.0,
+      "specificity": 0.1224,
+      "precision": 0.6417,
+      "f1": 0.7817,
+      "youden": 0.1224
+    },
+    {
+      "threshold": 0.54,
+      "tp": 77,
+      "fn": 0,
+      "fp": 41,
+      "tn": 8,
+      "recall": 1.0,
+      "specificity": 0.1633,
+      "precision": 0.6525,
+      "f1": 0.7897,
+      "youden": 0.1633
+    },
+    {
+      "threshold": 0.545,
+      "tp": 77,
+      "fn": 0,
+      "fp": 41,
+      "tn": 8,
+      "recall": 1.0,
+      "specificity": 0.1633,
+      "precision": 0.6525,
+      "f1": 0.7897,
+      "youden": 0.1633
+    },
+    {
+      "threshold": 0.55,
+      "tp": 77,
+      "fn": 0,
+      "fp": 38,
+      "tn": 11,
+      "recall": 1.0,
+      "specificity": 0.2245,
+      "precision": 0.6696,
+      "f1": 0.8021,
+      "youden": 0.2245
+    },
+    {
+      "threshold": 0.555,
+      "tp": 77,
+      "fn": 0,
+      "fp": 37,
+      "tn": 12,
+      "recall": 1.0,
+      "specificity": 0.2449,
+      "precision": 0.6754,
+      "f1": 0.8063,
+      "youden": 0.2449
+    },
+    {
+      "threshold": 0.56,
+      "tp": 77,
+      "fn": 0,
+      "fp": 37,
+      "tn": 12,
+      "recall": 1.0,
+      "specificity": 0.2449,
+      "precision": 0.6754,
+      "f1": 0.8063,
+      "youden": 0.2449
+    },
+    {
+      "threshold": 0.565,
+      "tp": 77,
+      "fn": 0,
+      "fp": 36,
+      "tn": 13,
+      "recall": 1.0,
+      "specificity": 0.2653,
+      "precision": 0.6814,
+      "f1": 0.8105,
+      "youden": 0.2653
+    },
+    {
+      "threshold": 0.57,
+      "tp": 77,
+      "fn": 0,
+      "fp": 35,
+      "tn": 14,
+      "recall": 1.0,
+      "specificity": 0.2857,
+      "precision": 0.6875,
+      "f1": 0.8148,
+      "youden": 0.2857
+    },
+    {
+      "threshold": 0.575,
+      "tp": 77,
+      "fn": 0,
+      "fp": 35,
+      "tn": 14,
+      "recall": 1.0,
+      "specificity": 0.2857,
+      "precision": 0.6875,
+      "f1": 0.8148,
+      "youden": 0.2857
+    },
+    {
+      "threshold": 0.58,
+      "tp": 77,
+      "fn": 0,
+      "fp": 32,
+      "tn": 17,
+      "recall": 1.0,
+      "specificity": 0.3469,
+      "precision": 0.7064,
+      "f1": 0.828,
+      "youden": 0.3469
+    },
+    {
+      "threshold": 0.585,
+      "tp": 77,
+      "fn": 0,
+      "fp": 30,
+      "tn": 19,
+      "recall": 1.0,
+      "specificity": 0.3878,
+      "precision": 0.7196,
+      "f1": 0.837,
+      "youden": 0.3878
+    },
+    {
+      "threshold": 0.59,
+      "tp": 77,
+      "fn": 0,
+      "fp": 30,
+      "tn": 19,
+      "recall": 1.0,
+      "specificity": 0.3878,
+      "precision": 0.7196,
+      "f1": 0.837,
+      "youden": 0.3878
+    },
+    {
+      "threshold": 0.595,
+      "tp": 77,
+      "fn": 0,
+      "fp": 29,
+      "tn": 20,
+      "recall": 1.0,
+      "specificity": 0.4082,
+      "precision": 0.7264,
+      "f1": 0.8415,
+      "youden": 0.4082
+    },
+    {
+      "threshold": 0.6,
+      "tp": 77,
+      "fn": 0,
+      "fp": 27,
+      "tn": 22,
+      "recall": 1.0,
+      "specificity": 0.449,
+      "precision": 0.7404,
+      "f1": 0.8508,
+      "youden": 0.449
+    },
+    {
+      "threshold": 0.605,
+      "tp": 77,
+      "fn": 0,
+      "fp": 24,
+      "tn": 25,
+      "recall": 1.0,
+      "specificity": 0.5102,
+      "precision": 0.7624,
+      "f1": 0.8652,
+      "youden": 0.5102
+    },
+    {
+      "threshold": 0.61,
+      "tp": 77,
+      "fn": 0,
+      "fp": 23,
+      "tn": 26,
+      "recall": 1.0,
+      "specificity": 0.5306,
+      "precision": 0.77,
+      "f1": 0.8701,
+      "youden": 0.5306
+    },
+    {
+      "threshold": 0.615,
+      "tp": 77,
+      "fn": 0,
+      "fp": 20,
+      "tn": 29,
+      "recall": 1.0,
+      "specificity": 0.5918,
+      "precision": 0.7938,
+      "f1": 0.8851,
+      "youden": 0.5918
+    },
+    {
+      "threshold": 0.62,
+      "tp": 77,
+      "fn": 0,
+      "fp": 19,
+      "tn": 30,
+      "recall": 1.0,
+      "specificity": 0.6122,
+      "precision": 0.8021,
+      "f1": 0.8902,
+      "youden": 0.6122
+    },
+    {
+      "threshold": 0.625,
+      "tp": 77,
+      "fn": 0,
+      "fp": 18,
+      "tn": 31,
+      "recall": 1.0,
+      "specificity": 0.6327,
+      "precision": 0.8105,
+      "f1": 0.8953,
+      "youden": 0.6327
+    },
+    {
+      "threshold": 0.63,
+      "tp": 77,
+      "fn": 0,
+      "fp": 15,
+      "tn": 34,
+      "recall": 1.0,
+      "specificity": 0.6939,
+      "precision": 0.837,
+      "f1": 0.9112,
+      "youden": 0.6939
+    },
+    {
+      "threshold": 0.635,
+      "tp": 77,
+      "fn": 0,
+      "fp": 13,
+      "tn": 36,
+      "recall": 1.0,
+      "specificity": 0.7347,
+      "precision": 0.8556,
+      "f1": 0.9222,
+      "youden": 0.7347
+    },
+    {
+      "threshold": 0.64,
+      "tp": 77,
+      "fn": 0,
+      "fp": 10,
+      "tn": 39,
+      "recall": 1.0,
+      "specificity": 0.7959,
+      "precision": 0.8851,
+      "f1": 0.939,
+      "youden": 0.7959
+    },
+    {
+      "threshold": 0.645,
+      "tp": 77,
+      "fn": 0,
+      "fp": 8,
+      "tn": 41,
+      "recall": 1.0,
+      "specificity": 0.8367,
+      "precision": 0.9059,
+      "f1": 0.9506,
+      "youden": 0.8367
+    },
+    {
+      "threshold": 0.65,
+      "tp": 74,
+      "fn": 3,
+      "fp": 6,
+      "tn": 43,
+      "recall": 0.961,
+      "specificity": 0.8776,
+      "precision": 0.925,
+      "f1": 0.9427,
+      "youden": 0.8386
+    },
+    {
+      "threshold": 0.655,
+      "tp": 74,
+      "fn": 3,
+      "fp": 6,
+      "tn": 43,
+      "recall": 0.961,
+      "specificity": 0.8776,
+      "precision": 0.925,
+      "f1": 0.9427,
+      "youden": 0.8386
+    },
+    {
+      "threshold": 0.66,
+      "tp": 70,
+      "fn": 7,
+      "fp": 4,
+      "tn": 45,
+      "recall": 0.9091,
+      "specificity": 0.9184,
+      "precision": 0.9459,
+      "f1": 0.9272,
+      "youden": 0.8275
+    },
+    {
+      "threshold": 0.665,
+      "tp": 69,
+      "fn": 8,
+      "fp": 4,
+      "tn": 45,
+      "recall": 0.8961,
+      "specificity": 0.9184,
+      "precision": 0.9452,
+      "f1": 0.92,
+      "youden": 0.8145
+    },
+    {
+      "threshold": 0.67,
+      "tp": 69,
+      "fn": 8,
+      "fp": 3,
+      "tn": 46,
+      "recall": 0.8961,
+      "specificity": 0.9388,
+      "precision": 0.9583,
+      "f1": 0.9262,
+      "youden": 0.8349
+    },
+    {
+      "threshold": 0.675,
+      "tp": 67,
+      "fn": 10,
+      "fp": 1,
+      "tn": 48,
+      "recall": 0.8701,
+      "specificity": 0.9796,
+      "precision": 0.9853,
+      "f1": 0.9241,
+      "youden": 0.8497
+    },
+    {
+      "threshold": 0.68,
+      "tp": 66,
+      "fn": 11,
+      "fp": 1,
+      "tn": 48,
+      "recall": 0.8571,
+      "specificity": 0.9796,
+      "precision": 0.9851,
+      "f1": 0.9167,
+      "youden": 0.8367
+    },
+    {
+      "threshold": 0.685,
+      "tp": 65,
+      "fn": 12,
+      "fp": 1,
+      "tn": 48,
+      "recall": 0.8442,
+      "specificity": 0.9796,
+      "precision": 0.9848,
+      "f1": 0.9091,
+      "youden": 0.8237
+    },
+    {
+      "threshold": 0.69,
+      "tp": 62,
+      "fn": 15,
+      "fp": 1,
+      "tn": 48,
+      "recall": 0.8052,
+      "specificity": 0.9796,
+      "precision": 0.9841,
+      "f1": 0.8857,
+      "youden": 0.7848
+    },
+    {
+      "threshold": 0.695,
+      "tp": 61,
+      "fn": 16,
+      "fp": 1,
+      "tn": 48,
+      "recall": 0.7922,
+      "specificity": 0.9796,
+      "precision": 0.9839,
+      "f1": 0.8777,
+      "youden": 0.7718
+    },
+    {
+      "threshold": 0.7,
+      "tp": 57,
+      "fn": 20,
+      "fp": 1,
+      "tn": 48,
+      "recall": 0.7403,
+      "specificity": 0.9796,
+      "precision": 0.9828,
+      "f1": 0.8444,
+      "youden": 0.7199
+    },
+    {
+      "threshold": 0.705,
+      "tp": 54,
+      "fn": 23,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.7013,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.8244,
+      "youden": 0.7013
+    },
+    {
+      "threshold": 0.71,
+      "tp": 52,
+      "fn": 25,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.6753,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.8062,
+      "youden": 0.6753
+    },
+    {
+      "threshold": 0.715,
+      "tp": 51,
+      "fn": 26,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.6623,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.7969,
+      "youden": 0.6623
+    },
+    {
+      "threshold": 0.72,
+      "tp": 46,
+      "fn": 31,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.5974,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.748,
+      "youden": 0.5974
+    },
+    {
+      "threshold": 0.725,
+      "tp": 45,
+      "fn": 32,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.5844,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.7377,
+      "youden": 0.5844
+    },
+    {
+      "threshold": 0.73,
+      "tp": 41,
+      "fn": 36,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.5325,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.6949,
+      "youden": 0.5325
+    },
+    {
+      "threshold": 0.735,
+      "tp": 35,
+      "fn": 42,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.4545,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.625,
+      "youden": 0.4545
+    },
+    {
+      "threshold": 0.74,
+      "tp": 30,
+      "fn": 47,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.3896,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.5607,
+      "youden": 0.3896
+    },
+    {
+      "threshold": 0.745,
+      "tp": 26,
+      "fn": 51,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.3377,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.5049,
+      "youden": 0.3377
+    },
+    {
+      "threshold": 0.75,
+      "tp": 25,
+      "fn": 52,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.3247,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.4902,
+      "youden": 0.3247
+    },
+    {
+      "threshold": 0.755,
+      "tp": 22,
+      "fn": 55,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.2857,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.4444,
+      "youden": 0.2857
+    },
+    {
+      "threshold": 0.76,
+      "tp": 17,
+      "fn": 60,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.2208,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.3617,
+      "youden": 0.2208
+    },
+    {
+      "threshold": 0.765,
+      "tp": 14,
+      "fn": 63,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.1818,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.3077,
+      "youden": 0.1818
+    },
+    {
+      "threshold": 0.77,
+      "tp": 12,
+      "fn": 65,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.1558,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.2697,
+      "youden": 0.1558
+    },
+    {
+      "threshold": 0.775,
+      "tp": 8,
+      "fn": 69,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.1039,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.1882,
+      "youden": 0.1039
+    },
+    {
+      "threshold": 0.78,
+      "tp": 5,
+      "fn": 72,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0649,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.122,
+      "youden": 0.0649
+    },
+    {
+      "threshold": 0.785,
+      "tp": 4,
+      "fn": 73,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0519,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0988,
+      "youden": 0.0519
+    },
+    {
+      "threshold": 0.79,
+      "tp": 2,
+      "fn": 75,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.026,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0506,
+      "youden": 0.026
+    },
+    {
+      "threshold": 0.795,
+      "tp": 2,
+      "fn": 75,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.026,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0506,
+      "youden": 0.026
+    },
+    {
+      "threshold": 0.8,
+      "tp": 2,
+      "fn": 75,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.026,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0506,
+      "youden": 0.026
+    },
+    {
+      "threshold": 0.805,
+      "tp": 1,
+      "fn": 76,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.013,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0256,
+      "youden": 0.013
+    },
+    {
+      "threshold": 0.81,
+      "tp": 1,
+      "fn": 76,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.013,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0256,
+      "youden": 0.013
+    },
+    {
+      "threshold": 0.815,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.82,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.825,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.83,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.835,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.84,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.845,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.85,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.855,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.86,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.865,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.87,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.875,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.88,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.885,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.89,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.895,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    },
+    {
+      "threshold": 0.9,
+      "tp": 0,
+      "fn": 77,
+      "fp": 0,
+      "tn": 49,
+      "recall": 0.0,
+      "specificity": 1.0,
+      "precision": 1.0,
+      "f1": 0.0,
+      "youden": 0.0
+    }
+  ],
   "cases": [
+    {
+      "id": "CP01",
+      "query": "¿Cuántos días puedo tener un libro prestado siendo alumno?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.769,
+      "margin": 0.065,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.769,
+        0.732,
+        0.725,
+        0.714,
+        0.704
+      ]
+    },
+    {
+      "id": "CP02",
+      "query": "¿Cuánto tiempo de préstamo tienen los docentes?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.732,
+      "margin": 0.092,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.732,
+        0.691,
+        0.69,
+        0.682,
+        0.64
+      ]
+    },
+    {
+      "id": "CP03",
+      "query": "¿Cuántos libros puede llevarse un alumno al mismo tiempo?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.753,
+      "margin": 0.087,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.753,
+        0.68,
+        0.673,
+        0.668,
+        0.667
+      ]
+    },
+    {
+      "id": "CP04",
+      "query": "¿Y cuántos puede tener un docente a la vez?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.7,
+      "margin": 0.095,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.7,
+        0.638,
+        0.629,
+        0.62,
+        0.605
+      ]
+    },
+    {
+      "id": "CP05",
+      "query": "¿Puedo renovar un préstamo más de una vez?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.718,
+      "margin": 0.123,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.718,
+        0.622,
+        0.617,
+        0.603,
+        0.595
+      ]
+    },
+    {
+      "id": "CP06",
+      "query": "¿Cuántos días extiende la renovación si soy docente?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.708,
+      "margin": 0.102,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.708,
+        0.648,
+        0.619,
+        0.61,
+        0.605
+      ]
+    },
+    {
+      "id": "CP07",
+      "query": "Si me atraso con un libro, ¿cuánto pago por día?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.779,
+      "margin": 0.11,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.779,
+        0.715,
+        0.711,
+        0.691,
+        0.669
+      ]
+    },
+    {
+      "id": "CP08",
+      "query": "¿Hasta qué hora está abierta la biblioteca los días de semana?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.717,
+      "margin": 0.084,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.717,
+        0.652,
+        0.642,
+        0.64,
+        0.633
+      ]
+    },
+    {
+      "id": "CP09",
+      "query": "¿La biblioteca abre los sábados?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.751,
+      "margin": 0.114,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.751,
+        0.653,
+        0.642,
+        0.637,
+        0.637
+      ]
+    },
+    {
+      "id": "CP10",
+      "query": "¿Atienden los domingos y feriados?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.715,
+      "margin": 0.112,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.715,
+        0.614,
+        0.605,
+        0.604,
+        0.604
+      ]
+    },
+    {
+      "id": "CP11",
+      "query": "¿Qué pasa si pierdo un libro de la biblioteca?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.74,
+      "margin": 0.068,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": false,
+      "scores": [
+        0.74,
+        0.735,
+        0.715,
+        0.702,
+        0.672
+      ]
+    },
+    {
+      "id": "CP12",
+      "query": "¿Se pueden sacar los libros de consulta en sala?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.753,
+      "margin": 0.081,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.753,
+        0.691,
+        0.688,
+        0.685,
+        0.672
+      ]
+    },
+    {
+      "id": "CP13",
+      "query": "¿Puedo reservar un libro que no tiene ejemplares disponibles?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.744,
+      "margin": 0.117,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.744,
+        0.642,
+        0.631,
+        0.631,
+        0.627
+      ]
+    },
+    {
+      "id": "CP14",
+      "query": "¿Cuánto tiempo me guardan el libro que reservé?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.777,
+      "margin": 0.126,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.777,
+        0.708,
+        0.691,
+        0.656,
+        0.651
+      ]
+    },
+    {
+      "id": "CP15",
+      "query": "¿Qué necesito para retirar libros por primera vez?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.729,
+      "margin": 0.049,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.729,
+        0.708,
+        0.697,
+        0.687,
+        0.68
+      ]
+    },
+    {
+      "id": "CP16",
+      "query": "¿Puedo retirar libros si tengo uno vencido?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.716,
+      "margin": 0.024,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.716,
+        0.71,
+        0.694,
+        0.693,
+        0.692
+      ]
+    },
+    {
+      "id": "CP17",
+      "query": "¿Desde cuándo se cuentan los días de atraso?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.682,
+      "margin": 0.084,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.682,
+        0.645,
+        0.627,
+        0.599,
+        0.598
+      ]
+    },
+    {
+      "id": "CP18",
+      "query": "¿Dónde se paga una multa?",
+      "covered": true,
+      "group": "reglamento",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.647,
+      "margin": 0.091,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.647,
+        0.613,
+        0.563,
+        0.557,
+        0.556
+      ]
+    },
+    {
+      "id": "CP19",
+      "query": "¿Puedo subrayar un libro de la biblioteca?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.734,
+      "margin": 0.091,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.734,
+        0.658,
+        0.653,
+        0.645,
+        0.644
+      ]
+    },
+    {
+      "id": "CP20",
+      "query": "¿Puedo prestarle a un amigo el libro que retiré con mi legajo?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.76,
+      "margin": 0.069,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.76,
+        0.719,
+        0.714,
+        0.699,
+        0.69
+      ]
+    },
+    {
+      "id": "CP21",
+      "query": "¿Se puede comer en la sala de lectura?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.759,
+      "margin": 0.13,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.759,
+        0.674,
+        0.647,
+        0.637,
+        0.629
+      ]
+    },
+    {
+      "id": "CP22",
+      "query": "¿Qué sanción hay si me atraso más de 30 días varias veces?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.697,
+      "margin": 0.094,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.697,
+        0.684,
+        0.625,
+        0.62,
+        0.603
+      ]
+    },
+    {
+      "id": "CP23",
+      "query": "¿Qué pasa con mis préstamos si pierdo la regularidad como alumno?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.663,
+      "margin": 0.051,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.663,
+        0.626,
+        0.624,
+        0.622,
+        0.612
+      ]
+    },
+    {
+      "id": "CP24",
+      "query": "¿Qué hace la biblioteca con mis datos personales?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.81,
+      "margin": 0.146,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.81,
+        0.69,
+        0.688,
+        0.685,
+        0.664
+      ]
+    },
+    {
+      "id": "CP25",
+      "query": "¿Cómo sugiero que compren un libro nuevo?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.72,
+      "margin": 0.096,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.72,
+        0.637,
+        0.633,
+        0.626,
+        0.624
+      ]
+    },
+    {
+      "id": "CP26",
+      "query": "¿Cada cuánto evalúan las sugerencias de compra?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.692,
+      "margin": 0.117,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.692,
+        0.582,
+        0.577,
+        0.577,
+        0.575
+      ]
+    },
+    {
+      "id": "CP27",
+      "query": "¿Puedo usar el celular en la sala de lectura?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.756,
+      "margin": 0.109,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.756,
+        0.661,
+        0.649,
+        0.647,
+        0.647
+      ]
+    },
+    {
+      "id": "CP28",
+      "query": "¿Se pueden fotocopiar libros de la biblioteca?",
+      "covered": true,
+      "group": "politicas",
+      "expected_document": "politicas_universidad",
+      "max_similarity": 0.726,
+      "margin": 0.09,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.726,
+        0.657,
+        0.641,
+        0.638,
+        0.636
+      ]
+    },
+    {
+      "id": "CP29",
+      "query": "¿De qué trata Cien años de soledad?",
+      "covered": true,
+      "group": "resena_cien_anios",
+      "expected_document": "resenas_cien_anios_de_soledad",
+      "max_similarity": 0.771,
+      "margin": 0.217,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.771,
+        0.745,
+        0.701,
+        0.69,
+        0.553
+      ]
+    },
+    {
+      "id": "CP30",
+      "query": "¿Quién escribió Cien años de soledad?",
+      "covered": true,
+      "group": "resena_cien_anios",
+      "expected_document": "resenas_cien_anios_de_soledad",
+      "max_similarity": 0.7,
+      "margin": 0.167,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.7,
+        0.688,
+        0.666,
+        0.663,
+        0.533
+      ]
+    },
+    {
+      "id": "CP31",
+      "query": "¿Cuáles son los temas principales de Cien años de soledad?",
+      "covered": true,
+      "group": "resena_cien_anios",
+      "expected_document": "resenas_cien_anios_de_soledad",
+      "max_similarity": 0.786,
+      "margin": 0.202,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.786,
+        0.698,
+        0.674,
+        0.669,
+        0.584
+      ]
+    },
+    {
+      "id": "CP32",
+      "query": "¿Qué es el realismo mágico en la novela de Macondo?",
+      "covered": true,
+      "group": "resena_cien_anios",
+      "expected_document": "resenas_cien_anios_de_soledad",
+      "max_similarity": 0.647,
+      "margin": 0.147,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.647,
+        0.629,
+        0.607,
+        0.581,
+        0.5
+      ]
+    },
+    {
+      "id": "CP33",
+      "query": "¿Es difícil seguir la trama de Cien años de soledad?",
+      "covered": true,
+      "group": "resena_cien_anios",
+      "expected_document": "resenas_cien_anios_de_soledad",
+      "max_similarity": 0.728,
+      "margin": 0.14,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.728,
+        0.725,
+        0.721,
+        0.719,
+        0.588
+      ]
+    },
+    {
+      "id": "CP34",
+      "query": "¿Para qué lectores se recomienda Cien años de soledad?",
+      "covered": true,
+      "group": "resena_cien_anios",
+      "expected_document": "resenas_cien_anios_de_soledad",
+      "max_similarity": 0.78,
+      "margin": 0.114,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.78,
+        0.73,
+        0.695,
+        0.689,
+        0.667
+      ]
+    },
+    {
+      "id": "CP35",
+      "query": "¿De qué trata Clean Code?",
+      "covered": true,
+      "group": "resena_clean_code",
+      "expected_document": "resenas_clean_code",
+      "max_similarity": 0.758,
+      "margin": 0.216,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": true,
+      "scores": [
+        0.758,
+        0.755,
+        0.742,
+        0.734,
+        0.543
+      ]
+    },
+    {
+      "id": "CP36",
+      "query": "¿Quién es el autor de Clean Code?",
+      "covered": true,
+      "group": "resena_clean_code",
+      "expected_document": "resenas_clean_code",
+      "max_similarity": 0.726,
+      "margin": 0.202,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": true,
+      "scores": [
+        0.726,
+        0.707,
+        0.705,
+        0.691,
+        0.524
+      ]
+    },
+    {
+      "id": "CP37",
+      "query": "¿Qué dice Clean Code sobre los comentarios?",
+      "covered": true,
+      "group": "resena_clean_code",
+      "expected_document": "resenas_clean_code",
+      "max_similarity": 0.735,
+      "margin": 0.191,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": true,
+      "scores": [
+        0.735,
+        0.719,
+        0.715,
+        0.703,
+        0.544
+      ]
+    },
+    {
+      "id": "CP38",
+      "query": "¿En qué lenguaje están los ejemplos de Clean Code?",
+      "covered": true,
+      "group": "resena_clean_code",
+      "expected_document": "resenas_clean_code",
+      "max_similarity": 0.746,
+      "margin": 0.212,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": true,
+      "scores": [
+        0.746,
+        0.708,
+        0.707,
+        0.696,
+        0.534
+      ]
+    },
+    {
+      "id": "CP39",
+      "query": "¿Qué son los code smells?",
+      "covered": true,
+      "group": "resena_clean_code",
+      "expected_document": "resenas_clean_code",
+      "max_similarity": 0.686,
+      "margin": 0.155,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": true,
+      "scores": [
+        0.686,
+        0.657,
+        0.642,
+        0.635,
+        0.531
+      ]
+    },
+    {
+      "id": "CP40",
+      "query": "¿Quién debería leer Clean Code?",
+      "covered": true,
+      "group": "resena_clean_code",
+      "expected_document": "resenas_clean_code",
+      "max_similarity": 0.776,
+      "margin": 0.17,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": true,
+      "scores": [
+        0.776,
+        0.736,
+        0.731,
+        0.706,
+        0.606
+      ]
+    },
+    {
+      "id": "CP41",
+      "query": "¿De qué trata El Silmarillion?",
+      "covered": true,
+      "group": "resena_tolkien",
+      "expected_document": "resenas_tolkien",
+      "max_similarity": 0.737,
+      "margin": 0.097,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": true,
+      "scores": [
+        0.737,
+        0.699,
+        0.68,
+        0.662,
+        0.639
+      ]
+    },
+    {
+      "id": "CP42",
+      "query": "¿Es difícil leer El Silmarillion?",
+      "covered": true,
+      "group": "resena_tolkien",
+      "expected_document": "resenas_tolkien",
+      "max_similarity": 0.77,
+      "margin": 0.119,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": true,
+      "scores": [
+        0.77,
+        0.71,
+        0.7,
+        0.694,
+        0.651
+      ]
+    },
+    {
+      "id": "CP43",
+      "query": "¿Quién es Gollum en El Hobbit?",
+      "covered": true,
+      "group": "resena_tolkien",
+      "expected_document": "resenas_tolkien",
+      "max_similarity": 0.699,
+      "margin": 0.092,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": true,
+      "scores": [
+        0.699,
+        0.64,
+        0.636,
+        0.635,
+        0.608
+      ]
+    },
+    {
+      "id": "CP44",
+      "query": "¿Para qué tipo de lector está pensado El Hobbit?",
+      "covered": true,
+      "group": "resena_tolkien",
+      "expected_document": "resenas_tolkien",
+      "max_similarity": 0.742,
+      "margin": 0.117,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": true,
+      "scores": [
+        0.742,
+        0.742,
+        0.685,
+        0.661,
+        0.625
+      ]
+    },
+    {
+      "id": "CP45",
+      "query": "¿Qué pasa en Las Dos Torres?",
+      "covered": true,
+      "group": "resena_tolkien",
+      "expected_document": "resenas_tolkien",
+      "max_similarity": 0.697,
+      "margin": 0.095,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": true,
+      "scores": [
+        0.697,
+        0.656,
+        0.611,
+        0.609,
+        0.602
+      ]
+    },
+    {
+      "id": "CP46",
+      "query": "¿Qué es la Comunidad del Anillo?",
+      "covered": true,
+      "group": "resena_tolkien",
+      "expected_document": "resenas_tolkien",
+      "max_similarity": 0.73,
+      "margin": 0.112,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": true,
+      "scores": [
+        0.73,
+        0.667,
+        0.655,
+        0.636,
+        0.618
+      ]
+    },
+    {
+      "id": "CP47",
+      "query": "¿Cómo termina El Retorno del Rey?",
+      "covered": true,
+      "group": "resena_tolkien",
+      "expected_document": "resenas_tolkien",
+      "max_similarity": 0.737,
+      "margin": 0.12,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": true,
+      "scores": [
+        0.737,
+        0.729,
+        0.644,
+        0.627,
+        0.617
+      ]
+    },
+    {
+      "id": "CP48",
+      "query": "¿Por dónde empiezo a leer a Tolkien?",
+      "covered": true,
+      "group": "resena_tolkien",
+      "expected_document": "resenas_tolkien",
+      "max_similarity": 0.744,
+      "margin": 0.051,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": true,
+      "scores": [
+        0.744,
+        0.716,
+        0.701,
+        0.696,
+        0.693
+      ]
+    },
+    {
+      "id": "CP49",
+      "query": "¿De qué trata Alas de sangre?",
+      "covered": true,
+      "group": "resena_empyrean",
+      "expected_document": "resenas_empyrean",
+      "max_similarity": 0.714,
+      "margin": 0.064,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": true,
+      "scores": [
+        0.714,
+        0.704,
+        0.67,
+        0.661,
+        0.649
+      ]
+    },
+    {
+      "id": "CP50",
+      "query": "¿Cuál es el título original de Alas de ónix?",
+      "covered": true,
+      "group": "resena_empyrean",
+      "expected_document": "resenas_empyrean",
+      "max_similarity": 0.732,
+      "margin": 0.101,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": true,
+      "scores": [
+        0.732,
+        0.674,
+        0.637,
+        0.631,
+        0.631
+      ]
+    },
+    {
+      "id": "CP51",
+      "query": "¿La saga Empyrean es para adolescentes?",
+      "covered": true,
+      "group": "resena_empyrean",
+      "expected_document": "resenas_empyrean",
+      "max_similarity": 0.77,
+      "margin": 0.044,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": true,
+      "scores": [
+        0.77,
+        0.755,
+        0.733,
+        0.727,
+        0.726
+      ]
+    },
+    {
+      "id": "CP52",
+      "query": "¿Cómo es el ritmo de Alas de hierro?",
+      "covered": true,
+      "group": "resena_empyrean",
+      "expected_document": "resenas_empyrean",
+      "max_similarity": 0.672,
+      "margin": 0.077,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": true,
+      "scores": [
+        0.672,
+        0.648,
+        0.636,
+        0.621,
+        0.596
+      ]
+    },
+    {
+      "id": "CP53",
+      "query": "¿Quién es Xaden Riorson?",
+      "covered": true,
+      "group": "resena_empyrean",
+      "expected_document": "resenas_empyrean",
+      "max_similarity": 0.658,
+      "margin": 0.062,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": true,
+      "scores": [
+        0.658,
+        0.646,
+        0.625,
+        0.616,
+        0.595
+      ]
+    },
+    {
+      "id": "CP54",
+      "query": "¿Dónde transcurre la saga Empyrean?",
+      "covered": true,
+      "group": "resena_empyrean",
+      "expected_document": "resenas_empyrean",
+      "max_similarity": 0.764,
+      "margin": 0.057,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": true,
+      "scores": [
+        0.764,
+        0.714,
+        0.712,
+        0.708,
+        0.708
+      ]
+    },
+    {
+      "id": "CP55",
+      "query": "How many days can a student keep a borrowed book?",
+      "covered": true,
+      "group": "en",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.717,
+      "margin": 0.065,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.717,
+        0.677,
+        0.676,
+        0.668,
+        0.651
+      ]
+    },
+    {
+      "id": "CP56",
+      "query": "What is the late fee per day?",
+      "covered": true,
+      "group": "en",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.688,
+      "margin": 0.126,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.688,
+        0.616,
+        0.611,
+        0.597,
+        0.562
+      ]
+    },
+    {
+      "id": "CP57",
+      "query": "What are the library opening hours on Saturdays?",
+      "covered": true,
+      "group": "en",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.697,
+      "margin": 0.121,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.697,
+        0.601,
+        0.587,
+        0.586,
+        0.575
+      ]
+    },
+    {
+      "id": "CP58",
+      "query": "Can I renew a loan more than once?",
+      "covered": true,
+      "group": "en",
+      "expected_document": "reglamento_biblioteca",
+      "max_similarity": 0.657,
+      "margin": 0.121,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": true,
+      "scores": [
+        0.657,
+        0.568,
+        0.553,
+        0.542,
+        0.536
+      ]
+    },
+    {
+      "id": "CP59",
+      "query": "What is The Hobbit about?",
+      "covered": true,
+      "group": "en",
+      "expected_document": "resenas_tolkien",
+      "max_similarity": 0.674,
+      "margin": 0.089,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": true,
+      "scores": [
+        0.674,
+        0.64,
+        0.605,
+        0.602,
+        0.585
+      ]
+    },
+    {
+      "id": "CP60",
+      "query": "Who wrote One Hundred Years of Solitude?",
+      "covered": true,
+      "group": "en",
+      "expected_document": "resenas_cien_anios_de_soledad",
+      "max_similarity": 0.656,
+      "margin": 0.163,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": true,
+      "scores": [
+        0.656,
+        0.64,
+        0.618,
+        0.607,
+        0.493
+      ]
+    },
+    {
+      "id": "CP61",
+      "query": "Is Fourth Wing suitable for teenagers?",
+      "covered": true,
+      "group": "en",
+      "expected_document": "resenas_empyrean",
+      "max_similarity": 0.655,
+      "margin": 0.037,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": true,
+      "scores": [
+        0.655,
+        0.645,
+        0.624,
+        0.618,
+        0.618
+      ]
+    },
+    {
+      "id": "CP62",
+      "query": "What does Clean Code say about small functions?",
+      "covered": true,
+      "group": "en",
+      "expected_document": "resenas_clean_code",
+      "max_similarity": 0.677,
+      "margin": 0.203,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": true,
+      "scores": [
+        0.677,
+        0.629,
+        0.618,
+        0.608,
+        0.474
+      ]
+    },
+    {
+      "id": "CN01",
+      "query": "¿Me puedo conectar al wifi de la biblioteca con mi legajo?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.704,
+      "margin": 0.068,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.704,
+        0.697,
+        0.665,
+        0.655,
+        0.636
+      ]
+    },
+    {
+      "id": "CN02",
+      "query": "¿La biblioteca tiene cafetería?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.657,
+      "margin": 0.029,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.657,
+        0.656,
+        0.641,
+        0.634,
+        0.628
+      ]
+    },
+    {
+      "id": "CN03",
+      "query": "¿Hay estacionamiento para bicicletas en la biblioteca?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.632,
+      "margin": 0.029,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.632,
+        0.612,
+        0.606,
+        0.603,
+        0.603
+      ]
+    },
+    {
+      "id": "CN04",
+      "query": "¿Cómo reservo una sala de estudio para mi grupo?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.604,
+      "margin": 0.034,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
+      "scores": [
+        0.604,
+        0.592,
+        0.579,
+        0.576,
+        0.57
+      ]
+    },
+    {
+      "id": "CN05",
+      "query": "¿Cuánto cuesta imprimir en la biblioteca?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.636,
+      "margin": 0.014,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.636,
+        0.634,
+        0.633,
+        0.624,
+        0.622
+      ]
+    },
+    {
+      "id": "CN06",
+      "query": "¿La biblioteca presta notebooks?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.674,
+      "margin": 0.028,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.674,
+        0.67,
+        0.663,
+        0.657,
+        0.645
+      ]
+    },
+    {
+      "id": "CN07",
+      "query": "¿Hay préstamo interbibliotecario con otras universidades?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.668,
+      "margin": 0.022,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.668,
+        0.664,
+        0.656,
+        0.65,
+        0.646
+      ]
+    },
+    {
+      "id": "CN08",
+      "query": "¿Puedo leer libros electrónicos desde mi casa?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.62,
+      "margin": 0.011,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.62,
+        0.617,
+        0.615,
+        0.609,
+        0.608
+      ]
+    },
+    {
+      "id": "CN09",
+      "query": "¿Tienen casilleros para guardar las mochilas?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.58,
+      "margin": 0.004,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.58,
+        0.578,
+        0.576,
+        0.576,
+        0.576
+      ]
+    },
+    {
+      "id": "CN10",
+      "query": "¿La biblioteca da talleres de búsqueda bibliográfica?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.627,
+      "margin": 0.024,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.627,
+        0.623,
+        0.614,
+        0.603,
+        0.603
+      ]
+    },
+    {
+      "id": "CN11",
+      "query": "¿Cuánto cuesta la cuota para hacerse socio?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.637,
+      "margin": 0.064,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
+      "scores": [
+        0.637,
+        0.589,
+        0.577,
+        0.574,
+        0.573
+      ]
+    },
+    {
+      "id": "CN12",
+      "query": "¿Puedo donar libros a la biblioteca?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.672,
+      "margin": 0.045,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.672,
+        0.662,
+        0.641,
+        0.628,
+        0.627
+      ]
+    },
+    {
+      "id": "CN13",
+      "query": "¿Hay servicio de escaneo de documentos?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.605,
+      "margin": 0.029,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.605,
+        0.588,
+        0.588,
+        0.586,
+        0.576
+      ]
+    },
+    {
+      "id": "CN14",
+      "query": "¿Me pueden enviar un libro a mi domicilio?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.632,
+      "margin": 0.015,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.632,
+        0.626,
+        0.624,
+        0.619,
+        0.616
+      ]
+    },
+    {
+      "id": "CN15",
+      "query": "¿La biblioteca tiene sala de computadoras?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.626,
+      "margin": 0.017,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.626,
+        0.616,
+        0.613,
+        0.609,
+        0.609
+      ]
+    },
+    {
+      "id": "CN16",
+      "query": "¿Hay descuentos en las multas para docentes?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.611,
+      "margin": 0.019,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
+      "scores": [
+        0.611,
+        0.606,
+        0.597,
+        0.593,
+        0.592
+      ]
+    },
+    {
+      "id": "CN17",
+      "query": "¿Se pueden pagar las multas con tarjeta?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.596,
+      "margin": 0.073,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
+      "scores": [
+        0.596,
+        0.575,
+        0.533,
+        0.528,
+        0.523
+      ]
+    },
+    {
+      "id": "CN18",
+      "query": "¿Quién es la directora de la biblioteca?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.648,
+      "margin": 0.021,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.648,
+        0.638,
+        0.637,
+        0.63,
+        0.627
+      ]
+    },
+    {
+      "id": "CN19",
+      "query": "¿Cuál es el teléfono de la biblioteca?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.655,
+      "margin": 0.027,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.655,
+        0.655,
+        0.635,
+        0.633,
+        0.628
+      ]
+    },
+    {
+      "id": "CN20",
+      "query": "¿Tienen una sección infantil?",
+      "covered": false,
+      "group": "dominio_dificil",
+      "expected_document": null,
+      "max_similarity": 0.64,
+      "margin": 0.025,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": null,
+      "scores": [
+        0.64,
+        0.635,
+        0.631,
+        0.618,
+        0.615
+      ]
+    },
+    {
+      "id": "CN21",
+      "query": "¿De qué trata Harry Potter y la piedra filosofal?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.576,
+      "margin": 0.029,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": null,
+      "scores": [
+        0.576,
+        0.573,
+        0.568,
+        0.554,
+        0.547
+      ]
+    },
+    {
+      "id": "CN22",
+      "query": "¿De qué trata Dragon Ball?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.554,
+      "margin": 0.03,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": null,
+      "scores": [
+        0.554,
+        0.55,
+        0.533,
+        0.525,
+        0.524
+      ]
+    },
+    {
+      "id": "CN23",
+      "query": "¿Quién es Goku?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.527,
+      "margin": 0.022,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": null,
+      "scores": [
+        0.527,
+        0.515,
+        0.508,
+        0.507,
+        0.504
+      ]
+    },
+    {
+      "id": "CN24",
+      "query": "¿De qué trata Berserk?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.548,
+      "margin": 0.02,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": null,
+      "scores": [
+        0.548,
+        0.546,
+        0.539,
+        0.536,
+        0.528
+      ]
+    },
+    {
+      "id": "CN25",
+      "query": "¿Qué pasa en Las crónicas de Narnia?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.575,
+      "margin": 0.022,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": null,
+      "scores": [
+        0.575,
+        0.575,
+        0.563,
+        0.561,
+        0.553
+      ]
+    },
+    {
+      "id": "CN26",
+      "query": "¿Cuál es la trama de Watchmen?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.56,
+      "margin": 0.06,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.56,
+        0.554,
+        0.502,
+        0.502,
+        0.5
+      ]
+    },
+    {
+      "id": "CN27",
+      "query": "¿De qué trata Civil War de Marvel?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.535,
+      "margin": 0.047,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.535,
+        0.508,
+        0.492,
+        0.491,
+        0.488
+      ]
+    },
+    {
+      "id": "CN28",
+      "query": "¿De qué trata Fluent Python?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.602,
+      "margin": 0.077,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": null,
+      "scores": [
+        0.602,
+        0.602,
+        0.596,
+        0.569,
+        0.525
+      ]
+    },
+    {
+      "id": "CN29",
+      "query": "¿Qué explica Deep Learning sobre las redes neuronales?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.536,
+      "margin": 0.03,
+      "top_document": "resenas_clean_code.pdf",
+      "document_ok": null,
+      "scores": [
+        0.536,
+        0.535,
+        0.531,
+        0.506,
+        0.506
+      ]
+    },
+    {
+      "id": "CN30",
+      "query": "¿De qué trata Rayuela?",
+      "covered": false,
+      "group": "libro_sin_resena",
+      "expected_document": null,
+      "max_similarity": 0.575,
+      "margin": 0.038,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.575,
+        0.573,
+        0.556,
+        0.541,
+        0.537
+      ]
+    },
+    {
+      "id": "CN31",
+      "query": "¿Qué tiempo hace hoy en Tucumán?",
+      "covered": false,
+      "group": "ajeno",
+      "expected_document": null,
+      "max_similarity": 0.534,
+      "margin": 0.017,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
+      "scores": [
+        0.534,
+        0.533,
+        0.529,
+        0.522,
+        0.517
+      ]
+    },
+    {
+      "id": "CN32",
+      "query": "¿Cómo se hace una tortilla de papas?",
+      "covered": false,
+      "group": "ajeno",
+      "expected_document": null,
+      "max_similarity": 0.501,
+      "margin": 0.01,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": null,
+      "scores": [
+        0.501,
+        0.497,
+        0.496,
+        0.491,
+        0.49
+      ]
+    },
+    {
+      "id": "CN33",
+      "query": "¿Quién ganó el último mundial de fútbol?",
+      "covered": false,
+      "group": "ajeno",
+      "expected_document": null,
+      "max_similarity": 0.506,
+      "margin": 0.019,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": null,
+      "scores": [
+        0.506,
+        0.498,
+        0.489,
+        0.488,
+        0.487
+      ]
+    },
+    {
+      "id": "CN34",
+      "query": "¿Cuál es la capital de Australia?",
+      "covered": false,
+      "group": "ajeno",
+      "expected_document": null,
+      "max_similarity": 0.531,
+      "margin": 0.06,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": null,
+      "scores": [
+        0.531,
+        0.49,
+        0.477,
+        0.475,
+        0.471
+      ]
+    },
+    {
+      "id": "CN35",
+      "query": "¿Cómo me inscribo a una materia de la facultad?",
+      "covered": false,
+      "group": "ajeno",
+      "expected_document": null,
+      "max_similarity": 0.61,
+      "margin": 0.059,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
+      "scores": [
+        0.61,
+        0.606,
+        0.592,
+        0.552,
+        0.55
+      ]
+    },
+    {
+      "id": "CN36",
+      "query": "¿Cuánto cuesta la cuota de la universidad?",
+      "covered": false,
+      "group": "ajeno",
+      "expected_document": null,
+      "max_similarity": 0.639,
+      "margin": 0.035,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
+      "scores": [
+        0.639,
+        0.611,
+        0.607,
+        0.606,
+        0.605
+      ]
+    },
+    {
+      "id": "CN37",
+      "query": "Recomendame una película para esta noche",
+      "covered": false,
+      "group": "ajeno",
+      "expected_document": null,
+      "max_similarity": 0.58,
+      "margin": 0.012,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.58,
+        0.579,
+        0.578,
+        0.568,
+        0.567
+      ]
+    },
+    {
+      "id": "CN38",
+      "query": "Escribime un poema sobre el mar",
+      "covered": false,
+      "group": "ajeno",
+      "expected_document": null,
+      "max_similarity": 0.566,
+      "margin": 0.03,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.566,
+        0.561,
+        0.554,
+        0.545,
+        0.536
+      ]
+    },
+    {
+      "id": "CN39",
+      "query": "Is there wifi in the reading room?",
+      "covered": false,
+      "group": "en_negativo",
+      "expected_document": null,
+      "max_similarity": 0.591,
+      "margin": 0.04,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.591,
+        0.582,
+        0.568,
+        0.56,
+        0.551
+      ]
+    },
+    {
+      "id": "CN40",
+      "query": "Can I book a group study room?",
+      "covered": false,
+      "group": "en_negativo",
+      "expected_document": null,
+      "max_similarity": 0.549,
+      "margin": 0.013,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
+      "scores": [
+        0.549,
+        0.544,
+        0.539,
+        0.537,
+        0.536
+      ]
+    },
+    {
+      "id": "CN41",
+      "query": "What is the weather like today?",
+      "covered": false,
+      "group": "en_negativo",
+      "expected_document": null,
+      "max_similarity": 0.499,
+      "margin": 0.003,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.499,
+        0.497,
+        0.496,
+        0.496,
+        0.495
+      ]
+    },
+    {
+      "id": "CN42",
+      "query": "Does the library have a cafeteria?",
+      "covered": false,
+      "group": "en_negativo",
+      "expected_document": null,
+      "max_similarity": 0.618,
+      "margin": 0.044,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.618,
+        0.616,
+        0.587,
+        0.58,
+        0.574
+      ]
+    },
+    {
+      "id": "CN43",
+      "query": "What is Harry Potter about?",
+      "covered": false,
+      "group": "en_negativo",
+      "expected_document": null,
+      "max_similarity": 0.546,
+      "margin": 0.03,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": null,
+      "scores": [
+        0.546,
+        0.537,
+        0.527,
+        0.523,
+        0.516
+      ]
+    },
     {
       "id": "R1",
       "query": "plazo de devolución y multas",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.802,
+      "margin": 0.102,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.802,
         0.754,
@@ -19,8 +3011,13 @@
     {
       "id": "R2",
       "query": "sinopsis del libro Cien años de soledad",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.786,
+      "margin": 0.215,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": null,
       "scores": [
         0.786,
         0.745,
@@ -32,8 +3029,13 @@
     {
       "id": "R3",
       "query": "condiciones para renovar un préstamo",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.732,
+      "margin": 0.112,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.732,
         0.646,
@@ -45,8 +3047,13 @@
     {
       "id": "R4",
       "query": "precio del libro Rayuela",
-      "expected": "none",
+      "covered": false,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.611,
+      "margin": 0.025,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.611,
         0.593,
@@ -58,8 +3065,13 @@
     {
       "id": "R5",
       "query": "¿Hay wifi disponible en la sala de lectura?",
-      "expected": "none",
+      "covered": false,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.649,
+      "margin": 0.045,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
       "scores": [
         0.649,
         0.618,
@@ -71,8 +3083,13 @@
     {
       "id": "R6",
       "query": "¿La biblioteca tiene cafetería o estacionamiento?",
-      "expected": "none",
+      "covered": false,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.644,
+      "margin": 0.028,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
       "scores": [
         0.644,
         0.627,
@@ -84,8 +3101,13 @@
     {
       "id": "R7",
       "query": "¿Puedo reservar una sala de estudio grupal?",
-      "expected": "none",
+      "covered": false,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.597,
+      "margin": 0.022,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.597,
         0.586,
@@ -97,8 +3119,13 @@
     {
       "id": "R8",
       "query": "¿Cuánto cuesta imprimir o sacar fotocopias?",
-      "expected": "none",
+      "covered": false,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.602,
+      "margin": 0.038,
+      "top_document": "politicas_universidad.pdf",
+      "document_ok": null,
       "scores": [
         0.602,
         0.595,
@@ -110,8 +3137,13 @@
     {
       "id": "R9",
       "query": "¿cuánto es la multa por día de atraso?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.771,
+      "margin": 0.147,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.771,
         0.69,
@@ -123,8 +3155,13 @@
     {
       "id": "R10",
       "query": "¿hasta qué hora está abierta la biblioteca?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.735,
+      "margin": 0.087,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.735,
         0.666,
@@ -136,8 +3173,13 @@
     {
       "id": "R11",
       "query": "¿cuántos libros puedo tener prestados a la vez?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.765,
+      "margin": 0.089,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.765,
         0.691,
@@ -149,8 +3191,13 @@
     {
       "id": "R12",
       "query": "¿De qué trata El Hobbit?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.732,
+      "margin": 0.089,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": null,
       "scores": [
         0.732,
         0.695,
@@ -162,8 +3209,13 @@
     {
       "id": "R13",
       "query": "¿En qué orden conviene leer los libros de Tolkien?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.737,
+      "margin": 0.071,
+      "top_document": "resenas_tolkien.pdf",
+      "document_ok": null,
       "scores": [
         0.737,
         0.696,
@@ -175,8 +3227,13 @@
     {
       "id": "R14",
       "query": "¿De qué trata la saga Alas de hierro?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.706,
+      "margin": 0.062,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": null,
       "scores": [
         0.706,
         0.682,
@@ -188,8 +3245,13 @@
     {
       "id": "R15",
       "query": "¿Quién es Violet Sorrengail y qué le pasa en la academia?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.646,
+      "margin": 0.076,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": null,
       "scores": [
         0.646,
         0.635,
@@ -201,8 +3263,13 @@
     {
       "id": "R16",
       "query": "¿De qué trata la saga Canción de hielo y fuego?",
-      "expected": "none",
+      "covered": false,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.627,
+      "margin": 0.045,
+      "top_document": "resenas_empyrean.pdf",
+      "document_ok": null,
       "scores": [
         0.627,
         0.605,
@@ -214,8 +3281,13 @@
     {
       "id": "G6",
       "query": "¿Cuántos días tengo para devolver un libro antes de que me multen?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.755,
+      "margin": 0.062,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.755,
         0.734,
@@ -227,8 +3299,13 @@
     {
       "id": "G7",
       "query": "¿De qué trata el libro \"Cien años de soledad\"?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.762,
+      "margin": 0.212,
+      "top_document": "resenas_cien_anios_de_soledad.pdf",
+      "document_ok": null,
       "scores": [
         0.762,
         0.742,
@@ -240,8 +3317,13 @@
     {
       "id": "G8",
       "query": "¿Cómo renuevo un préstamo desde el sistema?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.703,
+      "margin": 0.109,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.703,
         0.63,
@@ -253,8 +3335,13 @@
     {
       "id": "G9",
       "query": "¿Cuál es el horario de la biblioteca?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.758,
+      "margin": 0.106,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.758,
         0.668,
@@ -266,8 +3353,13 @@
     {
       "id": "B2",
       "query": "How many days do I have to return a book before I get fined?",
-      "expected": "rag",
+      "covered": true,
+      "group": "golden",
+      "expected_document": null,
       "max_similarity": 0.686,
+      "margin": 0.055,
+      "top_document": "reglamento_biblioteca.pdf",
+      "document_ok": null,
       "scores": [
         0.686,
         0.676,
@@ -276,11 +3368,5 @@
         0.631
       ]
     }
-  ],
-  "verdict": {
-    "separable": false,
-    "worst_positive": 0.646,
-    "best_negative": 0.649,
-    "reason": "las similitudes de los casos con y sin cobertura se solapan"
-  }
+  ]
 }

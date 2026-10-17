@@ -123,8 +123,12 @@ del mismo contenido.
 | D94 | Pedidos de escritura, una sola nota y mensajes con carácter | R-2.9, R-5.8, R-5.9 |
 | D95 | La SPA presenta `answer` como Markdown (`react-markdown` + `remark-gfm`), sin HTML crudo | R-8.11, R-8.7 |
 | D96 | La frase de los mensajes fijos va en el título | T7.8, D94 |
-| D99 | R-7.9 se cumple en la herramienta SQL (whitelist), no en los permisos del rol | R-7.9, R-3.4, D63 |
+| D97 | Calibración del umbral con 126 consultas etiquetadas | R-4.8, R-4.9 |
+| D98 | Búsqueda híbrida y re-ranking medidos con el set de calibración | R-4.10, D97 |
+| D99 | Validación fuera de muestra del RAG | R-4.10, D98 |
+| D100 | El RAG usa re-ranking por defecto, con el coseno como respaldo | R-4.11, D12, D99 |
 | D101 | La interfaz no muestra `step` ni ofrece reintento ante un `answer_kind` `error`; las specs R-8.2 y R-8.3 se ajustan | R-8.2, R-8.3, R-8.6 |
+| D102 | R-7.9 se cumple en la herramienta SQL (whitelist), no en los permisos del rol | R-7.9, R-3.4, D63 |
 
 ## Risks / Trade-offs
 

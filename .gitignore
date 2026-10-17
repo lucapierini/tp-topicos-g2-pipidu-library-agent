@@ -33,3 +33,6 @@ db/dumps/
 # Frontend (web/)
 web/node_modules/
 web/dist/
+
+# Cachés locales de la evaluación del RAG (vectores de las consultas)
+.cache/

@@ -342,8 +342,10 @@ class LibraryAgent:
     def retriever(self) -> Retriever:
         if self._retriever is None:
             from agent.tools.rag_tool import GeminiEmbedder, PgVectorStore, RagRetriever
+            from agent.tools.reranker import GeminiReranker
 
-            self._retriever = RagRetriever(GeminiEmbedder(self.cfg), PgVectorStore(self.cfg), self.cfg)
+            reranker = GeminiReranker(self.cfg) if self.cfg.rag_strategy == "rerank" else None
+            self._retriever = RagRetriever(GeminiEmbedder(self.cfg), PgVectorStore(self.cfg), self.cfg, reranker)
         return self._retriever
 
     @property

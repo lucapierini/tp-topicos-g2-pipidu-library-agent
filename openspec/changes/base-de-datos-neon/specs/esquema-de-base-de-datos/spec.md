@@ -95,7 +95,7 @@ Las referencias de dominio SHALL usar `ON DELETE RESTRICT`; la FK de `libros_aut
 - **THEN** declara el operador `vector_cosine_ops` (y no L2 por defecto)
 
 ### Requirement: R-7.9 — El SQL tool no accede al almacén vectorial
-El SQL generado por el agente SHALL poder leer solo las tablas de negocio y la vista, y MUST NOT poder escribir ni leer `documentos` ni `documentos_chunks`. La lectura se impide en la herramienta SQL (lista de tablas permitidas, R-3.4); a nivel de permisos, el rol de la aplicación SHALL ser de solo lectura y MAY leer `documentos` y `documentos_chunks` porque la herramienta de recuperación los consulta con ese mismo rol (D63, D99).
+El SQL generado por el agente SHALL poder leer solo las tablas de negocio y la vista, y MUST NOT poder escribir ni leer `documentos` ni `documentos_chunks`. La lectura se impide en la herramienta SQL (lista de tablas permitidas, R-3.4); a nivel de permisos, el rol de la aplicación SHALL ser de solo lectura y MAY leer `documentos` y `documentos_chunks` porque la herramienta de recuperación los consulta con ese mismo rol (D63, D102).
 
 #### Scenario: lectura de chunks por el SQL tool
 - **GIVEN** una sentencia SQL generada por el agente que consulta `documentos_chunks`
