@@ -1,11 +1,12 @@
-"""Mide el criterio de aceptación R-2.1 con el modelo real (Gemini o LiteLLM), sin base ni PDFs (T6.3, T9.1).
+"""Mide el criterio de aceptación R-2.1 con el modelo real (Gemini o LiteLLM), por defecto sin base ni PDFs (T6.3, T9.1).
 
 Qué es real: el clasificador (Gemini o LiteLLM según `LLM_MODEL`), el loop del agente (smolagents + LiteLLM), el system prompt, el
 validador estático de SQL y la composición de la respuesta.
 Qué es falso por defecto: las filas que devuelve la base y los fragmentos que devuelve la recuperación.
 Por eso **no** se evalúa el contenido, sino lo que el orquestador sí controla: clasificación,
 herramientas invocadas, orden y SQL válido. Con `--db` las filas son reales (rol `agent_ro`) y con
-`--rag-mock` los fragmentos salen del corpus simulado de `tests/rag_fixture.py` (D69); el `check` de
+`--rag-mock` los fragmentos salen del corpus simulado de `tests/rag_fixture.py` (D69) y con `--rag-real`
+de pgvector; el `check` de
 contenido de cada caso se evalúa solo si sus fuentes no son falsas.
 
 Uso (desde la raíz del repo, con GEMINI_API_KEY en .env):
@@ -131,17 +132,16 @@ def run_case(agent: LibraryAgent, case, with_content: bool = False) -> CaseRepor
     return report
 
 
-def content_evaluable(expected: str, use_db: bool, rag_mock: bool, rag_real: bool = False) -> bool:
+def content_evaluable(expected: str, use_db: bool, rag_available: bool) -> bool:
     """El `check` de un caso solo significa algo si las fuentes que usa no son falsas.
 
-    SQL necesita la base local; RAG, el corpus simulado; un híbrido, las dos. `none` no depende de
+    SQL necesita la base local; RAG, un corpus simulado o la base vectorial real; un híbrido, las dos. `none` no depende de
     ninguna fuente: debe terminar sin filas ni fragmentos.
     """
-    rag = rag_mock or rag_real
     return {
         "sql": use_db,
-        "rag": rag,
-        "hybrid": use_db and rag,
+        "rag": rag_available,
+        "hybrid": use_db and rag_available,
         "none": True,
     }[expected]
 
@@ -217,7 +217,7 @@ def main() -> int:
     for case in cases:
         report = run_case(
             agent, case,
-            with_content=content_evaluable(case.expected_classification, args.db, args.rag_mock, args.rag_real),
+            with_content=content_evaluable(case.expected_classification, args.db, args.rag_mock or args.rag_real),
         )
         reports.append(report)
         mark = "OK " if report.classified_ok else "ERR"
@@ -257,7 +257,7 @@ def main() -> int:
                         else "FakeRetriever (un fragmento fijo)"),
                 "content_evaluated_for": [
                     kind for kind in ("sql", "rag", "hybrid", "none")
-                    if content_evaluable(kind, args.db, args.rag_mock, args.rag_real)
+                    if content_evaluable(kind, args.db, args.rag_mock or args.rag_real)
                 ],
             },
             "summary": summary,

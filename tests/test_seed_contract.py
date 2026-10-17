@@ -149,12 +149,12 @@ def ro_cursor():
 
 
 @pytest.mark.integration
-@pytest.mark.xfail(
-    reason="con DEV_SEED=1 (dev_seed.sql) las tablas tienen menos de 15 filas; con seed.sql se cumple",
-    strict=False,
+@pytest.mark.skipif(
+    os.environ.get("DEV_SEED") == "1",
+    reason="con DEV_SEED=1 (dev_seed.sql) las tablas tienen menos de 15 filas; el volumen se mide con seed.sql",
 )
 def test_volume_min_rows_per_domain_table(ro_cursor) -> None:
-    """T2.5: >= 15 filas en cada tabla del dominio. Se cumple con db/seed.sql; con db/dev_seed.sql no.
+    """T2.5: >= 15 filas en cada tabla del dominio. Se mide con db/seed.sql y se saltea con db/dev_seed.sql.
     """
     counts: dict[str, int] = {}
     for table in DOMAIN_TABLES:

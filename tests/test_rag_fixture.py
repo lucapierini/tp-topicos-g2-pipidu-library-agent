@@ -99,13 +99,13 @@ def test_the_orchestrator_cites_the_mock_chunk_and_the_golden_check_passes(retri
 def test_content_is_only_evaluated_where_the_sources_are_not_fake() -> None:
     from scripts.measure_golden import content_evaluable
 
-    assert content_evaluable("sql", use_db=True, rag_mock=False)
-    assert not content_evaluable("sql", use_db=False, rag_mock=True)
-    assert content_evaluable("rag", use_db=False, rag_mock=True)
-    assert not content_evaluable("rag", use_db=True, rag_mock=False)
-    assert not content_evaluable("hybrid", use_db=True, rag_mock=False)
-    assert content_evaluable("hybrid", use_db=True, rag_mock=True)
-    assert content_evaluable("none", use_db=False, rag_mock=False)
+    assert content_evaluable("sql", use_db=True, rag_available=False)
+    assert not content_evaluable("sql", use_db=False, rag_available=True)
+    assert content_evaluable("rag", use_db=False, rag_available=True)
+    assert not content_evaluable("rag", use_db=True, rag_available=False)
+    assert not content_evaluable("hybrid", use_db=True, rag_available=False)
+    assert content_evaluable("hybrid", use_db=True, rag_available=True)
+    assert content_evaluable("none", use_db=False, rag_available=False)
 
 
 # --- consultas en inglés (R-5.1, T7.6): los embeddings multilingües las resuelven; el mock, con alias ---
