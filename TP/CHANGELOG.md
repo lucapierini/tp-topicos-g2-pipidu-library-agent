@@ -127,15 +127,15 @@ Las specs por capacidad viven solo en `openspec/`. `TP/` conserva constitución,
 
 ---
 
-## 2026-10-13 — Base de datos en Neon y documentos del RAG (change `base-de-datos-neon`)
+## 2026-10-13 — Base de datos y documentos del RAG (change `base-de-datos`)
 
-**Decisión:** la justificación del esquema, el seed y los documentos fuente del RAG se tramitan como un change propio, `openspec/changes/base-de-datos-neon/`, con capacidades `esquema-de-base-de-datos` (R-7.x), `datos-de-prueba` (R-8.x) y `documentos-fuente-rag` (R-9.x). **Motivo:** D64 adoptó el esquema compartido sin dejar escrito por qué tiene esa forma; el modelo de datos necesita una justificación escrita.
+**Decisión:** la justificación del esquema, el seed y los documentos fuente del RAG se tramitan como un change propio, `openspec/changes/base-de-datos/`, con capacidades `esquema-de-base-de-datos` (R-7.x), `datos-de-prueba` (R-8.x) y `documentos-fuente-rag` (R-9.x). **Motivo:** D64 adoptó el esquema sin dejar escrito por qué tiene esa forma; el modelo de datos necesita una justificación escrita.
 
 Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D101`:
 
 | ID | Decisión | Alternativa descartada y motivo |
 |---|---|---|
-| D-DB1 | Neon (PostgreSQL + pgvector + bucket privado) es la fuente compartida de datos; el sistema corre en entorno local. La UI es la SPA de `web/` | Cloud SQL: más costo y fricción con pgvector; Neon ya ofrece ramas y almacenamiento de objetos |
+| D-DB1 | PostgreSQL con pgvector en Docker es la única fuente de datos; el sistema corre en entorno local. La UI es la SPA de `web/` | Base en la nube (Cloud SQL): más costo y fricción con pgvector sin aportar al alcance local |
 | D-DB2 | `GENERATED ALWAYS AS IDENTITY` | `SERIAL`: no estándar, permite ids manuales |
 | D-DB3 | Libros y autores por tabla puente `libros_autores` | `libros.autor_id`: no representa varios autores |
 | D-DB4 | `prestamos.estado` solo `activo`/`devuelto`, con CHECK contra `fecha_devolucion_real` | Guardar `vencido`: se desactualiza |
@@ -146,7 +146,7 @@ Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D10
 | D-DB9 | El rol del SQL tool no ve `documentos*` | Acceso total: no lo necesita |
 | D-DB10 | Plazos, límites y multas viven en el reglamento (RAG), no en tablas | Tabla de políticas: la consulta mixta no ejercitaría el RAG |
 
-**Orden seguido:** DDL aprobado antes de crear tablas → validado en rama de Neon (`test-ddl`) → aplicado a `production` → seed validado en `test-seed` → aplicado → PDFs generados y subidos al bucket `rag`.
+**Orden seguido:** DDL aprobado antes de crear tablas → aplicado sobre una base vacía → seed validado sobre la base local → PDFs generados con `rag/build_pdfs.py`.
 
 ---
 
@@ -206,8 +206,8 @@ Las decisiones de diseño llevan prefijo `D-DB` para no colisionar con `D1…D10
 | D61 | 2026-10-10 | T6.2 | smolagents hace una llamada extra al llegar a `max_steps`: el tope real de llamadas al modelo es `max_steps + 1` | Verificado con un modelo falso que nunca converge (7 llamadas con tope 6) |
 | D62 | 2026-10-10 | T6.2 | El clasificador para proveedores no-Gemini usa `max_tokens=4096` y propaga el motivo real del fallo (no solo la clase de la excepción) | La medición con un modelo local que razona dejó G12 en error 3 de 3 veces: con 1024 tokens el servidor devolvió `finish_reason=length` con el JSON incompleto, y el mensaje solo decía `ClassificationError`. El error era técnico y parecía una clasificación inválida (R-2.8) |
 | D63 | 2026-10-10 | T7.4 | Dos roles de aplicación: `agent_ro` (solo lectura del dominio y de `documentos_chunks`) y `agent_logger` (solo `INSERT` en `agent_runs`, y `SELECT (id)` para `RETURNING`). `agent_ro` no ve `agent_runs` | `agent_ro` es de solo lectura (R-3.5): no puede escribir la bitácora. Un único rol con escritura rompería Art. 3. Con rol de solo inserción, una credencial filtrada no expone la historia de consultas (D21). Verificado contra Postgres real |
-| D64 | 2026-10-10 | T2.1 | Se adopta el **esquema real compartido**: `libros` no tiene `autor_id` (N:M por `libros_autores`); la vista es `v_prestamos_estado` con `estado_calculado` y `dias_atraso`; `prestamos.estado` existe pero solo vale `activo`/`devuelto` | La whitelist, el prompt, los ejemplos y los tests se alinearon; el test de coincidencia con `schema.sql` es bidireccional y corre |
-| D65 | 2026-10-10 | T1.3, T2.1 | `db/schema.sql` es el DDL exportado de Neon **normalizado**; la base local corre en Docker (`docker compose up -d --wait`) con roles, `agent_runs`, permisos y `db/dev_seed.sql`; `scripts/replicate_neon.sh` trae datos reales con `pg_dump` desde un contenedor | El DDL exportado no corría en PostgreSQL: `CREATE VIEW … TABLESPACE`, `CREATE UNIQUE INDEX` duplicando el de cada PK/UNIQUE, `CREATE SCHEMA public`, falta `CREATE EXTENSION vector`. El HNSW no declaraba operador (por defecto L2) y el agente consulta por coseno (D13): se declaró `vector_cosine_ops`. Cada cambio queda anotado en la cabecera de `schema.sql` para llevarlo al esquema compartido |
+| D64 | 2026-10-10 | T2.1 | Se adopta el **esquema real**: `libros` no tiene `autor_id` (N:M por `libros_autores`); la vista es `v_prestamos_estado` con `estado_calculado` y `dias_atraso`; `prestamos.estado` existe pero solo vale `activo`/`devuelto` | La whitelist, el prompt, los ejemplos y los tests se alinearon; el test de coincidencia con `schema.sql` es bidireccional y corre |
+| D65 | 2026-10-10 | T1.3, T2.1 | `db/schema.sql` es el DDL de la base, escrito para que corra en PostgreSQL; la base local corre en Docker (`docker compose up -d --wait`) con roles, `agent_runs`, permisos y `db/seed.sql` y `db/dev_seed.sql` | El DDL exportado no corría en PostgreSQL: `CREATE VIEW … TABLESPACE`, `CREATE UNIQUE INDEX` duplicando el de cada PK/UNIQUE, `CREATE SCHEMA public`, falta `CREATE EXTENSION vector`. El HNSW no declaraba operador (por defecto L2) y el agente consulta por coseno (D13): se declaró `vector_cosine_ops`. Cada cambio queda anotado en la cabecera de `schema.sql` |
 | D66 | 2026-10-10 | T5.1 | La herramienta de RAG lee `documentos_chunks` + `documentos`. `location` = `metadata.seccion` / `ubicacion` / `pagina` o “fragmento N”; `content_hash` = `sha256 + ':' + chunk_index` | El esquema real no tiene columna de ubicación: la cita “Art. 12” (R-4.7) depende de que la ingesta la guarde en `metadata` |
 | D67 | 2026-10-10 | T7.4 | `agent_runs` se arma solo desde el `AgentAnswer` (una sola fuente de verdad). Si el registro falla, la consulta se contesta igual y el fallo queda en `evidence.run_recording_error`. La consulta vacía no se registra (R-1.2). Con la base caída no se reintenta durante 30 s | Una respuesta correcta no se pierde por un problema de bitácora, pero tampoco se finge que se registró (Art. 4). Sin el enfriamiento cada consulta pagaría el timeout de conexión (R-6.2, R-6.3) |
 | D68 | 2026-10-10 | T1.3 | `POSTGRES_HOST` por defecto `127.0.0.1` | En Windows `localhost` intenta primero IPv6 y cada conexión costaba ~2 s (medido: 2,03 s contra 0,03 s). La suite de integración pasó de 98 s a 2,4 s |

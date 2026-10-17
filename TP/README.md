@@ -37,7 +37,7 @@ Change `agente-y-tools` (agente y herramientas; IDs `R-1.x` a `R-7.x`):
 6. `trazabilidad-de-ejecucion`
 7. `consulta-por-api`
 
-Change `base-de-datos-neon` (justificación del esquema, seed y documentos fuente del RAG):
+Change `base-de-datos` (justificación del esquema, seed y documentos fuente del RAG):
 
 - `esquema-de-base-de-datos` (`R-7.1` a `R-7.10`)
 - `datos-de-prueba` (`R-8.1`, `R-8.2` y `R-8.4` a `R-8.8`)
@@ -60,7 +60,7 @@ Los PDF documentales (`rag/documents/pdf/`) cubren el contenido que sostienen lo
 openspec list --specs          # inventario de capacidades
 openspec list                  # changes en curso
 openspec validate --all --strict   # valida requisitos y escenarios de todos los changes
-openspec show agente-y-tools   # ver un change (también `base-de-datos-neon`, `calibracion-umbral-rag`, `frontend-web-vite` y `frontend-markdown-answer`)
+openspec show agente-y-tools   # ver un change (también `base-de-datos`, `calibracion-umbral-rag`, `frontend-web-vite` y `frontend-markdown-answer`)
 openspec context               # contexto del proyecto
 ```
 

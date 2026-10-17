@@ -3,15 +3,13 @@
 #
 #   cp .env.example .env     # completar las contraseñas
 #   docker compose up -d --wait   # db + api + web; la interfaz queda en http://localhost:3000
-#   bash scripts/replicate_neon.sh   # (opcional) trae el esquema y los datos de Neon
 #
-# Infraestructura local completa (base + RAG + agente), sin tocar Neon:
+# Infraestructura local completa (base + RAG + agente):
 #   docker compose up -d --wait db                 # Postgres + pgvector + esquema + roles + datos de desarrollo
 #   docker compose run --rm ingest                 # recarga el RAG a mano (`up` ya lo hace solo)
 #   docker compose run --rm agent "<pregunta>"     # el agente real contra la base local
 #
-# La imagen debe tener la misma versión mayor que Neon para poder restaurar su dump: `PG_IMAGE`.
-# El script de réplica la detecta y te dice cuál usar.
+# La versión de la imagen de Postgres se elige con `PG_IMAGE`.
 services:
   db:
     image: ${PG_IMAGE:-pgvector/pgvector:pg17}
@@ -65,8 +63,7 @@ services:
       PGUSER: postgres
       PGPASSWORD: ${POSTGRES_ADMIN_PASSWORD}
       PGDATABASE: ${POSTGRES_DB:-pipidu}
-      INGEST_DATABASE_URL: ""   # fuerza PG*: nunca la URL de Neon que pueda haber en .env
-      NEON_DATABASE_URL: ""
+      INGEST_DATABASE_URL: ""   # fuerza PG*: la ingesta de compose siempre escribe en la base local
 
   # El agente real (Gemini + SQL + RAG) contra la base local, una pregunta por corrida. Perfil `tools`: no
   # entra en `up`; la interfaz gráfica está en el servicio `web` (D93) y la API en `api` (D80).
@@ -80,12 +77,11 @@ services:
         condition: service_healthy
     env_file: .env
     environment:
-      # .env puede apuntar a Neon: dentro de la red de compose el agente usa SIEMPRE la base local.
+      # Dentro de la red de compose el agente usa SIEMPRE la base local, aunque .env apunte a otra.
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
       POSTGRES_DB: ${POSTGRES_DB:-pipidu}
       POSTGRES_SSLMODE: ""
-      NEON_DATABASE_URL: ""
 
   # API del agente (imagen `runtime`, D74, D81). Lee `.env` (GEMINI_API_KEY, roles de la base); dentro de la
   # red de compose la base es el servicio `db`, no 127.0.0.1, y siempre en el puerto 5432.
@@ -102,8 +98,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_PORT: "5432"
       POSTGRES_DB: ${POSTGRES_DB:-pipidu}
-      POSTGRES_SSLMODE: ""   # .env puede apuntar a Neon (require); la base de la red de compose es local
-      NEON_DATABASE_URL: ""
+      POSTGRES_SSLMODE: ""   # la base de la red de compose es local y sin TLS
       PORT: "8080"
     depends_on:
       db:

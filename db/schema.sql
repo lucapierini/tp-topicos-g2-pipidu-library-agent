@@ -1,5 +1,4 @@
--- Esquema de la base de la biblioteca (T2.1). Fuente: el esquema compartido en Neon, normalizado para
--- que corra tal cual en PostgreSQL local.
+-- Esquema de la base de la biblioteca (T2.1). Corre tal cual en PostgreSQL local.
 --
 -- Normalizado para PostgreSQL local: sin CREATE SCHEMA public, con CREATE EXTENSION vector, vista sin
 -- TABLESPACE, sin CREATE UNIQUE INDEX aparte de los de PK/UNIQUE, e índice HNSW con vector_cosine_ops

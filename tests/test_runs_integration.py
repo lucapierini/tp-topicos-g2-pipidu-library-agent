@@ -2,7 +2,7 @@
 
 Marcado `integration`: requiere `docker compose up -d` y el `.env` con las contraseñas. Se salta
 si no hay base. Verifica lo que ningún fake puede: permisos reales por rol, CHECKs, tipos y que el
-SQL que genera el agente corra contra el esquema compartido.
+SQL que genera el agente corra contra el esquema real.
 
 Uso:  docker compose up -d --wait db && .venv/Scripts/python -m pytest -m integration
 """

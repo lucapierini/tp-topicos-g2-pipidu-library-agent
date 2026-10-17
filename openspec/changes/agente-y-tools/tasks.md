@@ -12,7 +12,7 @@ configuración por variables de entorno.
 
 ## 2. Modelo de datos y datos sintéticos
 
-El esquema compartido, los roles de acceso a la base y la configuración de los valores del sistema.
+El esquema, los roles de acceso a la base y la configuración de los valores del sistema.
 
 - [x] 2.1 Escribir `db/schema.sql` con las 7 tablas del dominio (`autores`, `categorias`, `editoriales`, `libros`, `libros_autores`, `socios`, `prestamos`) más `documentos` y `documentos_chunks` (D64) y verificar que `psql -f db/schema.sql` crea el esquema sin errores de FK
 - [x] 2.2 Crear el usuario dedicado `agent_ro` con `GRANT SELECT` sobre las 7 tablas del dominio, la vista `v_prestamos_estado` y `documentos` + `documentos_chunks`, `statement_timeout = 10s` y `default_transaction_read_only`, y verificar que un `INSERT` con ese usuario es rechazado por PostgreSQL (D14, R-3.5, D64, D65; los permisos se aplican en `db/post_restore.sql:19-30`)

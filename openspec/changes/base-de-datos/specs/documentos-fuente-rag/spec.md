@@ -46,16 +46,16 @@ Cada documento fuente SHALL tener su PDF en `rag/documents/pdf/`, generado con `
 - **WHEN** se extrae su texto con `pypdf`
 - **THEN** contiene el contenido del Markdown de origen
 
-### Requirement: R-9.6 — Originales en bucket privado
-Los PDFs SHALL almacenarse en el bucket privado `rag` de Neon bajo el prefijo `documents/`. La subida la hace `rag/upload_to_bucket.py`, que sobrescribe la misma clave y MUST ser idempotente.
+### Requirement: R-9.6 — Originales versionados en el repositorio
+Los PDFs SHALL estar versionados en `rag/documents/pdf/`, generados con `rag/build_pdfs.py` a partir del `.md` de cada documento.
 
-#### Scenario: subida repetida
-- **WHEN** se ejecuta `rag/upload_to_bucket.py` dos veces
-- **THEN** el bucket queda con un objeto por PDF, sin duplicados
+#### Scenario: un PDF por documento
+- **WHEN** se listan `rag/documents/` y `rag/documents/pdf/`
+- **THEN** hay un PDF por cada `.md`, con el mismo nombre base
 
 #### Scenario: sin secretos versionados
 - **WHEN** se revisa el árbol versionado
-- **THEN** las credenciales S3 solo existen en `.env.local`, que está en `.gitignore`
+- **THEN** las credenciales solo existen en `.env` o `.env.local`, que están en `.gitignore`
 
 ### Requirement: R-9.7 — Los casos del golden set tienen respaldo documental
 Los documentos SHALL cubrir plazo de devolución, horarios y la sinopsis de las obras reseñadas (Cien años de soledad, Clean Code, la obra de Tolkien y la saga Empyrean).

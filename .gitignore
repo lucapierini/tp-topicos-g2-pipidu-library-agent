@@ -10,9 +10,6 @@ venv/
 .env.*
 !.env.example
 
-# Enlace local a Neon (neon link): estado de cada integrante
-.neon/
-
 # Evidencias locales
 *.log
 .pytest_cache/
@@ -27,7 +24,7 @@ venv/
 AGENTS.md
 CLAUDE.md
 
-# Volcados de la base compartida (scripts/replicate_neon.sh): datos, no código
+# Volcados de la base: datos, no código
 db/dumps/
 
 # Frontend (web/)

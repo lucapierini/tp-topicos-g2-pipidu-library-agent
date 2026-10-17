@@ -38,14 +38,14 @@ _(ninguna — es el primer change del proyecto)_
 
 ## Impact
 
-- Esquema compartido (D64): `autores`, `editoriales`, `categorias`, `libros`, `libros_autores`, `socios`,
+- Esquema de la base (D64): `autores`, `editoriales`, `categorias`, `libros`, `libros_autores`, `socios`,
   `prestamos`, la vista `v_prestamos_estado` y el repositorio documental `documentos` +
   `documentos_chunks` (pgvector). Este change agrega `agent_runs` (`db/migrations/001_agent_runs.sql`).
 - Roles de base de datos: `agent_ro` (solo lectura) y `agent_logger` (solo `INSERT` en `agent_runs`, D63).
 - Nuevas dependencias de ejecución (`requirements.txt`): `smolagents[litellm]`, `psycopg2-binary`, `pypdf`,
   `google-genai`, `sqlglot`, `fastapi`, `uvicorn` (la API HTTP, D75) y `python-dotenv` (`.env`, Art. 9).
   `pytest` y `ruff` son de desarrollo (`requirements-dev.txt`) y no entran a la imagen (D54).
-  `rag/requirements.txt` es solo para las utilidades de RAG: `fpdf2` (genera los PDF que se versionan en el repositorio, D19), `boto3` (el upload al bucket, fuera del alcance local de D81) y `python-dotenv`.
+  `rag/requirements.txt` es solo para las utilidades de RAG: `fpdf2` (genera los PDF que se versionan en el repositorio, D19) y `python-dotenv`.
 - Contenedor en ejecución: la imagen `runtime` arranca `uvicorn api.app:app` en `PORT` (8080 por defecto, D80).
 - Nuevas variables de entorno (`.env.example`): `GEMINI_API_KEY`, credenciales de BD (`POSTGRES_HOST`,
   `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`/`POSTGRES_PASSWORD` para `agent_ro`,
@@ -53,8 +53,7 @@ _(ninguna — es el primer change del proyecto)_
   `POSTGRES_ADMIN_PASSWORD` solo para compose y `scripts/export_runs.py`, D65) y, para cambiar de proveedor sin
   tocar código, `LLM_MODEL`, `LLM_API_BASE` y `LLM_API_KEY` (R-2.8). El flujo se valida primero contra un
   modelo local y la aceptación se mide después con Gemini. `API_ALLOWED_ORIGINS` agrega la allowlist de
-  CORS del frontend (R-7.8, D82). `NEON_DATABASE_URL` es la cadena de conexión de la base compartida para
-  `scripts/replicate_neon.sh` (secreto, solo en `.env`).
+  CORS del frontend (R-7.8, D82).
 - Los valores de configuración salen de `Config` (D6, D12, D15): `GEMINI_MODEL` (el modelo definitivo, D71),
   `GEMINI_EMBEDDING_MODEL` y `EMBEDDING_DIM` (D5), `RAG_TOP_K`, `RAG_SIMILARITY_THRESHOLD` (0,64, D12), `RAG_STRATEGY` y `RAG_RERANK_THRESHOLD` (D100),
   `SQL_MAX_ROWS`, `SQL_STATEMENT_TIMEOUT_MS`, `SQL_MAX_ATTEMPTS`, `SQL_MAX_TABLE_REFS`, `AGENT_TEMPERATURE`,

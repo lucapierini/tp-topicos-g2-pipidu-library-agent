@@ -90,7 +90,7 @@ class Config:
     db_name: str
     db_host: str
     db_port: int
-    # `require` para Neon (TLS obligatorio); vacío = el valor por defecto de libpq (base local).
+    # Modo TLS de libpq (`require`, etc.); vacío = el valor por defecto de libpq (base local).
     db_sslmode: str
 
     # Frontend externo (R-7.8, D82): orígenes permitidos para CORS. Vacío = ninguno.

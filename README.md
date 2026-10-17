@@ -215,7 +215,7 @@ completo: `python -m pytest tests/test_seed_contract.py -m integration`.
 - **El chat dice que no tiene información de los documentos**: `docker compose logs ingest` debe terminar con «En la base: 6 documentos, 44 fragmentos».
 - **Cambié `.env` y no se nota**: la API lee el archivo al arrancar; `docker compose up -d` recrea el contenedor con los valores nuevos.
 - **Cambié `DEV_SEED`**: solo aplica al crear el volumen; hay que hacer `docker compose down -v` y volver a levantar.
-- **Si `.env` apunta a Neon** (`NEON_DATABASE_URL` completo), `docker compose` igual usa la base local para `api`, `ingest` y `agent`.
+- **Si `.env` apunta a otra base** (`POSTGRES_HOST`, `INGEST_DATABASE_URL`), `docker compose` igual usa la base local para `api`, `ingest` y `agent`.
 
 `DEV_SEED` (opcional, en `.env`): `full` (por defecto) carga el catálogo completo, que es el seed que necesita el
 test de volumen de `tests/test_seed_contract.py`; `1` carga el seed mínimo de pruebas (`db/dev_seed.sql`, la foto
@@ -275,7 +275,6 @@ docker build -f docker/Dockerfile --target measure -t pipidu-measure . # imagen 
 
 Desarrollo sin cuota: apuntar a un servidor local OpenAI-compatible con `LLM_MODEL=openai/<id>` y
 `LLM_API_BASE=http://127.0.0.1:<puerto>/v1` (R-2.8); valida el flujo, pero la medición de referencia se hace con Gemini.
-Opcional: traer la base compartida de Neon con `NEON_DATABASE_URL` en `.env` y `bash scripts/replicate_neon.sh --check`.
 Las variables de entorno están documentadas una por una en `.env.example`.
 
 ## Qué incluye

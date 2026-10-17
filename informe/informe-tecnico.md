@@ -272,7 +272,7 @@ El desarrollo siguió el ciclo `Requirement → Spec → Plan → Tasks → Impl
 | Especificación funcional y técnica | `TP/01-especificacion-funcional.md`, `TP/02-especificacion-tecnica.md` |
 | Validación: casos de prueba, calibración y corridas medidas | `TP/05-validacion.md`, `TP/evidencia/` |
 | Registro de decisiones, con fecha y motivo | `TP/CHANGELOG.md` |
-| Cinco changes de OpenSpec: requisitos con escenarios `GIVEN / WHEN / THEN`, diseño y tareas | `openspec/changes/` (`agente-y-tools`, `base-de-datos-neon`, `calibracion-umbral-rag`, `frontend-web-vite`, `frontend-markdown-answer`) |
+| Cinco changes de OpenSpec: requisitos con escenarios `GIVEN / WHEN / THEN`, diseño y tareas | `openspec/changes/` (`agente-y-tools`, `base-de-datos`, `calibracion-umbral-rag`, `frontend-web-vite`, `frontend-markdown-answer`) |
 
 Cada requisito y cada decisión de diseño tienen un identificador, y las pruebas los citan, de modo que se puede seguir un comportamiento desde el requisito hasta la prueba que lo verifica. La especificación se escribe antes que el código y `openspec validate --all --strict` valida que cada requisito tenga al menos un escenario.
 

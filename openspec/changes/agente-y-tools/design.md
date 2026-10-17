@@ -91,7 +91,7 @@ canónico. Acá queda solo el índice, para no mantener dos copias del mismo con
 | D61 | `max_steps + 1` llamadas al modelo en smolagents | D15 |
 | D62 | Clasificador no-Gemini con 4096 tokens y motivo real del fallo | R-2.8, R-5.7 |
 | D63 | Dos roles: `agent_ro` (lectura) y `agent_logger` (solo `INSERT` en `agent_runs`) | R-3.5, R-6.2 |
-| D64 | Se adopta el esquema real compartido (N:M autores, vista `v_prestamos_estado`, `estado` solo activo/devuelto) | R-3.4, R-3.12 |
+| D64 | Se adopta el esquema real (N:M autores, vista `v_prestamos_estado`, `estado` solo activo/devuelto) | R-3.4, R-3.12 |
 | D65 | `db/schema.sql` normalizado desde el DDL exportado, base local en Docker y datos de desarrollo | T1.3, T2.1 |
 | D66 | La recuperación lee `documentos_chunks` + `documentos`; la ubicación sale de `metadata` | R-4.2, R-4.7 |
 | D67 | `agent_runs` se arma solo desde el `AgentAnswer` y su fallo no rompe la respuesta | R-6.1, R-6.3 |
@@ -145,7 +145,7 @@ canónico. Acá queda solo el índice, para no mantener dos copias del mismo con
 ## Migration Plan
 
 1. `docker compose up` con Postgres + pgvector en local.
-2. `db/schema.sql` (esquema compartido normalizado, D65) y `db/migrations/001_agent_runs.sql`; roles
+2. `db/schema.sql` (esquema de la base, D65) y `db/migrations/001_agent_runs.sql`; roles
    `agent_ro` y `agent_logger` con `db/init/10-roles.sh`. Todo se levanta con `docker compose up -d --wait`.
 3. Datos: `db/seed.sql` (catálogo completo, 70 libros) lo carga `docker compose up` con `DEV_SEED=full`
    (D91); `DEV_SEED=1` carga `db/dev_seed.sql` (7 libros, el que usan los tests de integración).

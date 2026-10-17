@@ -2,17 +2,16 @@
 
 ## Purpose
 
-Define la forma del esquema relacional y del almacén vectorial en PostgreSQL (Neon), de modo que el
+Define la forma del esquema relacional y del almacén vectorial en PostgreSQL, de modo que el
 SQL que genera el agente sea simple, seguro y no dependa de la fecha de ejecución.
 
 ## ADDED Requirements
 
-### Requirement: R-7.1 — Base única en Neon con pgvector
-El sistema SHALL mantener el dominio relacional y el almacén vectorial en la misma base PostgreSQL de
-Neon, con la extensión `vector` habilitada.
+### Requirement: R-7.1 — Base única con pgvector
+El sistema SHALL mantener el dominio relacional y el almacén vectorial en la misma base PostgreSQL, con la extensión `vector` habilitada.
 
 #### Scenario: base completa
-- **GIVEN** el esquema aplicado en la rama `production` del proyecto `library-agent`
+- **GIVEN** el esquema aplicado en la base local de `docker compose`
 - **WHEN** se inspeccionan los objetos de la base
 - **THEN** existen 9 tablas (7 de dominio: `autores`, `categorias`, `editoriales`, `libros`, `libros_autores`, `socios`, `prestamos`; 2 documentales: `documentos`, `documentos_chunks`) y la vista `v_prestamos_estado`
 - **AND** `agent_runs` no está entre ellas: es la tabla de trazabilidad y se crea aparte (R-6.1)

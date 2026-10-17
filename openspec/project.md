@@ -26,11 +26,11 @@ Proyecto de la materia Tópicos Avanzados de IA (UCSE, Ingeniería en Informáti
 ```
 db/            schema.sql, seed.sql (catálogo completo), dev_seed.sql (seed mínimo), migrations/, init/ (roles y carga
                inicial), post_restore.sql
-rag/           documents/ (.md y pdf/), ingest.py, build_pdfs.py, upload_to_bucket.py, requirements.txt
+rag/           documents/ (.md y pdf/), ingest.py, build_pdfs.py, requirements.txt
 agent/         agent.py, classifier.py, contracts.py, errors.py, retry.py, runs.py, sql_validator.py,
                config/, prompts/, tools/ (sql_tool.py, rag_tool.py, reranker.py, smol_tools.py)
 scripts/       ask.py, measure_golden.py, measure_queue.py, measure_retrieval.py, evaluate_retrieval.py,
-               calibrate_threshold.py, export_runs.py, probe_llm.py, replicate_neon.sh
+               calibrate_threshold.py, export_runs.py, probe_llm.py
 api/           app.py (FastAPI: POST /ask con streaming SSE, GET /health): único acceso al agente
 web/           SPA Vite + React + shadcn/ui: cliente de la API (D93)
 tests/         ver el detalle en `TP/02` §8

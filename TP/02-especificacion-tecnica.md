@@ -176,8 +176,7 @@ API y la web. `db` ejecuta `db/init/10-roles.sh` al crear el volumen: crea los r
 el seed que elige `DEV_SEED`: `full` (por defecto, D91) = `db/seed.sql`, el catálogo completo, que es el
 seed que necesita el test de volumen de `tests/test_seed_contract.py`; `1` = `db/dev_seed.sql` (pocas filas
 deterministas con fechas relativas a `CURRENT_DATE`, la foto que esperan `tests/test_golden_seed.py` y
-`tests/test_runs_integration.py`); `0` = base vacía. `scripts/replicate_neon.sh` trae el esquema y los datos de Neon con
-`pg_dump` desde un contenedor, solo lectura y sin imprimir la connection string.
+`tests/test_runs_integration.py`); `0` = base vacía.
 
 ### 3.3 Datos sintéticos
 
@@ -565,8 +564,7 @@ tp-topicos-g2-pipidu-library-agent/
 │   ├── documents/                # fuente .md y pdf/ (6 documentos)
 │   ├── build_pdfs.py             # genera los PDF desde los .md
 │   ├── ingest.py                 # ingesta a documentos y documentos_chunks (chunking por sección incluido)
-│   ├── upload_to_bucket.py       # fuera del flujo local (D81)
-│   └── requirements.txt          # fpdf2 y boto3: solo para build_pdfs.py y upload_to_bucket.py
+│   └── requirements.txt          # fpdf2: solo para build_pdfs.py
 ├── agent/
 │   ├── agent.py                  # orquestador: ToolCallingAgent (D2), eventos y cancelación (D75, D76), lock (D77)
 │   ├── classifier.py             # clasificación con salida estructurada (D3)
@@ -582,7 +580,7 @@ tp-topicos-g2-pipidu-library-agent/
 │   ├── __init__.py
 │   └── app.py                    # FastAPI: POST /ask (SSE), GET /health; único acceso al agente (D75, D80)
 ├── web/                          # SPA Vite + shadcn/ui: cliente de la API (D93)
-├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, evaluate_retrieval.py, measure_retrieval.py, probe_llm.py, replicate_neon.sh
+├── scripts/                      # ask.py, measure_golden.py, measure_queue.py, export_runs.py, calibrate_threshold.py, evaluate_retrieval.py, measure_retrieval.py, probe_llm.py
 ├── openspec/                     # cambios con specs, design y tasks; `project.md`, `config.yaml`
 ├── TP/                           # versión legible de los artefactos SDD
 ├── informe/                      # informe técnico (informe-tecnico.md y su PDF)

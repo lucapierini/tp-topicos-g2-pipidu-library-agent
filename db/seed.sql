@@ -1,5 +1,5 @@
 -- =============================================================================
--- Pipidu Library Agent — Seed de datos (change base-de-datos-neon)
+-- Pipidu Library Agent — Seed de datos (change base-de-datos)
 -- Catálogo REAL (70 libros: títulos, autores, editoriales, ISBN verificados en Open Library).
 -- Socios y préstamos SINTÉTICOS. Fechas de préstamos relativas a CURRENT_DATE,
 -- así siempre hay préstamos activos y vencidos.
